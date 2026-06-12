@@ -4,6 +4,7 @@ export interface PlayerState {
   status: PlayerStatus
   isPlaying: boolean
   volume: number
+  lastVolume: number
   streamUrl: string | null
   error: string | null
 }
@@ -14,6 +15,7 @@ export interface PlayerActions {
   pause: () => void
   toggle: () => void
   setVolume: (volume: number) => void
+  toggleMute: () => void
   setStatus: (status: PlayerStatus) => void
   setError: (error: string | null) => void
 }

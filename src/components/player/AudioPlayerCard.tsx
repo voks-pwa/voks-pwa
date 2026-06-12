@@ -3,6 +3,7 @@ import { ListenerCount } from '@/components/player/ListenerCount'
 import { LiveStatusBadge } from '@/components/player/LiveStatusBadge'
 import { PlayPauseButton } from '@/components/player/PlayPauseButton'
 import { SongArtwork } from '@/components/player/SongArtwork'
+import { VolumeControls } from '@/components/player/VolumeControls'
 import { getDisplayTrack } from '@/lib/now-playing'
 import { useNowPlaying } from '@/hooks/use-now-playing'
 import { usePlayerStore } from '@/stores/player-store'
@@ -17,6 +18,9 @@ export function AudioPlayerCard() {
   const streamUrl = data?.station.listen_url
   const listenerCount = data?.listeners.current ?? 0
   const isOnline = data?.is_online ?? false
+  const volume = usePlayerStore((state) => state.volume)
+  const setVolume = usePlayerStore((state) => state.setVolume)
+  const toggleMute = usePlayerStore((state) => state.toggleMute)
 
   return (
     <section
@@ -43,6 +47,12 @@ export function AudioPlayerCard() {
       </div>
 
       <ListenerCount count={listenerCount} />
+
+      <VolumeControls
+        volume={volume}
+        onChange={setVolume}
+        onToggleMute={toggleMute}
+      />
 
       <PlayPauseButton
         isPlaying={isPlaying}

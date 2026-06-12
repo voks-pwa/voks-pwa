@@ -22,6 +22,7 @@ export function AudioPlayer({ streamUrl }: AudioPlayerProps) {
     if (!audio) return
 
     audio.volume = volume
+    audio.muted = volume === 0
   }, [volume])
 
   useEffect(() => {
