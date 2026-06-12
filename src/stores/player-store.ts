@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { PlayerStatus, PlayerStore } from '@/types/player'
+import type { PlayerStore } from '@/types/player'
 
 const VOLUME_STORAGE_KEY = 'voks-player-volume'
 
