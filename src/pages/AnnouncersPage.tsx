@@ -1,7 +1,10 @@
 import { useAnnouncers } from '@/hooks/useAnnouncers'
 import { BottomNavigation } from '@/components/navigation/BottomNavigation'
 import { Link } from 'react-router-dom'
-import { FaInstagram } from 'react-icons/fa'
+import {
+  FaInstagram,
+  FaTiktok,
+} from 'react-icons/fa'
 
 export function AnnouncersPage() {
   const { data, isLoading, error } = useAnnouncers()
@@ -46,26 +49,55 @@ export function AnnouncersPage() {
                 )}
 
                 <div className="p-5">
-                  <h2 className="text-xl font-bold">
-                    {announcer.title.rendered}
-                  </h2>
-                </div>
+  <h2 className="text-center text-xl font-bold">
+    {announcer.title.rendered}
+  </h2>
+</div>
               </Link>
+<div className="flex justify-center gap-3 pb-5">
 
-              {announcer.acf?.link_instagram && (
-                <div className="px-5 pb-5">
-                  <a
-  href={announcer.acf.link_instagram}
-  target="_blank"
-  rel="noreferrer"
-  onClick={(e) => e.stopPropagation()}
-  className="mt-3 inline-flex items-center gap-2 rounded-full bg-pink-50 px-3 py-2 text-pink-600 hover:bg-pink-100"
->
-  <FaInstagram />
-  Instagram
-</a>
-                </div>
-              )}
+  {announcer.acf?.link_instagram && (
+    <a
+      href={announcer.acf.link_instagram}
+      target="_blank"
+      rel="noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      className="
+flex h-12 w-12 items-center justify-center
+rounded-full
+bg-pink-50
+text-pink-600
+transition-all
+hover:scale-110
+hover:bg-pink-100
+"
+    >
+      <FaInstagram size={20} />
+    </a>
+  )}
+
+  {announcer.acf?.link_tiktok && (
+    <a
+      href={announcer.acf.link_tiktok}
+      target="_blank"
+      rel="noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      className="
+flex h-12 w-12 items-center justify-center
+rounded-full
+bg-gray-100
+text-black
+transition-all
+hover:scale-110
+hover:bg-gray-200
+"
+    >
+      <FaTiktok size={20} />
+    </a>
+  )}
+
+</div>
+             
             </div>
           )
         })}

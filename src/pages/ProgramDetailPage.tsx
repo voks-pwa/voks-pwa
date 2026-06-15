@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 
 import { useProgram } from '@/hooks/useProgram'
 import { useAnnouncersByIds } from '@/hooks/useAnnouncer'
+import { FaShareAlt } from 'react-icons/fa'
 
 
 export function ProgramDetailPage() {
@@ -57,6 +58,46 @@ export function ProgramDetailPage() {
         <h1 className="mb-3 text-4xl font-bold">
           {program.title.rendered}
         </h1>
+        <button
+  onClick={async () => {
+    const shareUrl = window.location.href
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: program.title.rendered,
+          text: `Dengarkan program ${program.title.rendered} di Voks Radio`,
+          url: shareUrl,
+        })
+      } catch {
+        // user cancel
+      }
+    } else {
+      await navigator.clipboard.writeText(
+        shareUrl
+      )
+
+      alert(
+        'Link program berhasil disalin'
+      )
+    }
+  }}
+  className="
+    mb-6
+    inline-flex
+    items-center
+    gap-2
+    rounded-full
+    bg-[#bda752]
+    px-4
+    py-2
+    text-white
+    hover:opacity-90
+  "
+>
+  <FaShareAlt />
+<span>Bagikan Program</span>
+  </button>
 
         {announcers.length > 0 && (
           <div className="mb-6 space-y-3">
