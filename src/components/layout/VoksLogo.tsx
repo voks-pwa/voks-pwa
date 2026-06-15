@@ -1,12 +1,21 @@
+import logoHorizontal from '@/assets/branding/logo-horizontal.png'
+import logoSquare from '@/assets/branding/logo-square.png'
+
 export function VoksLogo() {
   return (
-    <div
-      aria-label="Voks logo placeholder"
-      className="flex h-20 w-20 items-center justify-center rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 sm:h-24 sm:w-24"
-    >
-      <span className="text-2xl font-bold tracking-tight text-primary sm:text-3xl">
-        VOKS
-      </span>
+    <div className="flex items-center justify-center rounded-2xl border border-primary/10 bg-background/80 p-3 shadow-sm sm:p-2">
+      <img
+        src={logoSquare}
+        alt="Voks logo"
+        className="block h-14 w-14 rounded-xl sm:hidden"
+        loading="eager"
+      />
+      <img
+        src={logoHorizontal}
+        alt="Voks logo"
+        className="hidden h-14 w-auto rounded-xl sm:block"
+        loading="eager"
+      />
     </div>
   )
 }

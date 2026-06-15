@@ -1,7 +1,7 @@
 {
   "id": "/",
   "name": "Voks Radio",
-  "short_name": "Voks",
+  "short_name": "Voks Radio",
   "description": "Listen to Voks Radio Bandung — live streaming and on-air music.",
   "start_url": "/",
   "scope": "/",

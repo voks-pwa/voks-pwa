@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { NOW_PLAYING_POLL_INTERVAL_MS } from '@/lib/constants'
-import { fetchNowPlaying } from '@/services/azuracast'
+import { fetchNowPlaying } from '@/services/azuracast/now-playing'
 import type { AzuraCastNowPlayingResponse } from '@/types/azuracast'
 
 export const nowPlayingQueryKey = ['azuracast', 'now-playing'] as const
