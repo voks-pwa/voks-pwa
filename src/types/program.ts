@@ -1,4 +1,4 @@
-export interface WordPressAnnouncer {
+export interface WordPressProgram {
   id: number
 
   slug: string
@@ -11,11 +11,16 @@ export interface WordPressAnnouncer {
     rendered: string
   }
 
-  acf?: {
-    link_instagram?: string
-    link_tiktok?: string
-    link_twitter?: string
-    short_description?: string
+  acf: {
+    host?: string
+    penyiar?: string
+    jadwal_hari?: string
+    jam_siaran?: string
+    jam_mulai?: string
+    jam_selesai?: string
+    hari?: string
+    program_order?: number
+    banner_program?: number
   }
 
   _embedded?: {

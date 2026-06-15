@@ -21,7 +21,7 @@ export const programs = [
   },
   {
     name: "Selekta Indonesia",
-    host: "Ryanti Moti",
+    host: "Ijan Mandagi",
     days: [1, 2, 3, 4, 5],
     startTime: "11:00",
     endTime: "13:00",

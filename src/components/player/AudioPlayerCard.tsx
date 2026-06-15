@@ -1,4 +1,3 @@
-import { AudioPlayer } from '@/components/player/AudioPlayer'
 import { ListenerCount } from '@/components/player/ListenerCount'
 import { LiveStatusBadge } from '@/components/player/LiveStatusBadge'
 import { PlayPauseButton } from '@/components/player/PlayPauseButton'
@@ -7,6 +6,7 @@ import { VolumeControls } from '@/components/player/VolumeControls'
 import { getDisplayTrack } from '@/lib/now-playing'
 import { useNowPlaying } from '@/hooks/use-now-playing'
 import { usePlayerStore } from '@/stores/player-store'
+import { useEffect } from 'react'
 
 export function AudioPlayerCard() {
   const { data, isLoading, isError } = useNowPlaying()
@@ -18,6 +18,15 @@ export function AudioPlayerCard() {
   const streamUrl = data?.station.listen_url
   const listenerCount = data?.listeners.current ?? 0
   const isOnline = data?.is_online ?? false
+  const setStreamUrl = usePlayerStore(
+  (state) => state.setStreamUrl
+)
+
+useEffect(() => {
+  if (streamUrl) {
+    setStreamUrl(streamUrl)
+  }
+}, [streamUrl, setStreamUrl])
   const volume = usePlayerStore((state) => state.volume)
   const setVolume = usePlayerStore((state) => state.setVolume)
   const toggleMute = usePlayerStore((state) => state.toggleMute)
@@ -61,7 +70,7 @@ export function AudioPlayerCard() {
         onClick={toggle}
       />
 
-      {streamUrl && <AudioPlayer streamUrl={streamUrl} />}
+      
     </section>
   )
 }
