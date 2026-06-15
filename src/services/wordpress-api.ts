@@ -28,7 +28,9 @@ export async function getAnnouncer(
   )
 
   if (!response.ok) {
-    throw new Error('Failed to fetch announcer')
+    throw new Error(
+      'Failed to fetch announcer'
+    )
   }
 
   const data = await response.json()

@@ -3,7 +3,6 @@ import { Header } from '@/components/layout/Header'
 import { AudioPlayerCard } from '@/components/player/AudioPlayerCard'
 import { CurrentShowCard } from '@/components/programs/CurrentShowCard'
 import { BottomNavigation } from '@/components/navigation/BottomNavigation'
-import { usePrograms } from '@/hooks/usePrograms'
 import { useAnnouncers } from '@/hooks/useAnnouncers'
 import { Link } from 'react-router-dom'
 import { Swiper, SwiperSlide } from 'swiper/react'
@@ -11,13 +10,12 @@ import { Autoplay } from 'swiper/modules'
 import { FeaturedPrograms } from '@/components/programs/FeaturedPrograms'
 
 import 'swiper/css'
-import { MdFeaturedPlayList } from 'react-icons/md'
+
 
 export function HomePage() {
-  const { data: programs } = usePrograms()
-  const currentProgram = programs?.[0]
-  const nextProgram = programs?.[1]
+
   const { data: announcers } = useAnnouncers()
+
   return (
     <>
       <div className="pb-24">

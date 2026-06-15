@@ -1,5 +1,5 @@
 import { useMedia } from '@/hooks/useMedia'
-import type { WordPressProgram } from '@/types/programs'
+import type { WordPressProgram } from '@/types/program'
 
 interface Props {
   program: WordPressProgram

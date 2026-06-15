@@ -52,10 +52,6 @@ const banner = currentProgramData?._embedded?.[
   'wp:featuredmedia'
 ]?.[0]?.source_url
 
-console.log(schedule)
-console.log(current)
-console.log(next)
-
   return (
     <section className="w-full rounded-3xl border border-black/5 bg-white p-6 shadow-sm sm:p-8">
       {banner && (

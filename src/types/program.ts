@@ -12,16 +12,28 @@ export interface WordPressProgram {
   }
 
   acf: {
-    host?: string
-    penyiar?: string
-    jadwal_hari?: string
-    jam_siaran?: string
-    jam_mulai?: string
-    jam_selesai?: string
-    hari?: string
-    program_order?: number
-    banner_program?: number
-  }
+  host?: string
+
+  penyiar?: string
+
+  jadwal_hari?: string
+
+  jam_siaran?: string
+
+  jam_mulai?: string
+
+  jam_selesai?: string
+
+  hari?: string[]
+
+  program_order?: number
+
+  announcers?: number[]
+
+  gambar_landscape?: number
+
+  banner_program?: number 
+}
 
   _embedded?: {
     'wp:featuredmedia'?: Array<{

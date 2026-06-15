@@ -23,11 +23,7 @@ export function ProgramsPage() {
       <div className="grid gap-6 md:grid-cols-2">
         {data?.map((program) => {
 
-  console.log(
-    'PROGRAM',
-    program.title.rendered,
-    program._embedded
-  )
+  
 
   const image =
     program._embedded?.['wp:featuredmedia']?.[0]

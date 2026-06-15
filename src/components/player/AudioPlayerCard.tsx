@@ -7,6 +7,7 @@ import { getDisplayTrack } from '@/lib/now-playing'
 import { useNowPlaying } from '@/hooks/use-now-playing'
 import { usePlayerStore } from '@/stores/player-store'
 import { useEffect } from 'react'
+import { useCurrentProgram } from '@/hooks/useCurrentProgram'
 
 export function AudioPlayerCard() {
   const { data, isLoading, isError } = useNowPlaying()
@@ -21,6 +22,17 @@ export function AudioPlayerCard() {
   const setStreamUrl = usePlayerStore(
   (state) => state.setStreamUrl
 )
+const currentProgram =
+  useCurrentProgram()
+const programArtwork =
+  currentProgram?._embedded?.[
+    'wp:featuredmedia'
+  ]?.[0]?.media_details?.sizes
+    ?.medium_large?.source_url ??
+  currentProgram?._embedded?.[
+    'wp:featuredmedia'
+  ]?.[0]?.source_url ??
+  null
 
 useEffect(() => {
   if (streamUrl) {
@@ -42,9 +54,13 @@ useEffect(() => {
       />
 
       <SongArtwork
-        artworkUrl={displayTrack.artworkUrl}
-        title={displayTrack.title}
-      />
+  artworkUrl={programArtwork}
+  title={
+    currentProgram?.title.rendered ??
+    displayTrack.title
+  }
+  isPlaying={isPlaying}
+/>
 
       <div className="w-full space-y-1 text-center">
         <h1 className="text-xl font-semibold text-text sm:text-2xl">

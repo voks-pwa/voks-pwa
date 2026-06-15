@@ -32,9 +32,8 @@ export function ProgramScheduleCard({
         <h3 className="mt-1 text-lg font-bold">
           {program.title.rendered}
         </h3>
-
         <p className="text-sm text-gray-600">
-          {program.acf?.penyiar}
+          {program.acf?.host}
         </p>
       </div>
     </div>

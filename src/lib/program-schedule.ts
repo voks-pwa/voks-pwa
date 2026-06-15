@@ -45,10 +45,10 @@ export function buildSchedule(
             .filter(Boolean) ?? [],
 
         startTime:
-          program.acf?.jam_mulai.slice(0, 5),
+  program.acf?.jam_mulai?.slice(0, 5) ?? '00:00',
 
         endTime:
-          program.acf?.jam_selesai.slice(0, 5),
+  program.acf?.jam_selesai?.slice(0, 5) ?? '00:00',
       })),
   }
 }

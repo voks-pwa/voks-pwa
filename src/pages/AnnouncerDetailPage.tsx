@@ -1,5 +1,9 @@
 import { Link, useParams } from 'react-router-dom'
-import { FaArrowLeft, FaInstagram } from 'react-icons/fa'
+import {
+  FaArrowLeft,
+  FaInstagram,
+  FaTiktok,
+} from 'react-icons/fa'
 import { useProgramsByHost } from '@/hooks/useProgramsByHost'
 
 import { useAnnouncer } from '@/hooks/useAnnouncer'
@@ -60,17 +64,29 @@ export function AnnouncerDetailPage() {
             {announcer.title.rendered}
           </h1>
 
-          {announcer.acf?.link_instagram && (
-            <a
-              href={announcer.acf.link_instagram}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-full bg-pink-50 px-4 py-2 text-pink-600 hover:bg-pink-100"
-            >
-              <FaInstagram />
-              Follow on Instagram
-            </a>
-          )}
+    <div className="mt-6 flex gap-3">
+  {announcer.acf?.link_instagram && (
+    <a
+      href={announcer.acf.link_instagram}
+      target="_blank"
+      rel="noreferrer"
+      className="flex h-12 w-12 items-center justify-center rounded-full bg-pink-100 text-pink-600"
+    >
+      <FaInstagram size={20} />
+    </a>
+  )}
+
+  {announcer.acf?.link_tiktok && (
+    <a
+      href={announcer.acf.link_tiktok}
+      target="_blank"
+      rel="noreferrer"
+      className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100"
+    >
+      <FaTiktok size={20} />
+    </a>
+  )}
+</div>
 
           {announcer.acf?.short_description && (
             <div className="mt-8">

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 
 import { Swiper, SwiperSlide } from 'swiper/react'
+import { Autoplay } from 'swiper/modules'
 
 import 'swiper/css'
 
@@ -20,11 +21,16 @@ export function FeaturedPrograms() {
       </h2>
 
       <Swiper
+        modules={[Autoplay]}
         slidesPerView={2.2}
         spaceBetween={16}
+        autoplay={{
+          delay: 3000,
+          disableOnInteraction: false,
+        }}
+        loop
       >
         {programs.map((program) => {
-
           const image =
             program._embedded?.['wp:featuredmedia']?.[0]
               ?.media_details?.sizes?.medium_large?.source_url ??
@@ -35,6 +41,7 @@ export function FeaturedPrograms() {
             <SwiperSlide key={program.id}>
               <Link
                 to={`/programs/${program.slug}`}
+                className="block"
               >
                 {image && (
                   <img

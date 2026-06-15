@@ -1,38 +1,121 @@
 interface SongArtworkProps {
   artworkUrl: string | null
   title: string
+  isPlaying?: boolean
 }
 
-export function SongArtwork({ artworkUrl, title }: SongArtworkProps) {
-  if (artworkUrl) {
-    return (
-      <img
-        src={artworkUrl}
-        alt={`${title} artwork`}
-        className="aspect-square w-full max-w-xs rounded-2xl object-cover shadow-md ring-1 ring-black/5"
-      />
-    )
-  }
-
+export function SongArtwork({
+  artworkUrl,
+  title,
+  isPlaying = false,
+}: SongArtworkProps) {
   return (
-    <div
-      aria-label="No artwork available"
-      className="flex aspect-square w-full max-w-xs items-center justify-center rounded-2xl bg-secondary/10 shadow-md ring-1 ring-black/5"
-    >
-      <svg
-        aria-hidden="true"
-        className="h-16 w-16 text-secondary/40"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={1.5}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+    <div className="relative flex items-center justify-center">
+      {/* Glow saat play */}
+      {isPlaying && (
+        <div className="absolute h-72 w-72 rounded-full bg-red-500/20 blur-3xl" />
+      )}
+
+      {/* Tonearm */}
+      <div
+        className={`
+          absolute
+          -right-4
+          top-2
+          z-20
+          h-32
+          w-2
+          origin-top
+          rounded-full
+          bg-gray-400
+          transition-transform
+          duration-700
+          ${isPlaying ? 'rotate-[22deg]' : 'rotate-0'}
+        `}
+      />
+
+      {/* Vinyl */}
+      <div className="relative">
+        {artworkUrl ? (
+          <img
+            src={artworkUrl}
+            alt={`${title} artwork`}
+            style={{
+              animationDuration: '12s',
+            }}
+            className={`
+              aspect-square
+              w-72
+              rounded-full
+              object-cover
+              shadow-2xl
+              ring-4
+              ring-black/10
+              ${isPlaying ? 'animate-spin' : ''}
+            `}
+          />
+        ) : (
+          <div
+            className="
+              flex
+              aspect-square
+              w-72
+              items-center
+              justify-center
+              rounded-full
+              bg-gray-200
+            "
+          >
+            No Artwork
+          </div>
+        )}
+
+        {/* Label tengah */}
+        <div
+  className="
+    absolute
+    left-1/2
+    top-1/2
+    flex
+    h-20
+    w-20
+    -translate-x-1/2
+    -translate-y-1/2
+    items-center
+    justify-center
+    rounded-full
+    text-center
+    text-xs
+    font-bold
+  "
+  style={{
+    backgroundColor: '#bda752',
+    color: '#2a2a2a',
+  }}
+>
+  <div>
+    VOKS
+    <br />
+    ON AIR
+  </div>
+</div>
+
+        {/* Lubang vinyl */}
+        <div
+          className="
+            absolute
+            left-1/2
+            top-1/2
+            z-30
+            h-3
+            w-3
+            -translate-x-1/2
+            -translate-y-1/2
+            rounded-full
+            bg-white
+          "
         />
-      </svg>
+      </div>
     </div>
   )
 }
