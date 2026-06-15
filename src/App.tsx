@@ -1,9 +1,7 @@
-import { AnnouncersPage } from '@/pages/AnnouncersPage'
+import { HomePage } from '@/pages/HomePage'
 
 function App() {
-  return (
-    <AnnouncersPage />
-  )
+  return <HomePage />
 }
 
 export default App
