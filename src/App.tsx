@@ -6,6 +6,7 @@ import { ProgramDetailPage } from '@/pages/ProgramDetailPage'
 import { AnnouncersPage } from '@/pages/AnnouncersPage'
 import { AnnouncerDetailPage } from '@/pages/AnnouncerDetailPage'
 import { SchedulePage } from '@/pages/SchedulePage'
+import { LiveStudioPage } from '@/pages/LiveStudioPage'
 
 function App() {
   return (
@@ -39,6 +40,10 @@ function App() {
         <Route
           path="/schedule"
           element={<SchedulePage />}
+        />
+        <Route
+          path="/live"
+          element={<LiveStudioPage />}
         />
       </Routes>
 

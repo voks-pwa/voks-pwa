@@ -8,6 +8,7 @@ import { useNowPlaying } from '@/hooks/use-now-playing'
 import { usePlayerStore } from '@/stores/player-store'
 import { useEffect } from 'react'
 import { useCurrentProgram } from '@/hooks/useCurrentProgram'
+import fallbackCover from '@/assets/branding/voks-vinyl-cover.jpg'
 
 export function AudioPlayerCard() {
   const { data, isLoading, isError } = useNowPlaying()
@@ -32,7 +33,7 @@ const programArtwork =
   currentProgram?._embedded?.[
     'wp:featuredmedia'
   ]?.[0]?.source_url ??
-  null
+  fallbackCover
 
 useEffect(() => {
   if (streamUrl) {
