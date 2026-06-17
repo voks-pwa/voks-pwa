@@ -28,20 +28,38 @@ export function Header() {
       <div className="mb-5 flex items-center justify-between">
 
         <div>
-          <VoksLogo />
+          <div>
+  <p
+    className="
+      text-xs
+      font-semibold
+      uppercase
+      tracking-widest
+      text-[#bda752]
+    "
+  >
+    Welcome Back
+  </p>
 
-          <p
-            className="
-              mt-2
-              text-xs
-              font-medium
-              uppercase
-              tracking-widest
-              text-secondary
-            "
-          >
-            Voks Digital Platform
-          </p>
+  <h1
+    className="
+      mt-1
+      text-2xl
+      font-bold
+    "
+  >
+    Feel Good Radio
+  </h1>
+
+  <p
+    className="
+      text-sm
+      text-gray-500
+    "
+  >
+    Listen. Watch. Discover.
+  </p>
+</div>
         </div>
 
         <div className="flex items-center gap-3">

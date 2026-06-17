@@ -12,9 +12,10 @@ import { useOwncastStatus } from '@/hooks/useOwncastStatus'
 import { useVoksPlus } from '@/hooks/useVoksPlus'
 import { FaPlay } from 'react-icons/fa'
 import { Search } from 'lucide-react'
+import {  NotificationCenter,} from '@/components/notifications/NotificationCenter'
 import {
-  NotificationCenter,
-} from '@/components/notifications/NotificationCenter'
+  TodayScheduleWidget,
+} from '@/components/programs/TodayScheduleWidget'
 
 import 'swiper/css'
 
@@ -106,33 +107,9 @@ console.log(voksPlus)
   </Link>
 )}
             <CurrentShowCard />
+            <TodayScheduleWidget />
             <NotificationCenter />
-           <Link
-  to="/live"
-  className="block rounded-3xl p-5 text-white shadow"
-  style={{
-    backgroundColor: '#5B5B3F',
-  }}
->
-  <div className="flex items-center gap-3">
-    <span
-      className="animate-pulse text-xl"
-      style={{ color: '#bd5252' }}
-    >
-      ●
-    </span>
-
-    <div>
-      <h2 className="font-bold">
-        Live Studio
-      </h2>
-
-      <p className="text-sm text-white/80">
-        Watch Voks Radio Visual Streaming
-      </p>
-    </div>
-  </div>
-</Link>
+           
             <FeaturedPrograms />
             <AudioPlayerCard />
 

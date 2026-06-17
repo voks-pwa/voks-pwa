@@ -19,6 +19,28 @@ export function NotificationCenter() {
 
   return (
     <section>
+    <div className="mb-4 flex items-center justify-between">
+
+  <div>
+    <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+      Notifications
+    </p>
+
+    <h2 className="text-lg font-bold">
+      Latest Updates
+    </h2>
+  </div>
+
+  <button
+    onClick={() =>
+      navigate('/notifications')
+    }
+    className="text-sm font-medium text-primary"
+  >
+    View All
+  </button>
+
+</div>
 
       <div
         className="
