@@ -1,119 +1,79 @@
 import {
-  Calendar,
   Home,
   Radio,
-  Users,
-  Video,
+  Podcast,
+  Menu,
 } from 'lucide-react'
 
-import {
-  Link,
-  useLocation,
-} from 'react-router-dom'
-
-import { useOwncastStatus } from '@/hooks/useOwncastStatus'
+import { NavLink } from 'react-router-dom'
 
 export function BottomNavigation() {
-  const location = useLocation()
-
-  const { data: owncast } =
-    useOwncastStatus()
-
   const items = [
     {
       label: 'Home',
-      path: '/',
       icon: Home,
-    },
-    {
-      label: 'Programs',
-      path: '/programs',
-      icon: Radio,
-    },
-    {
-      label: 'Schedule',
-      path: '/schedule',
-      icon: Calendar,
+      path: '/',
     },
     {
       label: 'Live',
+      icon: Radio,
       path: '/live',
-      icon: Video,
-      live: owncast?.online,
     },
     {
-      label: 'Announcers',
-      path: '/announcers',
-      icon: Users,
+      label: 'Voks+',
+      icon: Podcast,
+      path: '/plus',
+    },
+    {
+      label: 'More',
+      icon: Menu,
+      path: '/more',
     },
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white">
+    <nav
+      className="
+        fixed
+        bottom-0
+        left-0
+        right-0
+        z-50
+        border-t
+        bg-white
+        shadow-lg
+      "
+    >
       <div className="mx-auto flex max-w-lg justify-around py-3">
 
         {items.map((item) => {
           const Icon = item.icon
 
-          const active =
-            location.pathname === item.path
-
-          const isLiveTab =
-            item.label === 'Live'
-
           return (
-            <Link
+            <NavLink
               key={item.path}
               to={item.path}
-              className="
-                relative
+              className={({ isActive }) =>
+                `
                 flex
                 flex-col
                 items-center
+                gap-1
                 text-xs
-              "
+                ${
+                  isActive
+                    ? 'text-[#5B5B3F]'
+                    : 'text-gray-400'
+                }
+              `
+              }
             >
-              <Icon
-                size={20}
-                className={
-                  active
-                    ? 'text-primary'
-                    : isLiveTab &&
-                      item.live
-                    ? 'text-red-600'
-                    : 'text-gray-400'
-                }
-              />
+              <Icon size={20} />
 
-              <span
-                className={
-                  active
-                    ? 'text-primary'
-                    : isLiveTab &&
-                      item.live
-                    ? 'font-semibold text-red-600'
-                    : 'text-gray-400'
-                }
-              >
+              <span>
                 {item.label}
               </span>
-
-              {isLiveTab &&
-                item.live && (
-                  <span
-                    className="
-                      absolute
-                      -top-1
-                      right-0
-                      h-2.5
-                      w-2.5
-                      rounded-full
-                      bg-red-600
-                      animate-pulse
-                    "
-                  />
-                )}
-            </Link>
+            </NavLink>
           )
         })}
 

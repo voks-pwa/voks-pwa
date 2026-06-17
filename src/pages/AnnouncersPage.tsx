@@ -24,7 +24,7 @@ export function AnnouncersPage() {
         Voks Announcers
       </h1>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4">
         {data?.map((announcer) => {
           const image =
             announcer._embedded?.['wp:featuredmedia']?.[0]

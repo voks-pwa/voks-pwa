@@ -32,7 +32,7 @@ export function buildSchedule(
 
         host:
           program.acf?.host ??
-          program.acf?.penyiar ??
+          program.acf?.host ??
           '',
 
         days:

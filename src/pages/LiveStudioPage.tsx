@@ -55,6 +55,40 @@ export function LiveStudioPage() {
 
       <LiveStudioPlayer />
 
+      <div className="mt-4 grid grid-cols-3 gap-3">
+
+  <Link
+    to="/"
+    className="rounded-2xl bg-white p-4 text-center shadow"
+  >
+    🏠
+    <p className="mt-2 text-xs">
+      Home
+    </p>
+  </Link>
+
+  <Link
+    to="/plus"
+    className="rounded-2xl bg-white p-4 text-center shadow"
+  >
+    🎙
+    <p className="mt-2 text-xs">
+      Voks+
+    </p>
+  </Link>
+
+  <Link
+    to="/programs"
+    className="rounded-2xl bg-white p-4 text-center shadow"
+  >
+    📻
+    <p className="mt-2 text-xs">
+      Programs
+    </p>
+  </Link>
+
+</div>
+
       {currentProgram && (
         <div className="mt-6 overflow-hidden rounded-3xl bg-white shadow">
 

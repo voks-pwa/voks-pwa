@@ -20,7 +20,7 @@ export function ProgramsPage() {
         Programs
       </h1>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-2 gap-4">
         {data?.map((program) => {
 
   

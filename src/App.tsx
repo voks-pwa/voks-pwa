@@ -7,6 +7,12 @@ import { AnnouncersPage } from '@/pages/AnnouncersPage'
 import { AnnouncerDetailPage } from '@/pages/AnnouncerDetailPage'
 import { SchedulePage } from '@/pages/SchedulePage'
 import { LiveStudioPage } from '@/pages/LiveStudioPage'
+import { VoksPlusPage } from '@/pages/VoksPlusPage'
+import { VoksPlusDetailPage } from '@/pages/VoksPlusDetailPage'
+import { MorePage } from '@/pages/MorePage'
+import { SearchPage } from '@/pages/SearchPage'
+import {  NotificationsPage,} from '@/pages/NotificationsPage'
+import { NotificationDetailPage } from '@/pages/NotificationDetailPage'
 
 function App() {
   return (
@@ -44,6 +50,33 @@ function App() {
         <Route
           path="/live"
           element={<LiveStudioPage />}
+        />
+        <Route
+          path="/more"
+          element={<MorePage />}
+        />
+
+        <Route
+           path="/plus"
+           element={<VoksPlusPage />}
+        />
+
+        <Route
+            path="/plus/:slug"
+            element={<VoksPlusDetailPage />}
+        />
+
+        <Route
+          path="/search"
+         element={<SearchPage />}
+        />
+        <Route
+          path="/notifications"
+          element={<NotificationsPage />}
+        />
+        <Route
+          path="/notifications/:id"
+          element={<NotificationDetailPage />}
         />
       </Routes>
 

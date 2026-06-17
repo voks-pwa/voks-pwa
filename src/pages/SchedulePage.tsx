@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { usePrograms } from '@/hooks/usePrograms'
 
 import { BottomNavigation } from '@/components/navigation/BottomNavigation'
-import { ProgramScheduleCard } from '@/components/programs/ProgramScheduleCard'
 
 const DAYS = [
   'Senin',
@@ -48,23 +47,33 @@ export function SchedulePage() {
   const currentTime =
     now.getHours() * 60 + now.getMinutes()
 
-  const currentProgram =
-    dayPrograms.find((program) => {
-      const startParts =
-        program.acf?.jam_mulai?.split(':') ??
-        []
-
-      const endParts =
-        program.acf?.jam_selesai?.split(':') ??
-        []
-
+  const currentIndex =
+    dayPrograms.findIndex((program) => {
       const start =
-        Number(startParts[0] ?? 0) * 60 +
-        Number(startParts[1] ?? 0)
+        Number(
+          program.acf?.jam_mulai?.split(
+            ':'
+          )[0]
+        ) *
+          60 +
+        Number(
+          program.acf?.jam_mulai?.split(
+            ':'
+          )[1]
+        )
 
       const end =
-        Number(endParts[0] ?? 0) * 60 +
-        Number(endParts[1] ?? 0)
+        Number(
+          program.acf?.jam_selesai?.split(
+            ':'
+          )[0]
+        ) *
+          60 +
+        Number(
+          program.acf?.jam_selesai?.split(
+            ':'
+          )[1]
+        )
 
       return (
         currentTime >= start &&
@@ -72,16 +81,36 @@ export function SchedulePage() {
       )
     })
 
+  const currentProgram =
+    currentIndex >= 0
+      ? dayPrograms[currentIndex]
+      : null
+
+  const nextProgram =
+    currentIndex >= 0
+      ? dayPrograms[currentIndex + 1]
+      : null
+
   return (
     <>
       <div className="p-6 pb-24">
-        <h1 className="mb-6 text-3xl font-bold">
-          Schedule
-        </h1>
 
-        {/* DAY TABS */}
+        <div className="mb-6">
 
-        <div className="mb-8 flex gap-2 overflow-x-auto pb-2">
+          <h1 className="text-3xl font-bold">
+            Schedule
+          </h1>
+
+          <p className="mt-1 text-gray-500">
+            Today's radio lineup
+          </p>
+
+        </div>
+
+        {/* DAY CHIPS */}
+
+        <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
+
           {DAYS.map((day) => (
             <button
               key={day}
@@ -95,17 +124,17 @@ export function SchedulePage() {
                 py-2
                 text-sm
                 font-medium
-                transition
                 ${
                   selectedDay === day
-                    ? 'bg-[#bda752] text-black'
-                    : 'bg-gray-100 text-gray-600'
+                    ? 'bg-[#5B5B3F] text-white'
+                    : 'bg-white text-gray-600 shadow'
                 }
               `}
             >
               {day}
             </button>
           ))}
+
         </div>
 
         {/* LIVE NOW */}
@@ -113,80 +142,176 @@ export function SchedulePage() {
         {currentProgram && (
           <div
             className="
-              mb-8
-              overflow-hidden
+              mb-4
               rounded-3xl
-              bg-[#bda752]
-              text-black
+              bg-[#5B5B3F]
+              p-6
+              text-white
+            "
+          >
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider">
+              🔴 LIVE NOW
+            </p>
+
+            <h2 className="text-2xl font-bold">
+              {
+                currentProgram.title
+                  .rendered
+              }
+            </h2>
+
+            <p className="mt-2 text-white/80">
+              {
+                currentProgram.acf
+                  ?.host
+              }
+            </p>
+
+            <p className="mt-2 text-sm">
+              {
+                currentProgram.acf
+                  ?.jam_mulai
+              }
+              {' - '}
+              {
+                currentProgram.acf
+                  ?.jam_selesai
+              }
+            </p>
+
+          </div>
+        )}
+
+        {/* NEXT UP */}
+
+        {nextProgram && (
+          <div
+            className="
+              mb-6
+              rounded-3xl
+              bg-white
+              p-5
               shadow
             "
           >
-            <div className="p-6">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-black px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
-                <span className="h-2 w-2 rounded-full bg-red-500" />
-                ON AIR NOW
-              </div>
+            <p className="mb-2 text-xs font-semibold uppercase text-gray-500">
+              Up Next
+            </p>
 
-              <h2 className="text-2xl font-bold">
-                {
-                  currentProgram.title
-                    .rendered
-                }
-              </h2>
+            <h3 className="font-bold">
+              {
+                nextProgram.title
+                  .rendered
+              }
+            </h3>
 
-              <p className="mt-1 text-sm">
-                {currentProgram.acf?.host}
-              </p>
+            <p className="text-sm text-gray-500">
+              {
+                nextProgram.acf
+                  ?.jam_mulai
+              }
+              {' - '}
+              {
+                nextProgram.acf
+                  ?.jam_selesai
+              }
+            </p>
 
-              <p className="mt-2 text-sm font-medium">
-                {
-                  currentProgram.acf
-                    ?.jam_mulai
-                ?.slice(0, 5)
-                }
-                {' - '}
-                {
-                  currentProgram.acf
-                    ?.jam_selesai
-                ?.slice(0, 5)
-                }
-              </p>
-            </div>
           </div>
         )}
 
-        {/* DAY TITLE */}
+        {/* TIMELINE */}
 
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold">
-            {selectedDay}
-          </h2>
+        <div className="space-y-5">
 
-          <span className="text-sm text-gray-500">
-            {dayPrograms.length}{' '}
-            Program
-          </span>
+          {dayPrograms.map((program) => {
+
+            const active =
+              currentProgram?.id ===
+              program.id
+
+            return (
+              <div
+                key={program.id}
+                className="flex gap-4"
+              >
+
+                <div className="flex flex-col items-center">
+
+                  <div
+                    className={`
+                      h-4
+                      w-4
+                      rounded-full
+                      ${
+                        active
+                          ? 'bg-red-500'
+                          : 'bg-gray-300'
+                      }
+                    `}
+                  />
+
+                  <div className="h-full w-px bg-gray-200" />
+
+                </div>
+
+                <div
+                  className={`
+                    flex-1
+                    rounded-3xl
+                    p-5
+                    ${
+                      active
+                        ? 'bg-[#F7F5EC]'
+                        : 'bg-white shadow'
+                    }
+                  `}
+                >
+
+                  <div className="mb-2 flex items-center justify-between">
+
+                    <h3 className="font-bold">
+                      {
+                        program.title
+                          .rendered
+                      }
+                    </h3>
+
+                    {active && (
+                      <span className="rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white">
+                        LIVE
+                      </span>
+                    )}
+
+                  </div>
+
+                  <p className="text-sm text-gray-600">
+                    {
+                      program.acf
+                        ?.host
+                    }
+                  </p>
+
+                  <p className="mt-2 text-sm text-gray-500">
+                    {
+                      program.acf
+                        ?.jam_mulai
+                    }
+                    {' - '}
+                    {
+                      program.acf
+                        ?.jam_selesai
+                    }
+                  </p>
+
+                </div>
+
+              </div>
+            )
+          })}
+
         </div>
 
-        {/* PROGRAM LIST */}
-
-        {dayPrograms.length === 0 ? (
-          <div className="rounded-3xl bg-white p-6 text-center shadow">
-            <p className="text-gray-500">
-              Belum ada program untuk hari
-              ini.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {dayPrograms.map((program) => (
-              <ProgramScheduleCard
-                key={program.id}
-                program={program}
-              />
-            ))}
-          </div>
-        )}
       </div>
 
       <BottomNavigation />
