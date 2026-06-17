@@ -6,14 +6,12 @@ import {
   Globe,
   Share2,
   Star,
-  Music2,
-  Video,
-} from 'lucide-react'
+  } from 'lucide-react'
 
 import { Link } from 'react-router-dom'
 
 import { BottomNavigation } from '@/components/navigation/BottomNavigation'
-import { FaInstagram, FaInstagramSquare, FaTiktok, FaYoutube } from 'react-icons/fa'
+import { FaInstagram, FaTiktok, FaYoutube } from 'react-icons/fa'
 
 export function MorePage() {
   const handleShare = async () => {

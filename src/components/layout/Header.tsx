@@ -4,7 +4,6 @@ import {
   Search,
 } from 'lucide-react'
 
-import { VoksLogo } from '@/components/layout/VoksLogo'
 import { InstallAppButton } from '@/components/pwa/InstallAppButton'
 
 import { useNotifications } from '@/hooks/useNotifications'
