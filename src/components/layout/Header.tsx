@@ -8,16 +8,23 @@ import { InstallAppButton } from '@/components/pwa/InstallAppButton'
 
 import { useNotifications } from '@/hooks/useNotifications'
 
-export function Header() {
-  const { data } =
-    useNotifications()
+import {
+  isNotificationRead,
+  isDismissed,
+} from '@/utils/notificationStorage'
 
-  const notifications =
-    data?.filter(
-      (item) =>
-        item.acf?.featured === true
-    ) ?? []
-    
+export function Header() {
+  
+  const { data } =
+  useNotifications()
+
+const notifications =
+  data?.filter((item) => {
+    return (
+      !isNotificationRead(item.id) &&
+      !isDismissed(item.id)
+    )
+  }) ?? []  
 
   return (
     <header className="mb-8">
@@ -47,7 +54,7 @@ export function Header() {
       font-bold
     "
   >
-    Feel Good Radio
+    VOKS RADIO
   </h1>
 
   <p
@@ -56,7 +63,7 @@ export function Header() {
       text-gray-500
     "
   >
-    Listen. Watch. Discover.
+    Feel the Music. Feel the Vibes. Feel Good.
   </p>
 </div>
         </div>

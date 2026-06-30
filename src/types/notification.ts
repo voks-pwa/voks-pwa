@@ -3,6 +3,8 @@ export interface WordPressNotification {
 
   slug: string
 
+  date?: string
+
   title: {
     rendered: string
   }
@@ -27,5 +29,12 @@ export interface WordPressNotification {
     featured?: boolean
 
     send_now?: boolean
+
+    notification_priority?:
+      | 'Normal'
+      | 'Important'
+      | 'Critical'
+
+    show_as_story?: boolean
   }
 }

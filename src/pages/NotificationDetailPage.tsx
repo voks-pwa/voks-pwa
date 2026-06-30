@@ -13,6 +13,15 @@ import {
 import { useNotifications } from '@/hooks/useNotifications'
 import { getMedia } from '@/services/wordpress-api'
 
+import {
+  markNotificationRead,
+} from '@/utils/notificationStorage'
+
+import {
+  dismissNotification,
+} from '@/utils/notificationStorage'
+
+
 export function NotificationDetailPage() {
   const { id } = useParams()
 
@@ -29,6 +38,14 @@ export function NotificationDetailPage() {
 
   const [image, setImage] =
     useState('')
+    
+useEffect(() => {
+  if (notification?.id) {
+    markNotificationRead(
+      notification.id
+    )
+  }
+}, [notification])
 
   useEffect(() => {
     async function loadImage() {
@@ -200,6 +217,26 @@ export function NotificationDetailPage() {
             "
           >
             Open Content
+
+            <button
+  onClick={() => {
+    dismissNotification(
+      notification.id
+    )
+
+    navigate('/')
+  }}
+  className="
+    mt-6
+    rounded-xl
+    border
+    border-white/20
+    px-4
+    py-3
+  "
+>
+  Hide Notification
+</button>
 
             <ExternalLink
               size={18}

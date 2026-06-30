@@ -1,0 +1,25 @@
+{
+  "models": [
+    {
+      "title": "Qwen 2.5 Coder (Lokal)",
+      "provider": "ollama",
+      "model": "qwen2.5-coder:1.5b"
+    }
+  ],
+  "contextProviders": [
+    "code",
+    "folder",
+    "diff",
+    "terminal",
+    "problems"
+  ],
+  "mcpServers": {
+    "memory-server": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ]
+    }
+  }
+}

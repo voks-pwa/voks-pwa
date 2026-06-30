@@ -1,5 +1,9 @@
 import { create } from 'zustand'
 import type { PlayerStore } from '@/types/player'
+// ========================================================
+// TAMBAHAN: IMPORT EVENT BUS DI BARIS PALING ATAS
+// ========================================================
+import { emitMissionEvent } from '@/features/missions/missionEventBus'
 
 const VOLUME_STORAGE_KEY = 'voks-player-volume'
 
@@ -43,6 +47,11 @@ const getInitialVolumeState = (): PersistedVolumeState => {
 const initialVolumeState = getInitialVolumeState()
 
 export const usePlayerStore = create<PlayerStore>((set, get) => ({
+  // ========================================================
+  // TAMBAHAN: STATE BARU UNTUK MENAMPUNG USER ID
+  // ========================================================
+  userId: null,
+  
   status: 'idle',
   isPlaying: false,
   volume: initialVolumeState.volume,
@@ -50,11 +59,51 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   streamUrl: null,
   error: null,
 
+  // ========================================================
+  // TAMBAHAN: ACTION UNTUK MENGATUR USER ID
+  // ========================================================
+  setUserId: (userId) => set({ userId }),
+
   setStreamUrl: (url) => set({ streamUrl: url, error: null }),
 
-  play: () => set({ isPlaying: true, status: 'playing', error: null }),
+  // ========================================================
+  // PERUBAHAN: ACTION PLAY DENGAN EMIT EVENT
+  // ========================================================
+  play: () => {
+    const state = get()
 
-  pause: () => set({ isPlaying: false, status: 'paused' }),
+    set({
+      isPlaying: true,
+      status: 'playing',
+      error: null,
+    })
+
+    if (state.userId) {
+      emitMissionEvent({
+        action: 'player_play',
+        userId: state.userId,
+      })
+    }
+  },
+
+  // ========================================================
+  // PERUBAHAN: ACTION PAUSE DENGAN EMIT EVENT
+  // ========================================================
+  pause: () => {
+    const state = get()
+
+    set({
+      isPlaying: false,
+      status: 'paused',
+    })
+
+    if (state.userId) {
+      emitMissionEvent({
+        action: 'player_pause',
+        userId: state.userId,
+      })
+    }
+  },
 
   toggle: () => {
     const { isPlaying } = get()
@@ -62,6 +111,54 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
       get().pause()
     } else {
       get().play()
+    }
+  },
+
+  // ========================================================
+  // TAMBAHAN: ACTION LISTEN TICK (AUTOSAVE PER DETAK)
+  // ========================================================
+  listenTick: () => {
+    const state = get()
+
+    if (!state.userId) return
+
+    emitMissionEvent({
+      action: 'listen_tick',
+      userId: state.userId,
+      amount: 1,
+    })
+  },
+
+  // ========================================================
+  // TAMBAHAN: ACTION DISCONNECT (SAAT PLAYER TERPUTUS)
+  // ========================================================
+  disconnect: () => {
+    const state = get()
+
+    if (!state.userId) return
+
+    emitMissionEvent({
+      action: 'player_disconnect',
+      userId: state.userId,
+    })
+  },
+
+  // ========================================================
+  // TAMBAHAN: ACTION STOP (MENGHENTIKAN PLAYER KE IDLE)
+  // ========================================================
+  stop: () => {
+    const state = get()
+
+    set({
+      isPlaying: false,
+      status: 'idle',
+    })
+
+    if (state.userId) {
+      emitMissionEvent({
+        action: 'player_stop',
+        userId: state.userId,
+      })
     }
   },
 

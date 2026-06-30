@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@theme {
+:root {
   --color-primary: #bda752;
   --color-secondary: #5b5b3f;
   --color-background: #ffffff;
@@ -11,10 +11,15 @@
 
 @layer base {
   html {
-    @apply antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    @apply bg-background text-text font-sans;
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: var(--font-sans);
   }
 }
+
+

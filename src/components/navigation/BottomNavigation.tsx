@@ -2,8 +2,9 @@ import {
   Home,
   Radio,
   Podcast,
-  Menu,
-} from 'lucide-react'
+  User
+}
+from 'lucide-react'
 
 import { NavLink } from 'react-router-dom'
 
@@ -26,7 +27,7 @@ export function BottomNavigation() {
     },
     {
       label: 'More',
-      icon: Menu,
+      icon: User,
       path: '/more',
     },
   ]

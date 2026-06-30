@@ -10,6 +10,8 @@ export interface PlayerState {
 }
 
 export interface PlayerActions {
+userId: string | null
+setUserId: (userId: string) => void
   setStreamUrl: (url: string) => void
   play: () => void
   pause: () => void
@@ -18,6 +20,9 @@ export interface PlayerActions {
   toggleMute: () => void
   setStatus: (status: PlayerStatus) => void
   setError: (error: string | null) => void
+  listenTick: () => void
+  disconnect: () => void
+  stop: () => void
 }
 
 export type PlayerStore = PlayerState & PlayerActions

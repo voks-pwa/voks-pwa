@@ -3,6 +3,10 @@ import { useCurrentProgram } from '@/hooks/useCurrentProgram'
 import { Link } from 'react-router-dom'
 import { FaArrowLeft } from 'react-icons/fa'
 
+import { supabase } from '@/lib/supabase'
+
+console.log('Supabase OK', supabase)
+
 export function LiveStudioPage() {
   const currentProgram =
     useCurrentProgram()
