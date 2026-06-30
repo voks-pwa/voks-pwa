@@ -23,7 +23,6 @@ import {
 } from 'react-icons/fa'
 
 import { Link } from 'react-router-dom'
-import { BottomNavigation } from '@/components/navigation/BottomNavigation'
 import { useProfile } from '@/hooks/useProfile'
 import { useAuth } from '@/features/auth/useAuth'
 
@@ -54,8 +53,7 @@ export function MorePage() {
     'flex items-center justify-between bg-white px-5 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50/80 transition-colors first:rounded-t-2xl last:rounded-b-2xl group cursor-pointer'
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-32">
-      <div className="mx-auto max-w-2xl p-4 sm:p-6">
+    <div className="mx-auto max-w-2xl p-4 sm:p-6">
         
         {/* 1. LOGIN / REGISTER BANNER */}
         {!user && (
@@ -326,7 +324,6 @@ export function MorePage() {
         </div>
 
       </div>
-      <BottomNavigation />
-    </div>
   )
 }
+

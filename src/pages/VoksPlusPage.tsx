@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PlayCircle } from 'lucide-react'
 
-import { BottomNavigation } from '@/components/navigation/BottomNavigation'
 import { useVoksPlus } from '@/hooks/useVoksPlus'
 
 const FILTERS = [
@@ -26,8 +25,8 @@ export function VoksPlusPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8F9FA] text-sm font-medium text-gray-500">
-        <div className="flex flex-col items-center gap-2">
+      <div className="p-6">
+        <div className="flex flex-col items-center gap-2 text-sm font-medium text-gray-500">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#bda752] border-t-transparent" />
           <span>Loading...</span>
         </div>
@@ -43,8 +42,7 @@ export function VoksPlusPage() {
         )
 
   return (
-    <>
-      <div className="min-h-screen bg-[#F8F9FA] p-6 pb-24">
+      <div className="p-6 pb-24">
         
         <h1 className="mb-6 text-3xl font-black tracking-tight text-gray-900">
           Voks+
@@ -120,8 +118,5 @@ export function VoksPlusPage() {
         </div>
 
       </div>
-
-      <BottomNavigation />
-    </>
   )
 }

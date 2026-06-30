@@ -165,7 +165,7 @@ export function ProfilePage() {
   // Proteksi render jika user belum terautentikasi
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#F7F6F2] flex items-center justify-center p-6">
+      <div className="flex items-center justify-center p-6">
         <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow">
           <h1 className="text-2xl font-bold">Login Required</h1>
           <p className="mt-3 text-gray-500">Please login to access your profile.</p>
@@ -181,7 +181,7 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F6F2] p-4 sm:p-6 pb-24">
+    <div className="p-4 sm:p-6 pb-24">
       <div className="mx-auto max-w-2xl space-y-6">
         
         {/* HEADER */}

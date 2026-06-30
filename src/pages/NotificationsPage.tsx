@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { X } from 'lucide-react'
 
 import { useNotifications } from '@/hooks/useNotifications'
-import { BottomNavigation } from '@/components/navigation/BottomNavigation'
 
 export function NotificationsPage() {
   const {
@@ -168,8 +167,6 @@ export function NotificationsPage() {
         )}
 
       </div>
-
-      <BottomNavigation />
     </>
   )
 }

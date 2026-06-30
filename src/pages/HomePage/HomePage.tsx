@@ -2,7 +2,6 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { Header } from '@/components/layout/Header'
 import { AudioPlayerCard } from '@/components/player/AudioPlayerCard'
 import { CurrentShowCard } from '@/components/programs/CurrentShowCard'
-import { BottomNavigation } from '@/components/navigation/BottomNavigation'
 import { useAnnouncers } from '@/hooks/useAnnouncers'
 import { Link } from 'react-router-dom'
 import { Swiper, SwiperSlide } from 'swiper/react'
@@ -35,9 +34,7 @@ export function HomePage() {
   const { data: owncast } = useOwncastStatus()
 
   return (
-    <>
-      <div className="min-h-screen bg-[#F8F9FA] pb-32">
-        <AppLayout>
+    <AppLayout>
           <Header />
 
           {/* USER PROFILE CARD (JIKA SUDAH LOGIN) */}
@@ -380,9 +377,5 @@ export function HomePage() {
           </div>
 
         </AppLayout>
-      </div>
-
-      <BottomNavigation />
-    </>
-  )
+    )
 }

@@ -2,8 +2,6 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Gift } from "lucide-react";
 
-import { BottomNavigation } from "@/components/navigation/BottomNavigation";
-
 import { useRewards } from "@/hooks/useRewards";
 
 import { RewardCard } from "@/features/rewards/components/RewardCard";
@@ -21,8 +19,7 @@ export function RewardStorePage() {
     useState(false);
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-32">
-
+    <>
       <div className="mx-auto max-w-2xl p-4">
 
         {/* Header */}
@@ -198,9 +195,6 @@ export function RewardStorePage() {
         open={open}
         onOpenChange={setOpen}
       />
-
-      <BottomNavigation />
-
-    </div>
+    </>
   );
 }

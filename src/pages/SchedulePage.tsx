@@ -2,8 +2,6 @@ import { useState } from 'react'
 
 import { usePrograms } from '@/hooks/usePrograms'
 
-import { BottomNavigation } from '@/components/navigation/BottomNavigation'
-
 const DAYS = [
   'Senin',
   'Selasa',
@@ -314,7 +312,6 @@ export function SchedulePage() {
 
       </div>
 
-      <BottomNavigation />
     </>
   )
 }

@@ -1,5 +1,4 @@
 import { useAnnouncers } from '@/hooks/useAnnouncers'
-import { BottomNavigation } from '@/components/navigation/BottomNavigation'
 import { Link } from 'react-router-dom'
 import {
   FaInstagram,
@@ -18,7 +17,6 @@ export function AnnouncersPage() {
   }
 
   return (
-  <>
     <div className="p-6 pb-24">
       <h1 className="mb-6 text-3xl font-bold">
         Voks Announcers
@@ -103,8 +101,5 @@ hover:bg-gray-200
         })}
       </div>
     </div>
-
-    <BottomNavigation />
-  </>
   )
 }

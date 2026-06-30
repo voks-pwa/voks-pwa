@@ -1,6 +1,5 @@
 import { usePrograms } from '@/hooks/usePrograms'
 import { stripHtml } from '@/utils/html'
-import { BottomNavigation } from '@/components/navigation/BottomNavigation'
 import { Link } from 'react-router-dom'
 
 export function ProgramsPage() {
@@ -76,7 +75,6 @@ export function ProgramsPage() {
           )
         })}
       </div>
-      <BottomNavigation />
     </div>
   )
 }

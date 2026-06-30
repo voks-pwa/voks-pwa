@@ -9,8 +9,7 @@ export function MissionsPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-24">
-      <div className="mx-auto max-w-2xl p-4 sm:p-6">
+    <div className="mx-auto max-w-2xl p-4 sm:p-6">
         
         {/* ROW TOMBOL KEMBALI DENGAN TULISAN */}
         <div className="mb-4 flex items-center justify-between mt-2">
@@ -56,6 +55,5 @@ export function MissionsPage() {
         </div>
 
       </div>
-    </div>
   );
 }

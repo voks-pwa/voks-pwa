@@ -29,7 +29,7 @@ export function VoksPlusDetailPage() {
 
   if (!data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8F9FA] text-sm font-medium text-gray-500">
+      <div className="flex items-center justify-center p-6 text-sm font-medium text-gray-500">
         <div className="flex flex-col items-center gap-2">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#bda752] border-t-transparent" />
           <span>Loading...</span>
@@ -44,8 +44,7 @@ export function VoksPlusDetailPage() {
   const decodedTitle = decodeHtmlEntities(data.title?.rendered || '')
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-24">
-      <div className="mx-auto max-w-2xl p-4 sm:p-6 space-y-6">
+    <div className="mx-auto max-w-2xl p-4 sm:p-6 space-y-6">
         
         {/* HEADER DENGAN BUTTON KEMBALI */}
         <div className="flex items-center gap-4 mt-2">
@@ -105,6 +104,5 @@ export function VoksPlusDetailPage() {
         </div>
 
       </div>
-    </div>
   )
 }
