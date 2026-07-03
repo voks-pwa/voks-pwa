@@ -8,8 +8,9 @@
     "build": "tsc -b && vite build",
     "check": "tsc --noEmit",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "generate:icons": "node scripts/generate-pwa-icons.mjs"
+    "preview": "npm run build && wrangler dev",
+    "generate:icons": "node scripts/generate-pwa-icons.mjs",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",
@@ -30,6 +31,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.43.0",
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
@@ -46,6 +48,7 @@
     "ts-prune": "^0.10.3",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
-    "vite": "^8.0.12"
+    "vite": "^8.0.12",
+    "wrangler": "^4.107.0"
   }
 }
