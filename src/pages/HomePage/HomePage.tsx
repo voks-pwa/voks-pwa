@@ -63,8 +63,8 @@ export function HomePage() {
             className="
               relative
               overflow-hidden
-              rounded-[32px]
-              bg-gradient-to-br
+              rounded-4xl
+              bg-linear-to-br
               from-[#4E523C]
               via-[#726743]
               to-[#bda752]
