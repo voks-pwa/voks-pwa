@@ -1,6 +1,7 @@
-import { supabase } from "@/lib/supabase";
+import { redeemRewardService } from "@/features/rewards/services/RewardRedemptionService";
 
 export async function redeemReward(
+  userId: string,
   reward: {
     id: number;
     slug: string;
@@ -8,17 +9,8 @@ export async function redeemReward(
     cost: number;
   }
 ) {
-  const { data, error } = await supabase.rpc(
-    "redeem_reward",
-    {
-      p_reward_wp_id: reward.id.toString(),
-      p_reward_slug: reward.slug,
-      p_reward_name: reward.title,
-      p_reward_cost: reward.cost,
-    }
+  return redeemRewardService(
+    userId,
+    reward
   );
-
-  if (error) throw error;
-
-  return data;
 }

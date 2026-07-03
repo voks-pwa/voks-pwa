@@ -3,7 +3,7 @@ import { Trophy } from "lucide-react";
 import type {
   MissionConfig,
   MissionProgress,
-} from "../missionTypes";
+} from "../services/missionTypes";
 
 interface Props {
 

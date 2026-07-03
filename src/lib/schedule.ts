@@ -416,13 +416,13 @@ export function validateSchedule(schedule: RadioSchedule): void {
 
     try {
       timeToMinutes(program.startTime)
-    } catch (error) {
+    } catch {
       throw new Error(`Program ${i} (${program.name}): startTime is invalid: ${program.startTime}`)
     }
 
     try {
       timeToMinutes(program.endTime)
-    } catch (error) {
+    } catch {
       throw new Error(`Program ${i} (${program.name}): endTime is invalid: ${program.endTime}`)
     }
   }

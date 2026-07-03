@@ -2,12 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 
 import { getMissions } from "@/services/wordpress-api";
 
-import { mapMission } from "@/features/missions/missionMapper";
+import { mapMission } from "@/features/missions/services/missionMapper";
 
 import type {
   MissionConfig,
   WPMission,
-} from "@/features/missions/missionTypes";
+} from "@/features/missions/services/missionTypes";
 
 export function useMissions() {
   return useQuery<MissionConfig[]>({

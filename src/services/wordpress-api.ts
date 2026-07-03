@@ -4,7 +4,7 @@ import type { WordPressMedia } from "@/types/media";
 import type { WordPressVoksPlus } from "@/types/voks-plus";
 import type { WordPressNotification } from "@/types/notification";
 
-import type { WPMission } from "@/features/missions/missionTypes";
+import type { WPMission } from "@/features/missions/services/missionTypes";
 
 import type {  WPReward,} from "@/features/rewards/rewardTypes";
 

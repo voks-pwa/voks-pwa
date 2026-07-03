@@ -3,11 +3,11 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/features/auth/useAuth'
 import { calculateCompletion } from '@/features/profile/profileHelpers'
 import { useProfile } from '@/hooks/useProfile' 
-import { addXP } from '@/features/xp/addXP'
-import { getLevelProgress } from '@/features/xp/levelHelpers'
+import { awardVXP } from "@/features/profile/services/profileXPService";
 import { ArrowLeft, LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { getUserRank } from '@/lib/getUserRank'
+import { calculateLevel } from "@/features/xp/utils/level";
 
 export function ProfilePage() {
   const navigate = useNavigate()
@@ -25,9 +25,12 @@ export function ProfilePage() {
   const [birthDate, setBirthDate] = useState('')
 
   // Menghitung data Level dan Rank Akumulasi VXP
-  const levelData = getLevelProgress(profile?.vxp ?? 0)
   const rank = getUserRank(profile?.lifetime_vxp ?? 0)
   const lifetime = profile?.lifetime_vxp ?? 0
+  const levelData = calculateLevel(
+    profile?.lifetime_vxp ?? 0
+  );
+
 
   // Tautan Referral Link
   const referralLink = `${window.location.origin}/login?ref=${profile?.referral_code ?? ''}`
@@ -72,16 +75,26 @@ export function ProfilePage() {
       ? 'Voks Legend'
       : null
 
-  // Sinkronisasi data ke state saat profil berhasil dimuat
   useEffect(() => {
     if (!profile) return
 
-    setDisplayName(profile.display_name ?? '')
-    setGender(profile.gender ?? '') 
-    setPhone(profile.phone ?? '')
-    setCity(profile.city ?? '')
-    setBio(profile.bio ?? '')
-    setBirthDate(profile.birth_date ?? '')
+    const nextValues = {
+      displayName: profile.display_name ?? '',
+      gender: profile.gender ?? '',
+      phone: profile.phone ?? '',
+      city: profile.city ?? '',
+      bio: profile.bio ?? '',
+      birthDate: profile.birth_date ?? '',
+    }
+
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setDisplayName(nextValues.displayName)
+    setGender(nextValues.gender)
+    setPhone(nextValues.phone)
+    setCity(nextValues.city)
+    setBio(nextValues.bio)
+    setBirthDate(nextValues.birthDate)
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [profile])
 
   async function handleLogout() {
@@ -144,12 +157,10 @@ export function ProfilePage() {
       'PROFILE COMPLETE REWARD'
     )
 
-    await addXP(
-      user!.id,
-      100,
-      'profile_complete'
-    )
-
+ await awardVXP(
+  user!.id,
+  100,
+);
     await supabase
       .from('profiles')
       .update({
@@ -202,7 +213,7 @@ export function ProfilePage() {
         </div>
 
         {/* MEMBER CARD */}
-        <div className="overflow-hidden rounded-[32px] bg-gradient-to-br from-[#4E523C] to-[#3B3E2D] p-6 text-white shadow-xl">
+        <div className="overflow-hidden rounded-4xl bg-linear-to-br from-[#4E523C] to-[#3B3E2D] p-6 text-white shadow-xl">
           <div className="flex items-center gap-5">
             <img
               src={getAvatarSrc()}
@@ -371,8 +382,13 @@ export function ProfilePage() {
           <div className="text-right">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">Progress Info</p>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-xs font-bold text-gray-400">({Math.round(levelData.progress)}%)</span>
-              <h2 className="text-xl font-black text-[#bda752]">Lv.{levelData.currentLevel}</h2>
+              <span className="text-xs font-bold text-gray-400">
+  ({Math.round(levelData.progress)}%)
+</span>
+
+<h2 className="text-xl font-black text-[#bda752]">
+  Lv.{levelData.level}
+</h2>
             </div>
           </div>
         </div>

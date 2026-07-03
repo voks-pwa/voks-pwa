@@ -1,5 +1,13 @@
+type ProfileCompletion = {
+  display_name?: string | null
+  avatar_url?: string | null
+  birth_date?: string | null
+  city?: string | null
+  bio?: string | null
+}
+
 export function calculateCompletion(
-  profile: any
+  profile?: ProfileCompletion | null
 ) {
   let score = 0
 

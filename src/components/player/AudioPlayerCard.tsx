@@ -19,7 +19,7 @@ import { useAuth } from '@/features/auth/useAuth'
 
 import {
   useListenMission,
-} from '@/features/missions/useListenMission'
+} from '@/features/missions/hooks/useListenMission'
 
 export function AudioPlayerCard() {
 

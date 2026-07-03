@@ -1,4 +1,4 @@
-import { useMissionStore } from "../missionStore"
+import { useMissionStore } from "../services/missionStore"
 
 import { MissionProgressCard } from "./MissionProgressCard"
 import { MissionRewardCard } from "./MissionRewardCard"

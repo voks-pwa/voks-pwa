@@ -3,7 +3,8 @@ import { usePlayerStore } from '@/stores/player-store'
 import { useAuth } from '@/features/auth/useAuth'
 import { useMissions } from '@/hooks/useMissions'
 import { supabase } from '@/lib/supabase'
-import { emitMissionEvent } from '@/features/missions/missionEventBus'
+import { emitMissionEvent } from '@/features/missions/services/missionEventBus'
+import type { MissionConfig } from '@/features/missions/services/missionTypes'
 
 type ListenSessionState = {
   seconds: number
@@ -23,8 +24,9 @@ const listenSessionState: ListenSessionState = {
   userId: null,
 }
 
-function getMissionValue(mission: any, key: string) {
-  return mission?.acf?.[key] ?? mission?.[key]
+function getMissionValue(mission: MissionConfig | undefined, key: string) {
+  const missionRecord = mission as MissionConfig & { acf?: Record<string, unknown> }
+  return missionRecord.acf?.[key] ?? mission?.[key as keyof MissionConfig]
 }
 
 export function useListenMission() {
@@ -39,7 +41,7 @@ export function useListenMission() {
     if (!user) return
 
     const listenMission = missions?.find(
-      (m: any) =>
+      (m: MissionConfig) =>
         getMissionValue(m, 'mission_action') === 'listen' ||
         m?.action === 'listen'
     )
@@ -147,7 +149,7 @@ export function useListenMission() {
 
   useEffect(() => {
     const listenMission = missions?.find(
-      (m: any) =>
+      (m: MissionConfig) =>
         getMissionValue(m, 'mission_action') === 'listen' ||
         m?.action === 'listen'
     )
@@ -179,5 +181,5 @@ export function useListenMission() {
         },
       })
     }
-  }, [playerStatus, missions])
+  }, [playerStatus, missions, user])
 }

@@ -1,179 +1,170 @@
 import {
   useEffect,
   useState,
-} from 'react'
+} from "react";
 
 import type {
   User,
-} from '@supabase/supabase-js'
+} from "@supabase/supabase-js";
 
-import { supabase } from '@/lib/supabase'
+import { supabase } from "@/lib/supabase";
 
-import { createProfile } from './createProfile'
-import { AuthContext } from './AuthContext'
+import {   getProfile,} from "@/features/profile";
 
-import { trackMission } from '@/hooks/useMissionTracker'
+import { AuthContext } from "./AuthContext";
+
+import { trackMission } from "@/hooks/useMissionTracker";
 
 import {
   useMissionEventBus,
-} from '@/features/missions/useMissionEventBus'
+} from "@/features/missions/hooks/useMissionEventBus";
 
 import {
   startMissionScheduler,
   stopMissionScheduler,
-} from '@/features/missions/missionScheduler'
+} from "@/features/missions/services/missionScheduler";
 
 export function AuthProvider({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
 
   const [user, setUser] =
-    useState<User | null>(null)
+    useState<User | null>(null);
 
   const [loading, setLoading] =
-    useState(true)
+    useState(true);
 
-  /**
-   * Mission Event Bus
-   */
-  useMissionEventBus()
+  useMissionEventBus();
 
-  /**
-   * First login tracker
-   */
   useEffect(() => {
 
-    if (!user) return
+    if (!user) return;
 
     trackMission({
+
       userId: user.id,
+
       missionId: 12341,
+
       amount: 1,
-    })
 
-  }, [user])
+    });
 
-  /**
-   * Scheduler
-   */
+  }, [user]);
+
   useEffect(() => {
 
     if (!user) {
 
-      stopMissionScheduler()
+      stopMissionScheduler();
 
-      return
+      return;
 
     }
 
-    startMissionScheduler(user.id)
+    startMissionScheduler(user.id);
 
     return () => {
 
-      stopMissionScheduler()
+      stopMissionScheduler();
 
-    }
+    };
 
-  }, [user])
+  }, [user]);
 
-  /**
-   * Session
-   */
   useEffect(() => {
 
     async function loadSession() {
 
-      const {
-        data: {
-          session,
-        },
-      } =
-        await supabase.auth.getSession()
+      try {
 
-      if (session?.user) {
+        const {
 
-        const { data } =
-          await supabase
-            .from('profiles')
-            .select('id')
-            .eq(
-              'id',
-              session.user.id
-            )
-            .maybeSingle()
+          data: {
 
-        if (!data) {
+            session,
 
-          console.log(
-            'FIRST LOGIN'
-          )
+          },
 
-          await createProfile(
-            session.user
-          )
+        } =
+          await supabase.auth.getSession();
+
+        if (!session?.user) {
+
+          setUser(null);
+
+          setLoading(false);
+
+          return;
 
         }
 
-        setUser(
-          session.user
-        )
+        const profile =
+          await getProfile(session.user.id);
 
-        trackMission({
-          userId: session.user.id,
-          missionId: 12341,
-          amount: 1,
-        })
+        if (!profile) {
 
-      } else {
+          await getProfile(session.user.id);
 
-        setUser(null)
+        }
+
+        setUser(session.user);
+
+      } finally {
+
+        setLoading(false);
 
       }
 
-      setLoading(false)
-
     }
 
-    loadSession()
+    loadSession();
 
     const {
+
       data: listener,
+
     } =
       supabase.auth.onAuthStateChange(
 
-        (_event, session) => {
+        async (_event, session) => {
 
           setUser(
             session?.user ?? null
-          )
+          );
 
         }
 
-      )
+      );
 
     return () => {
 
-      listener.subscription.unsubscribe()
+      listener.subscription.unsubscribe();
 
-    }
+    };
 
-  }, [])
+  }, []);
 
   return (
 
     <AuthContext.Provider
+
       value={{
+
         user,
+
         loading,
+
       }}
+
     >
 
       {children}
 
     </AuthContext.Provider>
 
-  )
+  );
 
 }

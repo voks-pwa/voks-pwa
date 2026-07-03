@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 import { RewardToast } from "./RewardToast";
 
-import { useMissionStore } from "../missionStore";
+import { useMissionStore } from "../services/missionStore";
 
 export function RewardPopup() {
 

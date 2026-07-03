@@ -3,9 +3,9 @@ import { Routes, Route } from "react-router-dom";
 import { AdminProtectedRoute } from "@/features/admin/layout/AdminProtectedRoute";
 import { AdminLayout } from "@/features/admin/layout/AdminLayout";
 
-import { DashboardPage } from "@/features/admin/pages/DashboardPage";
-import { RewardRedemptionsPage } from "@/features/admin/pages/RewardRedemptionsPage";
-import { UsersPage } from "@/features/admin/pages/UsersPage";
+import { DashboardPage } from "@/features/admin/dashboard/pages/DashboardPage";
+import { RewardRedemptionsPage } from "@/features/admin/rewards/pages/RewardRedemptionsPage";
+import { UsersPage } from "@/features/admin/users/pages/UsersPage";
 
 export function AdminRoutes() {
   return (

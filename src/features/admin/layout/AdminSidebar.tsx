@@ -55,7 +55,7 @@ export function AdminSidebar() {
       <div className="px-8 py-8">
 
         <h1 className="text-3xl font-black">
-          VOKS
+          VOKS NEXT
         </h1>
 
         <p className="text-sm text-white/70">

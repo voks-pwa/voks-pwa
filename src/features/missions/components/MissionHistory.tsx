@@ -1,5 +1,5 @@
 import { History } from "lucide-react";
-import { useMissionStore } from "../missionStore";
+import { useMissionStore } from "../services/missionStore";
 
 export function MissionHistory() {
   const progress =

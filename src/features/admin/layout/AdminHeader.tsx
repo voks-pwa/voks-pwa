@@ -27,7 +27,7 @@ export function AdminHeader() {
         </h2>
 
         <p className="text-sm text-gray-500">
-          Welcome back
+          Welcome back to VOKS NEXT
         </p>
 
       </div>

@@ -14,7 +14,7 @@ import type {
 
   MissionProgress,
 
-} from "../missionTypes";
+} from "../services/missionTypes";
 
 export function MissionList(){
 

@@ -3,7 +3,7 @@ import type { PlayerStore } from '@/types/player'
 // ========================================================
 // TAMBAHAN: IMPORT EVENT BUS DI BARIS PALING ATAS
 // ========================================================
-import { emitMissionEvent } from '@/features/missions/missionEventBus'
+import { emitMissionEvent } from '@/features/missions/services/missionEventBus'
 
 const VOLUME_STORAGE_KEY = 'voks-player-volume'
 

@@ -1,6 +1,6 @@
 import type {
   MissionRuntime,
-} from '@/features/missions/missionRuntime'
+} from '@/features/missions/services/missionRuntime'
 
 declare global {
 

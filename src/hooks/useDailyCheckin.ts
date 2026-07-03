@@ -1,38 +1,14 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useAuth } from '@/features/auth/useAuth'
 import { useMissions } from './useMissions'
 import { supabase } from '@/lib/supabase'
+import type { MissionConfig } from '@/features/missions/services/missionTypes'
 
 export function useDailyCheckin() {
-   console.log(
-  'DAILY CHECKIN HOOK RUNNING'
-)
   const { user } = useAuth()
   const { data: missions } = useMissions()
 
-  useEffect(() => {
-    if (!user) return
-    if (!missions?.length) return
-
-    const checkinMission = missions.find(
-      (m: any) =>
-        m.acf?.mission_action === 'checkin'
-    )
-
-    console.log(
-  'CHECKIN MISSION FOUND',
-  checkinMission
-)
-
-
-    if (!checkinMission) return
-
-    runCheckin(checkinMission.id)
-  }, [user, missions])
-
-  async function runCheckin(
-    missionId: number
-  ) {
+  const runCheckin = useCallback(async (missionId: number) => {
     const today =
       new Date()
         .toISOString()
@@ -46,10 +22,6 @@ export function useDailyCheckin() {
         .eq('mission_id', missionId)
         .maybeSingle()
 
-console.log(
-  'RUNNING DAILY CHECKIN',
-  missionId
-)
     if (
       existing?.completed_at &&
       existing.completed_at.startsWith(today)
@@ -83,9 +55,19 @@ console.log(
           new Date().toISOString(),
       })
       .eq('id', existing.id)
+  }, [user])
 
-    console.log(
-      'DAILY CHECKIN COMPLETED'
+  useEffect(() => {
+    if (!user) return
+    if (!missions?.length) return
+
+    const checkinMission = missions.find(
+      (m: MissionConfig) =>
+        m.action === 'checkin'
     )
-  }
+
+    if (!checkinMission) return
+
+    void runCheckin(checkinMission.id)
+  }, [missions, runCheckin, user])
 }

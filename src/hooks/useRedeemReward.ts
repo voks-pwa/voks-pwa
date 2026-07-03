@@ -1,27 +1,53 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { redeemReward } from "@/services/reward-service";
+import { useAuth } from "@/features/auth/useAuth";
 
 export function useRedeemReward() {
 
-    const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-    return useMutation({
+  const queryClient = useQueryClient();
 
-        mutationFn: redeemReward,
+  return useMutation({
 
-        onSuccess: () => {
+    mutationFn: async (reward: {
 
-            queryClient.invalidateQueries({
-                queryKey:["profile"]
-            });
+      id: number;
 
-            queryClient.invalidateQueries({
-                queryKey:["rewards"]
-            });
+      slug: string;
 
-        }
+      title: string;
 
-    });
+      cost: number;
+
+    }) => {
+
+      if (!user) {
+
+        throw new Error("User not logged in");
+
+      }
+
+      return redeemReward(
+        user.id,
+        reward
+      );
+
+    },
+
+    onSuccess: () => {
+
+      queryClient.invalidateQueries({
+        queryKey: ["profile"],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["rewards"],
+      });
+
+    },
+
+  });
 
 }

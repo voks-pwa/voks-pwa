@@ -1,47 +1,30 @@
-import { useQuery }
-from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query';
 
-import { supabase }
-from '@/lib/supabase'
-
-import { useAuth } from '@/features/auth/useAuth'
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/features/auth/useAuth';
 
 export function useProfile() {
-
-  const { user } = useAuth()
+  const { user } = useAuth();
 
   return useQuery({
-
-    queryKey: [
-      'profile',
-      user?.id,
-    ],
-
-    enabled: !!user,
-
+    queryKey: ['profile', user?.id],
+    enabled: Boolean(user?.id),
     queryFn: async () => {
+      if (!user?.id) {
+        return null;
+      }
 
-      const {
-        data,
-        error,
-      } = await supabase
-
+      const { data, error } = await supabase
         .from('profiles')
-
         .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
 
-        .eq(
-          'id',
-          user!.id
-        )
+      if (error) {
+        throw error;
+      }
 
-        .single()
-
-      if (error)
-        throw error
-
-      return data
+      return data;
     },
-
-  })
+  });
 }

@@ -20,7 +20,7 @@ import {
   so debug helper is attached
   to window.
 */
-import '@/features/missions/missionRuntime'
+import '@/features/missions/services/missionRuntime'
 
 const queryClient = new QueryClient()
 

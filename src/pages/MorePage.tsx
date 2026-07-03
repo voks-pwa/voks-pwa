@@ -66,7 +66,7 @@ export function MorePage() {
         )}
 
         {/* 2. VOKS HERO BRAND CARD */}
-        <div className="mb-6 overflow-hidden rounded-[32px] bg-gradient-to-br from-[#4E523C] to-[#3B3E2D] p-6 sm:p-8 text-white shadow-md relative">
+        <div className="mb-6 overflow-hidden rounded-4xl bg-linear-to-br from-[#4E523C] to-[#3B3E2D] p-6 sm:p-8 text-white shadow-md relative">
           {/* Dekorasi Siluet Mikrofon di Sisi Kanan Atas */}
           <div className="absolute right-4 bottom-4 top-4 w-1/3 opacity-15 pointer-events-none flex items-center justify-center">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="w-full h-full text-white">
