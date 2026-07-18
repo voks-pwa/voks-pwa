@@ -26,7 +26,7 @@ function getState(userId: string): MissionRuntime {
     lastTick: null,
     continuousSeconds: 0,
     accumulativeSeconds: 0,
-    lastResetDate: new Date().toDateString(), // 🌟 Menghasilkan string seperti "Mon Jun 29 2026"
+    lastResetDate: new Date().toISOString().split('T')[0],
   }
 
   runtime.set(userId, state)
@@ -51,6 +51,20 @@ export function stopListening(userId: string) {
   state.lastTick = null
 
   console.log('MISSION RUNTIME STOP', state)
+}
+
+export function finishListeningSession(userId: string): number {
+  const state = getState(userId)
+  const total = state.accumulativeSeconds
+
+  state.listening = false
+  state.startedAt = null
+  state.lastTick = null
+  state.continuousSeconds = 0
+  state.accumulativeSeconds = 0
+
+  console.log('MISSION RUNTIME FINISH SESSION', { userId, totalSeconds: total })
+  return total
 }
 
 export function interruptListening(userId: string) {
@@ -108,7 +122,7 @@ export function getRuntime(userId: string): MissionRuntime {
 export function updateResetDate(userId: string) {
   const state = getState(userId)
 
-  state.lastResetDate = new Date().toDateString()
+  state.lastResetDate = new Date().toISOString().split('T')[0]
 
   console.log(
     'MISSION UPDATE RESET DATE',

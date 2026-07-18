@@ -22,7 +22,7 @@ export function MissionCountdown({
   return (
     <div className="text-sm text-gray-500">
 
-      Remaining
+      Time Remaining
 
       <span className="ml-2 font-semibold text-black">
 

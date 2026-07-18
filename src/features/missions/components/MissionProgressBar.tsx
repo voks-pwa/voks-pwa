@@ -43,6 +43,11 @@ export function MissionProgressBar({
           style={{
             width: `${percentage}%`,
           }}
+          role="progressbar"
+          aria-valuenow={progress}
+          aria-valuemin={0}
+          aria-valuemax={target}
+          aria-label={`${percentage}% complete`}
         />
 
       </div>

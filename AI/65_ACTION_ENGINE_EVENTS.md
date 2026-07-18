@@ -1,0 +1,51 @@
+# Action Engine Events
+
+Canonical Events
+
+USER_LOGIN
+
+USER_REGISTER
+
+PROFILE_COMPLETED
+
+PROFILE_UPDATED
+
+REFERRAL_SUCCESS
+
+SHARE_APP
+
+CHECKIN
+
+PLAYER_START
+
+PLAYER_STOP
+
+PLAYER_LISTEN
+
+PLAYER_COMPLETE
+
+LIVE_JOIN
+
+LIVE_REACTION
+
+LIVE_CHAT
+
+PROMO_OPEN
+
+PROMO_CLICK
+
+PROGRAM_OPEN
+
+HOST_OPEN
+
+REWARD_REDEEM
+
+STORE_VISIT
+
+MISSION_JOIN
+
+MISSION_COMPLETE
+
+Semua mission baru WAJIB menggunakan event di atas.
+
+Tidak boleh membuat validator khusus apabila event sudah tersedia.

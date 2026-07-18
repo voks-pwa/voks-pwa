@@ -1,73 +1,95 @@
-import { History } from "lucide-react";
-import { useMissionStore } from "../services/missionStore";
+import { History, Loader2, CheckCircle2, Trophy, Clock, Target } from "lucide-react";
+import { useMissions } from "@/hooks/useMissions";
+import { useMissionProgress } from "@/hooks/useMissionProgress";
 
 export function MissionHistory() {
-  const progress =
-    useMissionStore(
-      state => state.progress
-    );
+  const { data: missions = [], isLoading: missionsLoading } = useMissions();
+  const { data: progress = [], isLoading: progressLoading } = useMissionProgress();
 
-  const history =
-    Object.values(progress)
-      .filter(
-        item =>
-          item.completed
-      )
-      .reverse();
+  if (missionsLoading || progressLoading) {
+    return (
+      <section className="mt-10">
+        <div className="mb-4 flex items-center gap-2">
+          <History size={18} className="text-[#bda752]" />
+          <h2 className="font-bold">Mission History</h2>
+        </div>
+        <div className="flex h-20 items-center justify-center">
+          <Loader2 className="h-5 w-5 animate-spin text-[#bda752]" />
+        </div>
+      </section>
+    );
+  }
+
+  const missionMap = new Map(missions.map((m) => [m.id, m]));
+
+  const history = [...progress]
+    .filter((p) => p.claimed)
+    .reverse();
 
   return (
     <section className="mt-10">
-
       <div className="mb-4 flex items-center gap-2">
-
-        <History
-          size={18}
-          className="text-[#bda752]"
-        />
-
-        <h2 className="font-bold">
-          Mission History
-        </h2>
-
+        <History size={18} className="text-[#bda752]" />
+        <h2 className="font-bold">Mission History</h2>
       </div>
 
       <div className="space-y-3">
-
         {history.length === 0 && (
-
           <div className="rounded-2xl bg-white p-6 text-center text-gray-400 shadow-sm">
-
-            No completed missions.
-
+            No claimed missions yet.
           </div>
-
         )}
 
-        {history.map(item => (
-
-          <div
-            key={item.missionId}
-            className="rounded-2xl bg-white p-4 shadow-sm"
-          >
-
-            <div className="flex justify-between">
-
-              <span>
-                Mission #{item.missionId}
-              </span>
-
-              <span className="font-bold text-[#bda752]">
-                +{item.reward}
-              </span>
-
+        {history.map((item) => {
+          const mission = missionMap.get(item.mission_id);
+          return (
+            <div
+              key={item.mission_id}
+              className="rounded-2xl bg-white p-4 shadow-sm"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3 min-w-0 flex-1">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50">
+                    <Trophy size={18} className="text-[#bda752]" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-800 truncate">
+                      {mission?.title ?? "Mission"}
+                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                      {item.completed_at && (
+                        <span className="flex items-center gap-1 text-xs text-gray-400">
+                          <Clock size={11} />
+                          {new Date(item.completed_at).toLocaleDateString("id-ID", {
+                            day: "numeric", month: "short", year: "numeric",
+                          })}
+                        </span>
+                      )}
+                      {mission?.type && (
+                        <span className="flex items-center gap-1 text-xs text-gray-400 capitalize">
+                          <Target size={11} />
+                          {mission.type}
+                        </span>
+                      )}
+                      {mission?.campaignSlug && (
+                        <span className="text-xs text-[#bda752]">
+                          {mission.campaignSlug}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0 ml-3">
+                  <CheckCircle2 size={14} className="text-green-600" />
+                  <span className="text-xs font-semibold text-green-600">
+                    +{mission?.reward ?? 0} XP
+                  </span>
+                </div>
+              </div>
             </div>
-
-          </div>
-
-        ))}
-
+          );
+        })}
       </div>
-
     </section>
   );
 }

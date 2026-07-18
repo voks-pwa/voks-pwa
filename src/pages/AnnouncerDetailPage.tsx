@@ -1,5 +1,4 @@
 import { Link, useParams } from 'react-router-dom'
-import { AppLayout } from '@/components/layout/AppLayout'
 import {
   FaInstagram,
   FaTiktok,
@@ -55,7 +54,7 @@ export function AnnouncerDetailPage() {
 
   return (
 
-  <AppLayout>
+  <>
     <div className="pb-24">
 
       {/* HERO */}
@@ -384,6 +383,6 @@ export function AnnouncerDetailPage() {
       </div>
 
     </div>
-    </AppLayout>
+    </>
   )
 }

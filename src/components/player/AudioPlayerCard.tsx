@@ -120,14 +120,13 @@ export function AudioPlayerCard() {
         w-full
         flex-col
         items-center
-        gap-6
+        gap-8
         rounded-3xl
         border
         border-black/5
         bg-white
-        p-6
+        p-8
         shadow-sm
-        sm:p-8
       "
     >
 

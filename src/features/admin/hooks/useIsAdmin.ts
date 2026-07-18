@@ -1,4 +1,4 @@
-import { useProfile } from "@/hooks/useProfile";
+import { useProfile } from "@/features/profile/hooks/useProfile";
 
 export function useIsAdmin() {
 

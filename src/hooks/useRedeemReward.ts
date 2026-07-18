@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import type { RewardItem } from "@/features/rewards/rewardTypes";
 import { redeemReward } from "@/services/reward-service";
 import { useAuth } from "@/features/auth/useAuth";
 
@@ -11,17 +12,7 @@ export function useRedeemReward() {
 
   return useMutation({
 
-    mutationFn: async (reward: {
-
-      id: number;
-
-      slug: string;
-
-      title: string;
-
-      cost: number;
-
-    }) => {
+    mutationFn: async (reward: RewardItem) => {
 
       if (!user) {
 
@@ -44,6 +35,10 @@ export function useRedeemReward() {
 
       queryClient.invalidateQueries({
         queryKey: ["rewards"],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["user-redemptions"],
       });
 
     },

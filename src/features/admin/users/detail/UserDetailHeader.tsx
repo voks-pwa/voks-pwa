@@ -1,5 +1,4 @@
-import type { Profile } from "../types";
-
+import type { Profile } from "@/features/profile";
 interface Props{
 
 user:Profile;

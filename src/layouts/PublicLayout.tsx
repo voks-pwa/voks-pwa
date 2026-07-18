@@ -9,7 +9,9 @@ export function PublicLayout() {
       <PersistentAudioPlayer />
 
       <main className="min-h-screen bg-[#F8F9FA] pb-28">
-        <Outlet />
+        <div className="mx-auto w-full max-w-2xl px-4 sm:px-6 py-6">
+          <Outlet />
+        </div>
       </main>
 
       <BottomNavigation />

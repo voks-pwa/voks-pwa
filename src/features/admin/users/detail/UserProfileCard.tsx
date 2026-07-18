@@ -1,4 +1,4 @@
-import type { Profile } from "../types";
+import type { Profile } from "../types/types";
 
 interface Props{
 
@@ -74,7 +74,7 @@ value={user.city ?? "-"}
 
 <Item
 label="Phone"
-value={user.phone ?? "-"}
+value={user.phone_number ?? "-"}
 />
 
 <Item

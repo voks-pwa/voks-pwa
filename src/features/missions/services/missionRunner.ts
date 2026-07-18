@@ -45,24 +45,39 @@ export async function runMission({
   const results = []
 
   for (const mission of missions) {
-    const result = await missionEngine({
-      userId,
-      missionId: mission.id,
-      amount,
-      action,
-    })
+    try {
+      const result = await missionEngine({
+        userId,
+        missionId: mission.id,
+        amount,
+        action,
+      })
 
-    setMissionResult({
-      action,
-      success: Boolean(result.success),
-      completed: Boolean(result.completed),
-      progress: result.progress,
-      reward: result.reward,
-      mission: result.missionTitle,
-      message: result.message,
-    })
+      setMissionResult({
+        action,
+        success: Boolean(result.success),
+        completed: Boolean(result.completed),
+        progress: result.progress,
+        reward: result.reward,
+        mission: result.missionTitle,
+        message: result.message,
+      })
 
-    results.push(result)
+      results.push(result)
+    } catch (error) {
+      console.error("MISSION ENGINE ERROR", mission.id, error)
+      results.push({
+        success: false,
+        completed: false,
+        progress: 0,
+        reward: 0,
+        claimed: false,
+        missionId: mission.id,
+        missionTitle: mission.title,
+        message: "Engine error",
+        blocked: true,
+      })
+    }
   }
 
   return results

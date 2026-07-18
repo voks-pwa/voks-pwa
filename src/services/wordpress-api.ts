@@ -6,7 +6,9 @@ import type { WordPressNotification } from "@/types/notification";
 
 import type { WPMission } from "@/features/missions/services/missionTypes";
 
-import type {  WPReward,} from "@/features/rewards/rewardTypes";
+import type { WPReward } from "@/features/rewards/rewardTypes";
+
+import type { WordPressPromo } from "@/types/promo";
 
 const WP_API_URL = "https://voksradio.com/wp-json/wp/v2";
 
@@ -26,7 +28,7 @@ export async function getNotifications(): Promise<
   WordPressNotification[]
 > {
   const response = await fetch(
-    `${WP_API_URL}/push-notification?_embed&per_page=100`
+    `${WP_API_URL}/notification?_embed&per_page=100`
   );
 
   if (!response.ok) {
@@ -130,6 +132,30 @@ export async function getMedia(
   }
 
   return response.json();
+}
+
+export async function getPromos(): Promise<WordPressPromo[]> {
+  const response = await fetch(
+    `${WP_API_URL}/promo?_embed&per_page=10`
+  );
+  if (!response.ok) {
+    throw new Error("Failed to fetch promos");
+  }
+  return response.json() as Promise<WordPressPromo[]>;
+}
+
+export async function getPromo(
+  slug?: string
+): Promise<WordPressPromo | null> {
+  if (!slug) return null;
+  const response = await fetch(
+    `${WP_API_URL}/promo?_embed&slug=${slug}`
+  );
+  if (!response.ok) {
+    throw new Error("Failed to fetch promo");
+  }
+  const data = await response.json();
+  return data[0] ?? null;
 }
 
 export async function getRewards(): Promise<WPReward[]> {

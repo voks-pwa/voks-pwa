@@ -16,11 +16,6 @@ export function useMissionProgress() {
         .select('*')
         .eq('user_id', user!.id)
 
-      console.log(
-        'MISSION PROGRESS RAW',
-        result
-      )
-
       if (result.error)
         throw result.error
 

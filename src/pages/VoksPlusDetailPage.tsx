@@ -25,9 +25,9 @@ export function VoksPlusDetailPage() {
   const { slug } = useParams()
   const navigate = useNavigate()
 
-  const { data } = useVoksPlusItem(slug)
+  const { data, isLoading } = useVoksPlusItem(slug)
 
-  if (!data) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center p-6 text-sm font-medium text-gray-500">
         <div className="flex flex-col items-center gap-2">
@@ -38,13 +38,27 @@ export function VoksPlusDetailPage() {
     )
   }
 
+  if (!data) {
+    return (
+      <div className="flex flex-col items-center gap-4 px-6 py-20 text-center">
+        <p className="text-lg font-semibold text-gray-700">Content not found</p>
+        <button
+          onClick={() => navigate('/plus')}
+          className="rounded-xl bg-[#bda752] px-6 py-2.5 text-sm font-semibold text-white"
+        >
+          Back to Voks+
+        </button>
+      </div>
+    )
+  }
+
   const videoId = getYoutubeId(data.acf?.youtube_url)
   
   // Memproses judul agar bersih dari kode entitas HTML seperti &#8211;
   const decodedTitle = decodeHtmlEntities(data.title?.rendered || '')
 
   return (
-    <div className="mx-auto max-w-2xl p-4 sm:p-6 space-y-6">
+    <div className="space-y-6">
         
         {/* HEADER DENGAN BUTTON KEMBALI */}
         <div className="flex items-center gap-4 mt-2">

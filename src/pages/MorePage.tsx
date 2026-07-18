@@ -1,3 +1,4 @@
+import { showToast } from "@/components/ui/showToast";
 import {
   Calendar,
   Mic2,
@@ -23,8 +24,10 @@ import {
 } from 'react-icons/fa'
 
 import { Link } from 'react-router-dom'
-import { useProfile } from '@/hooks/useProfile'
+import { useProfile } from '@/features/profile/hooks/useProfile'
 import { useAuth } from '@/features/auth/useAuth'
+import { ProfileCard } from '@/components/ui/ProfileCard'
+import { isFeatureEnabled } from '@/features/flags'
 
 export function MorePage() {
   const { user } = useAuth()
@@ -42,7 +45,7 @@ export function MorePage() {
       }
 
       await navigator.clipboard.writeText(window.location.origin)
-      alert('Link copied to clipboard!')
+      showToast({ type: "success", title: "Link copied to clipboard" })
     } catch (error) {
       console.error('Share failed:', error)
     }
@@ -53,7 +56,7 @@ export function MorePage() {
     'flex items-center justify-between bg-white px-5 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50/80 transition-colors first:rounded-t-2xl last:rounded-b-2xl group cursor-pointer'
 
   return (
-    <div className="mx-auto max-w-2xl p-4 sm:p-6">
+    <>
         
         {/* 1. LOGIN / REGISTER BANNER */}
         {!user && (
@@ -112,25 +115,12 @@ export function MorePage() {
           </div>
         </div>
 
-        {/* USER PROFILE CARD (JIKA SUDAH LOGIN) */}
         {user && (
-          <Link
-            to="/profile"
-            className="mb-6 flex items-center justify-between rounded-2xl bg-white p-4 shadow-sm border border-gray-100"
-          >
-            <div className="flex items-center gap-4">
-              <img
-                src={profile?.avatar_url || '/default-avatar.png'}
-                alt="Profile"
-                className="h-12 w-12 rounded-full object-cover ring-2 ring-gray-100"
-              />
-              <div>
-                <p className="font-bold text-gray-800">{profile?.display_name}</p>
-                <p className="text-xs text-gray-400 font-medium">{profile?.badge_name || 'Member'}</p>
-              </div>
-            </div>
-            <ChevronRight size={18} className="text-gray-400" />
-          </Link>
+          <ProfileCard
+            avatarUrl={profile?.avatar_url}
+            displayName={profile?.display_name}
+            badgeName={profile?.badge_name}
+          />
         )}
 
         {/* 3. SECTION: MEMBERSHIP */}
@@ -139,31 +129,59 @@ export function MorePage() {
             Membership
           </p>
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <Link to="/missions" className={listRowItem}>
-              <div className="flex items-center gap-4">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-500 shrink-0">
-                  <Trophy size={22} fill="currentColor" className="text-amber-500" />
+            {isFeatureEnabled("mission") ? (
+              <Link to="/missions" className={listRowItem}>
+                <div className="flex items-center gap-4">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-500 shrink-0">
+                    <Trophy size={22} fill="currentColor" className="text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm text-gray-800">Mission Center</p>
+                    <p className="text-xs text-gray-400">Complete missions and earn VXP</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-bold text-sm text-gray-800">Mission Center</p>
-                  <p className="text-xs text-gray-400">Complete missions and earn VXP</p>
+                <ChevronRight size={18} className="text-gray-300 group-hover:text-gray-500 transition-colors" />
+              </Link>
+            ) : (
+              <div className={listRowItem}>
+                <div className="flex items-center gap-4">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-500 shrink-0">
+                    <Trophy size={22} fill="currentColor" className="text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm text-gray-800">Mission Center</p>
+                    <p className="text-xs text-amber-500 font-semibold">Coming Soon</p>
+                  </div>
                 </div>
               </div>
-              <ChevronRight size={18} className="text-gray-300 group-hover:text-gray-500 transition-colors" />
-            </Link>
+            )}
 
-            <Link to="/Rewards" className={listRowItem}>
-              <div className="flex items-center gap-4">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-xl shrink-0">
-                  🎁
+            {isFeatureEnabled("reward") ? (
+              <Link to="/reward-store" className={listRowItem}>
+                <div className="flex items-center gap-4">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-xl shrink-0">
+                    🎁
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm text-gray-800">Reward Store</p>
+                    <p className="text-xs text-gray-400">Redeem your VXP</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-bold text-sm text-gray-800">Reward Store</p>
-                  <p className="text-xs text-gray-400">Redeem your VXP</p>
+                <ChevronRight size={18} className="text-gray-300 group-hover:text-gray-500 transition-colors" />
+              </Link>
+            ) : (
+              <div className={listRowItem}>
+                <div className="flex items-center gap-4">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-xl shrink-0">
+                    🎁
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm text-gray-800">Reward Store</p>
+                    <p className="text-xs text-amber-500 font-semibold">Coming Soon</p>
+                  </div>
                 </div>
               </div>
-              <ChevronRight size={18} className="text-gray-300 group-hover:text-gray-500 transition-colors" />
-            </Link>
+            )}
           </div>
         </div>
 
@@ -323,7 +341,7 @@ export function MorePage() {
           </div>
         </div>
 
-      </div>
+    </>
   )
 }
 

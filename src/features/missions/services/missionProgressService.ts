@@ -19,11 +19,13 @@ const INTERRUPT_EVENTS = [
   "player_pause",
   "player_stop",
   "player_disconnect",
+  "listen_pause",
 ];
 
 const LISTEN_EVENTS = [
   "player_play",
   "listen_tick",
+  "listen",
 ];
 
 export async function processMissionProgress(
@@ -129,8 +131,10 @@ export async function processMissionProgress(
       ? mission.durationMinutes * 60
       : mission.target;
 
-  const nextProgress =
-    (existing?.progress ?? 0) + amount;
+  const nextProgress = Math.min(
+    (existing?.progress ?? 0) + amount,
+    target
+);
 
   const completed =
     nextProgress >= target;

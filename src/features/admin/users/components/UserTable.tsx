@@ -1,145 +1,60 @@
-import type { Profile } from "../types";
+import type { AdminUser } from "../types";
 
 interface Props {
-  users: Profile[];
-  onSelect: (id: string) => void;
+  users: AdminUser[];
 }
 
-export function UserTable({
-  users,
-  onSelect,
-}: Props) {
+export function UserTable({ users }: Props) {
+  console.log(users);
   return (
-    <div
-      className="
-        overflow-hidden
-        rounded-3xl
-        bg-white
-        shadow-sm
-      "
-    >
+    <div className="overflow-hidden rounded-3xl bg-white shadow">
       <table className="w-full">
-
-        <thead className="border-b bg-gray-50">
-
-          <tr className="text-left">
-
-            <th className="px-6 py-4">User</th>
-
-            <th className="px-4 py-4">Role</th>
-
-            <th className="px-4 py-4">Badge</th>
-
-            <th className="px-4 py-4">Level</th>
-
-            <th className="px-4 py-4">Current VXP</th>
-
+        <thead className="bg-slate-100">
+          <tr>
+            <th className="p-4 text-left">User</th>
+            <th>Badge</th>
+            <th>Level</th>
+            <th>Current</th>
+            <th>Lifetime</th>
+            <th>Role</th>
           </tr>
-
         </thead>
 
         <tbody>
-
           {users.map((user) => (
-
-            <tr
-              key={user.id}
-              onClick={() => onSelect(user.id)}
-              className="
-                cursor-pointer
-                border-b
-                border-gray-100
-                transition
-                hover:bg-gray-50
-              "
-            >
-
-              <td className="px-6 py-4">
-
-                <div className="flex items-center gap-4">
-
+            <tr key={user.id} className="border-t">
+              <td className="p-4">
+                <div className="flex items-center gap-3">
                   <img
-                    src={
-                      user.avatar_url ??
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        user.display_name ?? "User"
-                      )}`
-                    }
-                    alt={user.display_name ?? ""}
-                    className="h-12 w-12 rounded-full object-cover"
+                    src={user.avatar_url ?? "https://placehold.co/80"}
+                    className="h-10 w-10 rounded-full"
                   />
 
                   <div>
-
                     <div className="font-semibold">
-
-                      {user.display_name ?? "Teman VOKS"}
-
+                      {user.display_name}
                     </div>
 
-                    <div className="text-sm text-gray-500">
-
+                    <div className="text-xs text-gray-500">
                       {user.email}
-
                     </div>
-
                   </div>
-
                 </div>
-
               </td>
 
-              <td className="px-4 py-4">
+              <td>{user.badge_name}</td>
 
-                <span
-                  className={`
-                    rounded-full
-                    px-3
-                    py-1
-                    text-xs
-                    font-semibold
-                    capitalize
+              <td>Lv.{user.level}</td>
 
-                    ${
-                      user.role === "admin"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-green-100 text-green-700"
-                    }
-                  `}
-                >
+              <td>{user.current_vxp}</td>
 
-                  {user.role ?? "member"}
+              <td>{user.lifetime_vxp}</td>
 
-                </span>
-
-              </td>
-
-              <td className="px-4 py-4">
-
-                {user.badge_name ?? "-"}
-
-              </td>
-
-              <td className="px-4 py-4 font-bold">
-
-                Lv.{user.level ?? 1}
-
-              </td>
-
-              <td className="px-4 py-4 font-black text-[#bda752]">
-
-                {(user.current_vxp ?? 0).toLocaleString()}
-
-              </td>
-
+              <td>{user.role}</td>
             </tr>
-
           ))}
-
         </tbody>
-
       </table>
-
     </div>
   );
 }

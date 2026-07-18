@@ -1,4 +1,4 @@
-import { Trophy } from "lucide-react";
+import { Trophy, Loader2 } from "lucide-react";
 import { useMissionStatistics } from "@/hooks/useMissionStatistics";
 
 export function MissionHeader() {
@@ -58,7 +58,11 @@ export function MissionHeader() {
           </p>
 
           <h2 className="mt-2 text-2xl font-bold">
-            {stats.total}
+            {stats.loading ? (
+              <Loader2 className="h-6 w-6 animate-spin opacity-60" />
+            ) : (
+              stats.total
+            )}
           </h2>
 
         </div>
@@ -76,7 +80,11 @@ export function MissionHeader() {
           </p>
 
           <h2 className="mt-2 text-2xl font-bold">
-            {stats.completed}
+            {stats.loading ? (
+              <Loader2 className="h-6 w-6 animate-spin opacity-60" />
+            ) : (
+              stats.completed
+            )}
           </h2>
 
         </div>
@@ -94,7 +102,11 @@ export function MissionHeader() {
           </p>
 
           <h2 className="mt-2 text-2xl font-bold">
-            {stats.claimed}
+            {stats.loading ? (
+              <Loader2 className="h-6 w-6 animate-spin opacity-60" />
+            ) : (
+              stats.claimed
+            )}
           </h2>
 
         </div>

@@ -1,17 +1,106 @@
-# React + TypeScript + Vite
+# Voks PWA - Gamified Mission System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Voks PWA is a progressive web application for managing gamified missions, rewards, and leaderboards with Supabase backend and WordPress integration.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### 🎯 Mission System
+- Complete mission CRUD operations
+- Mission statistics tracking
+- Status management (active, scheduled, completed)
+- WordPress mission updates integration
 
-## React Compiler
+### 🏆 Reward System  
+- Reward catalog management
+- Reward redemption history
+- Point-based reward system
+- User reward tracking
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 📊 Analytics Dashboard
+- User, mission, XP, and redemption analytics
+- Interactive period filtering (7/30/90 days)
+- Bar chart visualizations with recharts
+- Loading/error/empty state handling
 
-## Expanding the ESLint configuration
+### 👑 Leaderboard
+- Lifetime, weekly, and monthly rankings
+- Auto-refresh functionality
+- Points and XP tracking
+
+### 📣 Notification System
+- Broadcast notifications to all/premium users
+- Notification management
+- Real-time delivery via Supabase
+
+### ⚙️ Admin Panel
+- Analytics dashboard
+- Mission management
+- Reward catalog
+- User management
+- Platform settings configuration
+
+## Tech Stack
+
+- **Frontend**: React 18 + TypeScript + Vite
+- **Styling**: Tailwind CSS
+- **UI Components**: Radix UI
+- **Charts**: Recharts
+- **Backend**: Supabase (PostgreSQL, Auth, Functions)
+- **External API**: WordPress REST API
+-(Add missing Vite cache optimization for Swiper integration)
+
+## Recent Updates (2026-07-13)
+
+✅ **Fixed Homepage runtime error** - Resolved "Invalid hook call" issue with Swiper components by:
+- Cleared Vite cache (`node_modules/.vite`)
+- Added React and Swiper modules to `optimizeDeps.include`
+- Fixed unused React import in `HomePage.tsx`
+
+✅ **Enhanced Analytics Module** - Complete analytics dashboard with:
+- Full state handling (loading, error, empty, data)
+- 6 new analytics components (StatCard, AnalyticsBarChart, PeriodFilter, AnalyticsSkeleton, AnalyticsEmptyState, AnalyticsErrorState)
+- Auth verification in edge function
+- TypeScript compilation fixes
+
+## Getting Started
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Set up environment variables:
+   ```bash
+   cp .env.example .env.local
+   # Add Supabase and WordPress credentials
+   ```
+
+3. Start development server:
+   ```bash
+   npm run dev
+   ```
+
+## Project Status
+
+✅ Completed modules:
+- Mission CRUD operations
+- Reward system  
+- Leaderboard
+- Analytics dashboard
+- Notification system
+- Admin settings
+- Homepage with Swiper integration
+
+⚠️ Known issues: Build errors in Broadcast, Missions, Rewards, Leaderboard modules (pre-existing, not in scope)
+
+## Troubleshooting
+
+If you encounter "Invalid hook call" errors with Swiper:
+1. Clear Vite cache: `rm -rf node_modules/.vite`
+2. Ensure `optimizeDeps.include` config exists in `vite.config.ts`
+3. Check React imports are properly declared
+
+## Expand the ESLint configuration
 
 If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 

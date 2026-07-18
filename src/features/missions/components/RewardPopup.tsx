@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { RewardToast } from "./RewardToast";
 
@@ -16,18 +16,26 @@ export function RewardPopup() {
       (state) => state.clearLatestReward
     );
 
+  const timerRef = useRef<number | null>(null);
+
   useEffect(() => {
 
     if (!latestReward) return;
 
-    const timer =
+    timerRef.current =
       window.setTimeout(() => {
 
         clearLatestReward();
+        timerRef.current = null;
 
       }, 3500);
 
-    return () => clearTimeout(timer);
+    return () => {
+      if (timerRef.current != null) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
 
   }, [
     latestReward,
@@ -42,7 +50,7 @@ export function RewardPopup() {
 
   return (
 
-    <div className="fixed right-6 top-6 z-9999 animate-in slide-in-from-right duration-500">
+    <div className="fixed right-6 top-6 z-50 animate-in slide-in-from-right duration-500">
 
       <RewardToast
         mission={`Mission #${latestReward.missionId}`}

@@ -1,3 +1,12 @@
+export interface RewardItem {
+  id: number;
+  slug: string;
+  title: string;
+  cost: number;
+  stock: number;
+  maxPerUser: number;
+}
+
 export interface WPReward {
   id: number;
 
@@ -49,6 +58,14 @@ export interface WPReward {
     reward_priority?: number;
 
     reward_bonus_vxp?: number;
+
+    reward_campaign_slug?: string;
+
+    reward_required_badge?: string;
+
+    reward_required_achievement?: string;
+
+    reward_vip_only?: boolean;
   };
 }
 
@@ -94,4 +111,12 @@ export interface Reward {
   maxPerUser: number;
 
   bonusVxp: number;
+
+  campaignSlug?: string;
+
+  requiredBadge?: string;
+
+  requiredAchievement?: string;
+
+  vipOnly: boolean;
 }

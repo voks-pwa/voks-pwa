@@ -1,60 +1,19 @@
 import { useCallback, useEffect } from 'react'
 import { useAuth } from '@/features/auth/useAuth'
 import { useMissions } from './useMissions'
-import { supabase } from '@/lib/supabase'
+import { track } from '@/core/action-engine'
 import type { MissionConfig } from '@/features/missions/services/missionTypes'
 
 export function useDailyCheckin() {
   const { user } = useAuth()
   const { data: missions } = useMissions()
 
-  const runCheckin = useCallback(async (missionId: number) => {
-    const today =
-      new Date()
-        .toISOString()
-        .split('T')[0]
+  const runCheckin = useCallback(() => {
+    if (!user) return
 
-    const { data: existing } =
-      await supabase
-        .from('missions_progress')
-        .select('*')
-        .eq('user_id', user!.id)
-        .eq('mission_id', missionId)
-        .maybeSingle()
+    const today = new Date().toISOString().split('T')[0]
 
-    if (
-      existing?.completed_at &&
-      existing.completed_at.startsWith(today)
-    ) {
-      return
-    }
-
-    if (!existing) {
-      await supabase
-        .from('missions_progress')
-        .insert({
-          user_id: user!.id,
-          mission_id: missionId,
-          progress: 1,
-          completed: true,
-          claimed: false,
-          completed_at:
-            new Date().toISOString(),
-        })
-
-      return
-    }
-
-    await supabase
-      .from('missions_progress')
-      .update({
-        progress: 1,
-        completed: true,
-        claimed: false,
-        completed_at:
-          new Date().toISOString(),
-      })
-      .eq('id', existing.id)
+    track("CHECKIN", user.id, { date: today })
   }, [user])
 
   useEffect(() => {
@@ -68,6 +27,6 @@ export function useDailyCheckin() {
 
     if (!checkinMission) return
 
-    void runCheckin(checkinMission.id)
+    runCheckin()
   }, [missions, runCheckin, user])
 }

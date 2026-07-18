@@ -1,89 +1,59 @@
-import { MoreVertical } from "lucide-react";
-import { useState } from "react";
+import { CheckCircle2, XCircle, PackageCheck } from "lucide-react";
+
 import { useUpdateRewardRedemption } from "../hooks/useUpdateRewardRedemption";
-// ========================================================
-// TAMBAHAN IMPORT: Komponen dialog konfirmasi global
-// ========================================================
-import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 interface Props {
-  id: string;
+  redemptionId: string;
+  status: string;
 }
 
-type StatusType = "approved" | "completed" | "rejected";
+export function RedemptionActionMenu({
+  redemptionId,
+  status,
+}: Props) {
+  const mutation =
+    useUpdateRewardRedemption();
 
-export function RedemptionActionMenu({ id }: Props) {
-  const [open, setOpen] = useState(false);
-  
-  // ========================================================
-  // TAMBAHAN STATE: Untuk mengontrol Modal Konfirmasi
-  // ========================================================
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<StatusType>("approved");
-
-  const mutation = useUpdateRewardRedemption();
-
-  // Fungsi pembantu untuk membuka dialog konfirmasi dan menutup dropdown menu menu
-  const handleSelectStatus = (status: StatusType) => {
-    setSelectedStatus(status);
-    setConfirmOpen(true);
-    setOpen(false); // Menutup dropdown menu MoreVertical secara otomatis
-  };
+  function update(next: string) {
+    mutation.mutate({
+      redemptionId,
+      status: next,
+    });
+  }
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="rounded-lg p-2 hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-800"
-        aria-label="Aksi Menu"
-      >
-        <MoreVertical size={18} />
-      </button>
+    <div className="flex gap-2">
 
-      {/* DROPDOWN OPTIONS MENU */}
-      {open && (
-        <div className="absolute right-0 top-10 z-50 w-44 rounded-xl border border-gray-100 bg-white shadow-xl py-1 overflow-hidden">
+      {status === "pending" && (
+        <>
           <button
-            onClick={() => handleSelectStatus("approved")}
-            className="w-full px-4 py-2.5 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            onClick={() => update("approved")}
+            className="flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
           >
+            <CheckCircle2 size={16} />
             Approve
           </button>
 
           <button
-            onClick={() => handleSelectStatus("completed")}
-            className="w-full px-4 py-2.5 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            onClick={() => update("rejected")}
+            className="flex items-center gap-2 rounded-xl bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
           >
-            Complete
-          </button>
-
-          <button
-            onClick={() => handleSelectStatus("rejected")}
-            className="w-full px-4 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
-          >
+            <XCircle size={16} />
             Reject
           </button>
-        </div>
+        </>
       )}
 
-      {/* ========================================================
-        TAMBAHAN: GLOBAL CONFIRMATION DIALOG INTERACTIVE LAYER
-      ======================================================== */}
-      <ConfirmDialog
-        open={confirmOpen}
-        title="Confirm Action"
-        description={`Change redemption status to "${selectedStatus}" ?`}
-        confirmLabel="Continue"
-        danger={selectedStatus === "rejected"}
-        onCancel={() => setConfirmOpen(false)}
-        onConfirm={() => {
-          mutation.mutate({
-            id,
-            status: selectedStatus,
-          });
-          setConfirmOpen(false);
-        }}
-      />
+      {status === "approved" && (
+        <button
+          onClick={() => update("completed")}
+          className="flex items-center gap-2 rounded-xl bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700"
+        >
+          <PackageCheck size={16} />
+          Complete
+        </button>
+      )}
+
     </div>
   );
 }

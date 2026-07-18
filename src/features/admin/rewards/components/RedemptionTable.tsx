@@ -5,12 +5,11 @@ import { RedemptionRow } from "./RedemptionRow";
 interface Props {
   redemptions: RewardRedemption[];
 }
+
 export function RedemptionTable({
   redemptions,
 }: Props) {
-
   return (
-
     <div
       className="
         overflow-hidden
@@ -19,7 +18,6 @@ export function RedemptionTable({
         shadow-sm
       "
     >
-
       <table className="w-full">
 
         <thead>
@@ -30,7 +28,6 @@ export function RedemptionTable({
               bg-gray-50
             "
           >
-
             <th className="p-4 text-left">
               Reward
             </th>
@@ -51,6 +48,10 @@ export function RedemptionTable({
               Date
             </th>
 
+            <th className="text-left">
+              Action
+            </th>
+
           </tr>
 
         </thead>
@@ -58,12 +59,10 @@ export function RedemptionTable({
         <tbody>
 
           {redemptions.map((item) => (
-
             <RedemptionRow
               key={item.id}
               redemption={item}
             />
-
           ))}
 
         </tbody>
@@ -71,7 +70,5 @@ export function RedemptionTable({
       </table>
 
     </div>
-
   );
-
 }

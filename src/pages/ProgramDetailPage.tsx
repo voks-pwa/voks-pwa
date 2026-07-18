@@ -7,6 +7,7 @@ import {
   Mic2,
   Heart,
 } from 'lucide-react'
+import { showToast } from "@/components/ui/showToast";
 
 import { useProgram } from '@/hooks/useProgram'
 import { useAnnouncersByIds } from '@/hooks/useAnnouncer'
@@ -212,9 +213,10 @@ export function ProgramDetailPage() {
                   url
                 )
 
-                alert(
-                  'Link copied'
-                )
+                showToast({
+                  type: "success",
+                  title: "Link copied",
+                })
               }
             }}
             className="

@@ -2,9 +2,12 @@ import type {
   MissionConfig,
 } from './missionTypes'
 
+import { isMissionAvailableNow } from './missionAvailability'
+
 type MissionProgressRecord = {
   completed?: boolean
   completed_at?: string | null
+  claimed?: boolean
 }
 
 export function canRunMission(
@@ -12,6 +15,14 @@ export function canRunMission(
   progress: MissionProgressRecord | null
 ) {
   if (!mission.active) {
+    return false
+  }
+
+  if (!isMissionAvailableNow(mission)) {
+    return false
+  }
+
+  if (progress?.claimed) {
     return false
   }
 
@@ -28,8 +39,8 @@ export function canRunMission(
       return true
     }
 
-    const today = new Date().toDateString()
-    const completed = new Date(progress.completed_at).toDateString()
+    const today = new Date().toISOString().split('T')[0]
+    const completed = new Date(progress.completed_at).toISOString().split('T')[0]
 
     return today !== completed
   }

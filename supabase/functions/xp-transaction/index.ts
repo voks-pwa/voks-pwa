@@ -1,115 +1,141 @@
-import { serve } from "https://deno.land/std/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
-serve(async (req) => {
-  try {
-    const {
-      user_id,
-      amount,
-      transaction_type,
-      reason,
-      reference_id,
-    } = await req.json();
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Content-Type": "application/json",
+};
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
+      headers: corsHeaders,
+    });
+  }
+
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader) {
+    return new Response(
+      JSON.stringify({ success: false, error: "Missing authorization" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
+  }
 
-    /*
-      1.
-      Ambil profile
-    */
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
 
-    const { data: profile, error: profileError } =
-          await removeXP(
-        userId,
-        amount,
-        "Admin Deduction"
-      );
+  const authUser = await supabase.auth.getUser(
+    authHeader.replace("Bearer ", ""),
+  );
 
-    if (profileError) throw profileError;
+  if (authUser.error || !authUser.data.user) {
+    return new Response(
+      JSON.stringify({ success: false, error: "Unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
 
-    /*
-      2.
-      Hitung saldo baru
-    */
+  try {
+    const body = await req.json();
+    const { userId, amount, transaction_type, reason, reference_id } = body;
 
-    const current =
-      Number(profile.current_vxp ?? 0);
-
-    const lifetime =
-      Number(profile.lifetime_vxp ?? 0);
-
-    const newCurrent =
-      current + amount;
-
-    if (newCurrent < 0) {
+    if (!userId) {
       return new Response(
-        JSON.stringify({
-          error: "Insufficient VXP",
-        }),
-        {
-          status: 400,
-        }
+        JSON.stringify({ success: false, message: "userId required" }),
+        { status: 400, headers: corsHeaders },
       );
     }
 
-    const newLifetime =
-      amount > 0
-        ? lifetime + amount
-        : lifetime;
+    if (typeof amount !== "number" || amount === 0) {
+      return new Response(
+        JSON.stringify({ success: false, message: "Invalid amount" }),
+        { status: 400, headers: corsHeaders },
+      );
+    }
 
-    /*
-      3.
-      Simpan transaction
-    */
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("current_vxp,lifetime_vxp")
+      .eq("id", userId)
+      .single();
 
-    const { error: trxError } =
-      await supabase
-        .from("vxp_transactions")
-        .insert({
-          user_id,
-          amount,
-          transaction_type,
-          reason,
-          reference_id,
-        });
+    if (profileError) {
+      throw profileError;
+    }
+
+    const current = Number(profile.current_vxp ?? 0);
+    const lifetime = Number(profile.lifetime_vxp ?? 0);
+    const nextCurrent = current + amount;
+
+    if (nextCurrent < 0) {
+      return new Response(
+        JSON.stringify({ success: false, message: "Insufficient VXP" }),
+        { status: 400, headers: corsHeaders },
+      );
+    }
+
+    const nextLifetime = amount > 0 ? lifetime + amount : lifetime;
+
+    // Write to vxp_transactions (legacy)
+    const { data: trx, error: trxError } = await supabase
+      .from("vxp_transactions")
+      .insert({ user_id: userId, amount, transaction_type, reason, reference_id })
+      .select()
+      .single();
 
     if (trxError) throw trxError;
 
-    /*
-      4.
-      Update profile
-    */
-
-    const { error: updateError } =
-        await removeXP(
-        userId,
+    // Write to wallet_ledger (new canonical ledger)
+    const walletType = mapTransactionType(transaction_type);
+    await supabase
+      .from("wallet_ledger")
+      .insert({
+        user_id: userId,
         amount,
-        "Admin Deduction"
-      );
+        transaction_type: walletType,
+        reference_type: transaction_type,
+        reference_id: reference_id ?? "",
+        description: reason ?? "",
+      });
+
+    // Update profile
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ current_vxp: nextCurrent, lifetime_vxp: nextLifetime })
+      .eq("id", userId);
 
     if (updateError) throw updateError;
 
     return new Response(
       JSON.stringify({
         success: true,
-        current_vxp: newCurrent,
-        lifetime_vxp: newLifetime,
+        transaction: trx,
+        current_vxp: nextCurrent,
+        lifetime_vxp: nextLifetime,
       }),
-      {
-        status: 200,
-      }
+      { status: 200, headers: corsHeaders },
     );
   } catch (err) {
+    console.error(err);
     return new Response(
-      JSON.stringify({
-        error: String(err),
-      }),
-      {
-        status: 500,
-      }
+      JSON.stringify({ success: false, message: err instanceof Error ? err.message : String(err) }),
+      { status: 500, headers: corsHeaders },
     );
   }
 });
+
+function mapTransactionType(t: string): string {
+  switch (t) {
+    case "mission": return "MISSION_REWARD";
+    case "reward": return "REDEEM";
+    case "bonus": return "BONUS";
+    case "admin": return "ADMIN_ADJUSTMENT";
+    case "referral": return "REFERRAL";
+    case "manual": return "SYSTEM";
+    default: return "SYSTEM";
+  }
+}

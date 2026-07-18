@@ -1,9 +1,6 @@
 import { create } from 'zustand'
 import type { PlayerStore } from '@/types/player'
-// ========================================================
-// TAMBAHAN: IMPORT EVENT BUS DI BARIS PALING ATAS
-// ========================================================
-import { emitMissionEvent } from '@/features/missions/services/missionEventBus'
+import { track } from '@/core/action-engine'
 
 const VOLUME_STORAGE_KEY = 'voks-player-volume'
 
@@ -79,16 +76,10 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     })
 
     if (state.userId) {
-      emitMissionEvent({
-        action: 'player_play',
-        userId: state.userId,
-      })
+      track("PLAYER_PLAY", state.userId)
     }
   },
 
-  // ========================================================
-  // PERUBAHAN: ACTION PAUSE DENGAN EMIT EVENT
-  // ========================================================
   pause: () => {
     const state = get()
 
@@ -98,10 +89,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     })
 
     if (state.userId) {
-      emitMissionEvent({
-        action: 'player_pause',
-        userId: state.userId,
-      })
+      track("PLAYER_PAUSE", state.userId)
     }
   },
 
@@ -114,38 +102,14 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     }
   },
 
-  // ========================================================
-  // TAMBAHAN: ACTION LISTEN TICK (AUTOSAVE PER DETAK)
-  // ========================================================
-  listenTick: () => {
-    const state = get()
-
-    if (!state.userId) return
-
-    emitMissionEvent({
-      action: 'listen_tick',
-      userId: state.userId,
-      amount: 1,
-    })
-  },
-
-  // ========================================================
-  // TAMBAHAN: ACTION DISCONNECT (SAAT PLAYER TERPUTUS)
-  // ========================================================
   disconnect: () => {
     const state = get()
 
     if (!state.userId) return
 
-    emitMissionEvent({
-      action: 'player_disconnect',
-      userId: state.userId,
-    })
+    track("PLAYER_DISCONNECT", state.userId)
   },
 
-  // ========================================================
-  // TAMBAHAN: ACTION STOP (MENGHENTIKAN PLAYER KE IDLE)
-  // ========================================================
   stop: () => {
     const state = get()
 
@@ -155,10 +119,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
     })
 
     if (state.userId) {
-      emitMissionEvent({
-        action: 'player_stop',
-        userId: state.userId,
-      })
+      track("PLAYER_STOP", state.userId)
     }
   },
 

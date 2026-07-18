@@ -1,12 +1,14 @@
-import { adminAdjustXP } from "@/features/xp/services/adminAdjustXP";
+import { grantReward } from "@/core/reward-engine";
 
 export async function giveBonusXP(
   userId: string,
   amount: number,
   reason = "Admin Bonus",
 ) {
-  return adminAdjustXP({
+  return grantReward({
     userId,
+    source: "admin",
+    referenceId: `admin-${Date.now()}`,
     amount,
     reason,
   });
@@ -17,8 +19,10 @@ export async function removeXP(
   amount: number,
   reason = "Admin Deduction",
 ) {
-  return adminAdjustXP({
+  return grantReward({
     userId,
+    source: "admin",
+    referenceId: `admin-${Date.now()}`,
     amount: -Math.abs(amount),
     reason,
   });

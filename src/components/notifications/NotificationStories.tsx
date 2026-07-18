@@ -38,12 +38,13 @@ export function NotificationStory({
     >
       <div
         className="
-          h-16
-          w-16
+          h-[72px]
+          w-[72px]
           overflow-hidden
           rounded-full
           border-2
           border-[#bda752]
+          shadow-sm
         "
       >
         {image && (

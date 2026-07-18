@@ -1,34 +1,17 @@
 import { getMission } from "./missionWP";
 import type { MissionEngineInput } from "./missionTypes";
-
 import { useMissionStore } from "./missionStore";
-
 import {
   canRepeatMission,
   isContinuousMission,
   isAccumulativeMission,
   isDailyMission,
 } from "./missionRules";
-
-import {
-  getRuntime,
-  updateResetDate,
-} from "./missionRuntime";
-
-import {
-  processMissionProgress,
-  processDailyReset,
-} from "./missionProgressService";
-
-import { processMissionReward } from "./MissionRewardService";
-
-import { processMissionClaim } from "./MissionClaimService";
-
+import { getRuntime, updateResetDate } from "./missionRuntime";
+import { processMissionProgress, processDailyReset } from "./missionProgressService";
+import { autoClaimIfEligible } from "./MissionClaimService";
 import { repeatMissionIfNeeded } from "./missionRepeat";
-
-import { useNotificationStore } from "@/features/notifications/notificationStore";
-
-import { pushMissionNotification } from "@/features/notifications/missionNotification";
+import { track } from "@/core/action-engine/engine";
 
 export async function missionEngine({
   userId,
@@ -36,203 +19,76 @@ export async function missionEngine({
   amount = 1,
   action,
 }: MissionEngineInput) {
-  console.log("MISSION ENGINE START", {
-    userId,
-    missionId,
-    amount,
-    action,
-  });
+  if (!userId) {
+    return { success: false, completed: false, progress: 0, reward: 0, claimed: false, missionId: missionId ?? 0, missionTitle: "", message: "Authentication required", blocked: true };
+  }
 
   if (!missionId) {
-    return {
-      success: false,
-      completed: false,
-      progress: 0,
-      reward: 0,
-      claimed: false,
-      missionId: 0,
-      missionTitle: "",
-      message: "Mission id required",
-      blocked: true,
-    };
+    return { success: false, completed: false, progress: 0, reward: 0, claimed: false, missionId: 0, missionTitle: "", message: "Mission id required", blocked: true };
   }
 
   const mission = await getMission(missionId);
 
   if (!mission) {
-    return {
-      success: false,
-      completed: false,
-      progress: 0,
-      reward: 0,
-      claimed: false,
-      missionId,
-      missionTitle: "",
-      message: "Mission not found",
-      blocked: true,
-    };
+    return { success: false, completed: false, progress: 0, reward: 0, claimed: false, missionId, missionTitle: "", message: "Mission not found", blocked: true };
   }
 
-  /**
-   * DAILY RESET
-   */
-
-  if (
-    action === "scheduler_tick" &&
-    isDailyMission(mission)
-  ) {
+  if (action === "scheduler_tick" && isDailyMission(mission)) {
     const runtime = getRuntime(userId);
-
-    const today = new Date().toDateString();
+    const today = new Date().toISOString().split("T")[0];
 
     if (runtime.lastResetDate !== today) {
-      await processDailyReset(
-        userId,
-        mission,
-      );
-
+      await processDailyReset(userId, mission);
       updateResetDate(userId);
-
-      console.log(
-        "MISSION DAILY RESET",
-        mission.title,
-      );
     }
 
-    return {
-      success: true,
-      completed: false,
-      progress: 0,
-      reward: 0,
-      claimed: false,
-      missionId: mission.id,
-      missionTitle: mission.title,
-      message: "Daily Reset",
-      blocked: false,
-    };
+    return { success: true, completed: false, progress: 0, reward: 0, claimed: false, missionId: mission.id, missionTitle: mission.title, message: "Daily Reset", blocked: false };
   }
-
-  /**
-   * RULE FLAGS
-   */
 
   const repeatable = canRepeatMission(mission);
   const continuous = isContinuousMission(mission);
   const accumulative = isAccumulativeMission(mission);
   const daily = isDailyMission(mission);
 
-  /**
-   * PROGRESS
-   */
+  const progress = await processMissionProgress(userId, mission, amount, action);
 
-  const progress =
-    await processMissionProgress(
-      userId,
-      mission,
-      amount,
-      action,
-    );
-
-  /**
-   * DEFAULT RESULT
-   */
-
-  let reward = {
-    success: true,
-    reward: 0,
-    message: "",
-  };
-
-  let claim = {
-    success: true,
-    claimed: false,
-    message: "",
-  };
-
-  /**
-   * REWARD
-   */
+  let claimResult = { success: true, claimed: false, reward: 0, message: "" };
 
   if (progress.justCompleted) {
-    reward =
-      await processMissionReward(
-        userId,
-        mission,
-      );
+    const autoResult = await autoClaimIfEligible(userId, mission);
 
-    if (reward.success) {
-      claim =
-        await processMissionClaim(
-          userId,
-          mission.id,
-        );
-
-      await repeatMissionIfNeeded(
-        userId,
-        mission,
-      );
+    if (autoResult) {
+      claimResult = { ...autoResult, reward: autoResult.reward ?? mission.reward };
+      await repeatMissionIfNeeded(userId, mission);
     }
   }
 
-  /**
-   * NOTIFICATION
-   */
-
-  if (reward.reward > 0) {
-    useNotificationStore
-      .getState()
-      .addNotification({
-        type: "mission",
-        title: "Mission Complete",
-        message: mission.title,
-        reward: reward.reward,
-        missionId: mission.id,
-      });
-
-    pushMissionNotification({
-      missionId: mission.id,
-      missionTitle: mission.title,
-      reward: reward.reward,
-      progress: progress.progress ?? 0,
+  if (claimResult.reward > 0) {
+    track("MISSION_COMPLETE", userId, {
+      mission_id: mission.id,
+      reward_vxp: claimResult.reward,
     });
   }
 
-  /**
-   * STORE
-   */
-
-  useMissionStore
-    .getState()
-    .setProgress({
-      missionId: mission.id,
-      progress: progress.progress ?? 0,
-      target:
-        mission.durationMinutes
-          ? mission.durationMinutes * 60
-          : mission.target,
-      completed: Boolean(progress.completed),
-      claimed: claim.claimed,
-      reward: reward.reward,
-    });
-
-  /**
-   * RESULT
-   */
+  useMissionStore.getState().setProgress({
+    missionId: mission.id,
+    progress: progress.progress ?? 0,
+    target: mission.durationMinutes ? mission.durationMinutes * 60 : mission.target,
+    completed: Boolean(progress.completed),
+    claimed: claimResult.claimed,
+    reward: claimResult.reward,
+  });
 
   return {
     success: true,
     completed: Boolean(progress.completed),
     progress: progress.progress ?? 0,
-    reward: reward.reward,
-    claimed: claim.claimed,
+    reward: claimResult.reward,
+    claimed: claimResult.claimed,
     missionId: mission.id,
     missionTitle: mission.title,
-    message:
-      reward.message ||
-      claim.message ||
-      progress.message,
+    message: claimResult.message || progress.message,
     blocked: Boolean(progress.blocked),
-
     repeatable,
     continuous,
     accumulative,

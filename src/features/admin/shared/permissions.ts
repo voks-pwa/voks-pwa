@@ -6,6 +6,7 @@ const rolePermissions: Record<AdminRole, AdminPermission[]> = {
   member: [],
   admin: ['view_users', 'view_redemptions', 'view_audit_log'],
   superadmin: ['view_users', 'manage_users', 'view_redemptions', 'manage_redemptions', 'view_audit_log'],
+  banned: [],
 };
 
 export function getAdminPermissions(role?: AdminRole | null) {

@@ -1,166 +1,111 @@
 import { create } from "zustand";
+import type { Notification } from "./types";
 
-export type NotificationType =
-  | "mission"
-  | "reward"
-  | "badge"
-  | "system"
-  | "wordpress";
+export type { Notification } from "./types";
 
-export interface NotificationItem {
+export interface NotificationStoreItem {
   id: string;
-
-  type: NotificationType;
-
+  category: string;
   title: string;
-
   message: string;
-
-  reward?: number;
-
-  progress?: number;
-
-  missionId?: number;
-
-  createdAt: number;
-
+  icon?: string;
+  image?: string;
+  action_target?: string;
+  payload?: Record<string, unknown>;
   read: boolean;
+  created_at: string;
+  metadata?: {
+    missionId?: number;
+    reward?: number;
+    progress?: number;
+    campaignSlug?: string;
+    rank?: number;
+  };
 }
 
 interface NotificationStore {
-  notifications: NotificationItem[];
-
+  items: NotificationStoreItem[];
   unread: number;
 
-  addNotification(
-    notification: Omit<
-      NotificationItem,
-      "id" | "createdAt" | "read"
-    >
-  ): void;
-
+  add(item: NotificationStoreItem): void;
   markAsRead(id: string): void;
-
   markAllAsRead(): void;
-
-  removeNotification(id: string): void;
-
+  archive(id: string): void;
+  remove(id: string): void;
+  setFromSupabase(notifications: Notification[]): void;
   clear(): void;
 }
 
-export const useNotificationStore =
-create<NotificationStore>((set) => ({
-
-  notifications: [],
-
+export const useNotificationStore = create<NotificationStore>((set) => ({
+  items: [],
   unread: 0,
 
-  addNotification(notification) {
-
-    const item: NotificationItem = {
-
-      id: crypto.randomUUID(),
-
-      createdAt: Date.now(),
-
-      read: false,
-
-      ...notification,
-
-    };
-
+  add(item) {
     set((state) => ({
-
-      notifications: [
-        item,
-        ...state.notifications,
-      ],
-
-      unread: state.unread + 1,
-
+      items: [item, ...state.items],
+      unread: state.unread + (item.read ? 0 : 1),
     }));
-
   },
 
   markAsRead(id) {
-
     set((state) => {
-
-      const notifications =
-        state.notifications.map((n) =>
-          n.id === id
-            ? {
-                ...n,
-                read: true,
-              }
-            : n
-        );
-
+      const items = state.items.map((n) =>
+        n.id === id ? { ...n, read: true } : n,
+      );
       return {
-
-        notifications,
-
-        unread:
-          notifications.filter(
-            (n) => !n.read
-          ).length,
-
+        items,
+        unread: items.filter((n) => !n.read).length,
       };
-
     });
-
   },
 
   markAllAsRead() {
-
     set((state) => ({
-
-      notifications:
-        state.notifications.map((n) => ({
-          ...n,
-          read: true,
-        })),
-
+      items: state.items.map((n) => ({ ...n, read: true })),
       unread: 0,
-
     }));
-
   },
 
-  removeNotification(id) {
-
+  archive(id) {
     set((state) => {
-
-      const notifications =
-        state.notifications.filter(
-          (n) => n.id !== id
-        );
-
+      const items = state.items.filter((n) => n.id !== id);
       return {
-
-        notifications,
-
-        unread:
-          notifications.filter(
-            (n) => !n.read
-          ).length,
-
+        items,
+        unread: items.filter((n) => !n.read).length,
       };
-
     });
+  },
 
+  remove(id) {
+    set((state) => {
+      const items = state.items.filter((n) => n.id !== id);
+      return {
+        items,
+        unread: items.filter((n) => !n.read).length,
+      };
+    });
+  },
+
+  setFromSupabase(notifications) {
+    const items: NotificationStoreItem[] = notifications.map((n) => ({
+      id: n.id,
+      category: n.category,
+      title: n.title,
+      message: n.message,
+      icon: n.icon,
+      image: n.image,
+      action_target: n.action_target,
+      payload: n.payload,
+      read: n.read,
+      created_at: n.created_at,
+    }));
+    set({
+      items,
+      unread: items.filter((n) => !n.read).length,
+    });
   },
 
   clear() {
-
-    set({
-
-      notifications: [],
-
-      unread: 0,
-
-    });
-
+    set({ items: [], unread: 0 });
   },
-
 }));

@@ -1,79 +1,30 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { supabase } from "@/lib/supabase";
-import { useWriteAdminAudit } from "@/features/admin/shared/useAdminAudit";
-import { useProfile } from "@/hooks/useProfile";
-
-interface UpdateParams {
-  id: string;
-
-  status:
-    | "approved"
-    | "completed"
-    | "rejected";
-}
+import { rewardService } from "../services/rewardService";
 
 export function useUpdateRewardRedemption() {
-  const queryClient = useQueryClient();
-  const writeAudit = useWriteAdminAudit();
-  const { data: profile } = useProfile();
+  const qc = useQueryClient();
 
   return useMutation({
-
-    mutationFn: async ({
-      id,
+    mutationFn: ({
+      redemptionId,
       status,
-    }: UpdateParams) => {
-
-      const payload: Record<string, unknown> = {
-        reward_status: status,
-      };
-
-      if (status === "approved") {
-
-        payload.approved_at =
-          new Date().toISOString();
-
-      }
-
-      if (status === "completed") {
-
-        payload.completed_at =
-          new Date().toISOString();
-
-      }
-
-      const { error } = await supabase
-
-        .from("reward_redemptions")
-
-        .update(payload)
-
-        .eq("id", id);
-
-      if (error) throw error;
-
-      await writeAudit.mutateAsync({
-        actorId: profile?.id ?? null,
-        actorName: profile?.display_name ?? profile?.email ?? "admin",
-        action: `reward_status:${status}`,
-        entity: "reward_redemption",
-        entityId: id,
-        details: `Reward redemption status updated to ${status}`,
-      });
-    },
+      notes,
+    }: {
+      redemptionId: string;
+      status: string;
+      notes?: string;
+    }) =>
+      rewardService.updateRewardRedemption(
+        redemptionId,
+        status,
+        notes
+      ),
 
     onSuccess() {
-
-      queryClient.invalidateQueries({
-
-        queryKey: [
-          "reward-redemptions",
-        ],
-
+      qc.invalidateQueries({
+        queryKey: ["admin-rewards"],
       });
-
     },
-
   });
 }

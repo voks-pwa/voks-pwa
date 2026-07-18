@@ -1,163 +1,59 @@
-import type { Profile } from "../types";
+import type { Profile } from "@/features/profile";
 
 interface Props {
-
-  users: Profile[];
-
+  user: Profile;
 }
 
-export function UserSummary({
-
-  users,
-
-}: Props) {
-
-  const admins = users.filter(
-
-    (u) => u.role === "admin"
-
-  ).length;
-
-  const members = users.filter(
-
-    (u) => u.role !== "admin"
-
-  ).length;
-
-  const averageLevel =
-
-    users.length === 0
-
-      ? "0"
-
-      : (
-
-          users.reduce(
-
-            (sum, user) => sum + (user.level ?? 1),
-
-            0
-
-          ) / users.length
-
-        ).toFixed(1);
-
+export function UserStatsCard({ user }: Props) {
   return (
-
     <div
-
       className="
-
-        mb-8
-
-        grid
-
-        gap-5
-
-        md:grid-cols-2
-
-        xl:grid-cols-4
-
+      mt-6
+      grid
+      grid-cols-3
+      gap-4
       "
-
     >
-
       <Card
-
-        title="Total Users"
-
-        value={users.length}
-
+        title="Lifetime VXP"
+        value={user.lifetime_vxp ?? 0}
       />
 
       <Card
-
-        title="Admins"
-
-        value={admins}
-
+        title="Current VXP"
+        value={user.current_vxp ?? 0}
       />
 
       <Card
-
-        title="Members"
-
-        value={members}
-
+        title="Level"
+        value={user.level ?? 1}
       />
-
-      <Card
-
-        title="Average Level"
-
-        value={averageLevel}
-
-      />
-
     </div>
-
   );
-
 }
 
 function Card({
-
   title,
-
   value,
-
 }: {
-
   title: string;
-
-  value: string | number;
-
+  value: number;
 }) {
-
   return (
-
     <div
-
       className="
-
-        rounded-3xl
-
-        bg-white
-
-        p-6
-
-        shadow-sm
-
+      rounded-2xl
+      bg-[#F8F8F8]
+      p-5
       "
-
     >
-
-      <p className="text-sm text-gray-500">
-
+      <p className="text-xs text-gray-500">
         {title}
-
       </p>
 
-      <h2
-
-        className="
-
-          mt-3
-
-          text-3xl
-
-          font-black
-
-        "
-
-      >
-
-        {value}
-
-      </h2>
-
+      <h3 className="mt-2 text-2xl font-black">
+        {value.toLocaleString()}
+      </h3>
     </div>
-
   );
-
 }

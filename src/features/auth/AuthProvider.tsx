@@ -9,20 +9,85 @@ import type {
 
 import { supabase } from "@/lib/supabase";
 
-import {   getProfile,} from "@/features/profile";
+import { getProfile } from "@/features/profile";
+import { findProfileByReferralCode, updateProfileRow } from "@/features/profile/services/profileRepository";
 
 import { AuthContext } from "./AuthContext";
 
-import { trackMission } from "@/hooks/useMissionTracker";
-
 import {
-  useMissionEventBus,
-} from "@/features/missions/hooks/useMissionEventBus";
+  subscribeAction,
+  missionConsumer,
+  retentionConsumer,
+} from "@/core/action-engine";
+
+import { notificationConsumer } from "@/features/notifications/services/notificationSubscriber";
 
 import {
   startMissionScheduler,
   stopMissionScheduler,
 } from "@/features/missions/services/missionScheduler";
+
+import { bootstrapRetention } from "@/features/retention";
+
+import { track } from "@/core/action-engine";
+
+import { getReferralCode, clearReferralCode } from "@/lib/referralStorage";
+
+async function processReferralAfterLogin(userId: string) {
+  const refCode = getReferralCode();
+  if (!refCode) return;
+
+  clearReferralCode();
+
+  try {
+    const referrer = await findProfileByReferralCode(refCode);
+
+    if (!referrer || referrer.id === userId) return;
+
+    await updateProfileRow(userId, { referred_by: referrer.id });
+
+    const { count: existingCount } = await supabase
+      .from("referrals")
+      .select("*", { count: "exact", head: true })
+      .eq("referrer_id", referrer.id);
+
+    if (!existingCount) {
+      await supabase.from("referrals").insert({
+        referrer_id: referrer.id,
+        reward_granted: false,
+      });
+    }
+
+    track("REFERRAL_SUCCESS", referrer.id, {
+      referrer_id: referrer.id,
+      referred_id: userId,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error("[REFERRAL] processing failed:", err);
+  }
+}
+
+async function syncAuthProfile(authUser: User) {
+  try {
+    const avatarUrl =
+      (authUser.user_metadata?.avatar_url as string) ??
+      (authUser.user_metadata?.picture as string) ??
+      null;
+
+    const updates: Record<string, string | null> = {
+      email: authUser.email ?? "",
+    };
+
+    if (avatarUrl) {
+      updates.avatar_url = avatarUrl;
+    }
+
+    await updateProfileRow(authUser.id, updates);
+  } catch (err) {
+    console.error("[AUTH] profile sync failed:", err);
+  }
+}
 
 export function AuthProvider({
   children,
@@ -36,23 +101,16 @@ export function AuthProvider({
   const [loading, setLoading] =
     useState(true);
 
-  useMissionEventBus();
-
   useEffect(() => {
-
-    if (!user) return;
-
-    trackMission({
-
-      userId: user.id,
-
-      missionId: 12341,
-
-      amount: 1,
-
-    });
-
-  }, [user]);
+    const unsubMission = subscribeAction(missionConsumer);
+    const unsubRetention = subscribeAction(retentionConsumer);
+    const unsubNotification = subscribeAction(notificationConsumer);
+    return () => {
+      unsubMission();
+      unsubRetention();
+      unsubNotification();
+    };
+  }, []);
 
   useEffect(() => {
 
@@ -65,6 +123,10 @@ export function AuthProvider({
     }
 
     startMissionScheduler(user.id);
+
+    void bootstrapRetention().catch((e) =>
+      console.error("[RETENTION] bootstrap failed", e),
+    );
 
     return () => {
 
@@ -132,8 +194,25 @@ export function AuthProvider({
         async (_event, session) => {
 
           setUser(
-            session?.user ?? null
-          );
+  session?.user ?? null
+);
+
+ if (session?.user) {
+
+   sessionStorage.removeItem(
+     "redirectAfterLogin"
+   );
+
+    if (_event === "SIGNED_IN") {
+      track("USER_LOGIN", session.user.id, {
+        at: new Date().toISOString(),
+      });
+
+      void processReferralAfterLogin(session.user.id);
+      void syncAuthProfile(session.user);
+    }
+
+  }
 
         }
 

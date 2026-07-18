@@ -11,46 +11,49 @@ export function RedemptionRow({
   redemption,
 }: Props) {
   return (
-    <tr className="border-b last:border-none">
+    <tr className="border-b last:border-none hover:bg-gray-50 transition-colors">
 
       <td className="p-4 font-semibold">
         {redemption.reward_name}
       </td>
 
-      <td>
-        <span className="font-mono text-xs">
-          {redemption.user_id.slice(0,8)}...
-        </span>
+      <td className="p-4">
+        <div className="flex flex-col">
+
+          <span className="font-medium">
+            {redemption.profile?.display_name ??
+              redemption.user_id.slice(0, 8)}
+          </span>
+
+          <span className="text-xs text-gray-500">
+            {redemption.profile?.email ?? ""}
+          </span>
+
+        </div>
       </td>
 
-      <td>
+      <td className="p-4 font-semibold">
         {redemption.reward_cost} VXP
       </td>
 
-      <td>
+      <td className="p-4">
         <RedemptionStatusBadge
           status={redemption.reward_status}
         />
       </td>
 
-      <td className="text-gray-500 text-sm">
+      <td className="p-4 text-sm text-gray-500">
         {new Date(
           redemption.redeemed_at
-        ).toLocaleDateString()}
+        ).toLocaleString()}
       </td>
 
-      <td className="px-4 py-4 text-right">
-
+      <td className="p-4">
         <RedemptionActionMenu
-            id={redemption.id}
+          redemptionId={redemption.id}
+          status={redemption.reward_status}
         />
-
-        </td>
-      <th className="text-right">
-
-        Action
-
-         </th>
+      </td>
 
     </tr>
   );

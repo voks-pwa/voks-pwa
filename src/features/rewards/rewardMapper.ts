@@ -89,6 +89,20 @@ export function mapReward(
         wp.acf.reward_bonus_vxp ?? 0
       ),
 
+    campaignSlug:
+      wp.acf.reward_campaign_slug,
+
+    requiredBadge:
+      wp.acf.reward_required_badge,
+
+    requiredAchievement:
+      wp.acf.reward_required_achievement,
+
+    vipOnly:
+      Boolean(
+        wp.acf.reward_vip_only
+      ),
+
   };
 
 }

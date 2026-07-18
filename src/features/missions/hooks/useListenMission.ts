@@ -1,13 +1,12 @@
 import { useEffect } from 'react'
 
 import {
-  emitMissionEvent,
-} from '../services/missionEventBus'
+  track,
+} from '@/core/action-engine'
 
 import {
+  finishListeningSession,
   startListening,
-  stopListening,
-  interruptListening,
   addListeningSecond,
 } from '../services/missionRuntime'
 
@@ -15,10 +14,6 @@ export function useListenMission(
   userId?: string,
   isPlaying?: boolean
 ) {
-
-  /*
-   * PLAY / PAUSE
-   */
 
   useEffect(() => {
 
@@ -28,33 +23,9 @@ export function useListenMission(
 
       startListening(userId)
 
-      emitMissionEvent({
-
-        userId,
-
-        action: 'listen_tick',
-
-      })
-
-    } else {
-
-      interruptListening(userId)
-
-      emitMissionEvent({
-
-        userId,
-
-        action: 'listen_pause',
-
-      })
-
     }
 
   }, [userId, isPlaying])
-
-  /*
-   * LISTEN TICK
-   */
 
   useEffect(() => {
 
@@ -65,16 +36,7 @@ export function useListenMission(
     const timer = window.setInterval(() => {
 
       addListeningSecond(userId)
-
-      emitMissionEvent({
-
-        userId,
-
-        action: 'listen_tick',
-
-        amount: 1,
-
-      })
+      track("LISTEN_TICK", userId, { seconds: 1 }, 1)
 
     }, 1000)
 
@@ -86,38 +48,24 @@ export function useListenMission(
 
   }, [userId, isPlaying])
 
-  /*
-   * TAB CLOSED
-   */
-
   useEffect(() => {
 
     if (!userId) return
 
-    const handleUnload = () => {
-
-      stopListening(userId)
-
-      emitMissionEvent({
-
-        userId,
-
-        action: 'listen_stop',
-
-      })
-
+    const handleStop = () => {
+      finishListeningSession(userId)
     }
 
     window.addEventListener(
       'beforeunload',
-      handleUnload
+      handleStop
     )
 
     return () => {
 
       window.removeEventListener(
         'beforeunload',
-        handleUnload
+        handleStop
       )
 
     }

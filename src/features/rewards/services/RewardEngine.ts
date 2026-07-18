@@ -1,12 +1,6 @@
-import { deductVXP } from "@/features/profile/services/profileXPService";
-import { createRewardClaim } from "./RewardClaimService";
-
-export interface RewardItem {
-  id: number;
-  slug: string;
-  title: string;
-  cost: number;
-}
+import type { RewardItem } from "../rewardTypes";
+import { processRedeem } from "@/features/redeem/services/redeemEngine";
+import { getUserRedemptions } from "../repositories/rewardRedemptionRepository";
 
 export interface RewardResult {
   success: boolean;
@@ -16,50 +10,37 @@ export interface RewardResult {
 
 export async function processRewardRedemption(
   userId: string,
-  reward: RewardItem
+  reward: RewardItem,
 ): Promise<RewardResult> {
+  if (!userId) {
+    return { success: false, message: "Authentication required" };
+  }
 
-  /**
-   * STEP 1
-   * Deduct XP
-   */
+  const existing = await getUserRedemptions(userId);
+  const userRewards = existing.filter((r) => Number(r.reward_wp_id) === reward.id);
 
-  const xpResult = await deductVXP(
+  if (reward.maxPerUser > 0 && userRewards.length >= reward.maxPerUser) {
+    return {
+      success: false,
+      message: `Maximum redemptions (${reward.maxPerUser}) reached for this reward`,
+    };
+  }
+
+  if (reward.stock <= 0) {
+    return { success: false, message: "This reward is out of stock" };
+  }
+
+  const result = await processRedeem({
     userId,
-    reward.cost,
-    `Redeem Reward : ${reward.title}`,
-    reward.id.toString()
-  );
-
-  if (!xpResult.success) {
-    return {
-      success: false,
-      message: xpResult.message,
-    };
-  }
-
-  /**
-   * STEP 2
-   * Create reward claim
-   */
-
-  const claim = await createRewardClaim(reward);
-
-  if (!claim.success) {
-    return {
-      success: false,
-      message: claim.message,
-    };
-  }
-
-  /**
-   * STEP 3
-   * Success
-   */
+    rewardId: reward.id,
+    rewardTitle: reward.title,
+    requiredVxp: reward.cost,
+    approvalRequired: false,
+  });
 
   return {
-    success: true,
-    message: claim.message,
-    redemptionId: String(claim.redemption ?? ""),
+    success: result.success,
+    message: result.message,
+    redemptionId: result.redeemId,
   };
 }

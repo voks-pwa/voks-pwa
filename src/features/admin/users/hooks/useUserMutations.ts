@@ -2,13 +2,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/lib/supabase';
 import { useWriteAdminAudit } from '@/features/admin/shared/useAdminAudit';
-import { useProfile } from '@/hooks/useProfile';
+import { useProfile } from '@/features/profile/hooks/useProfile';
 
-import type { Profile } from '../types';
+import type { AdminUser } from '../types';
 
 interface UpdateUserRoleInput {
   id: string;
-  role: Profile['role'];
+  role: AdminUser['role'];
 }
 
 export function useUpdateUserRole() {

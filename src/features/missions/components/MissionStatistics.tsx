@@ -1,4 +1,4 @@
-import { CheckCircle2, Trophy, Target } from "lucide-react";
+import { CheckCircle2, Trophy, Target, Loader2 } from "lucide-react";
 import { useMissionStatistics } from "@/hooks/useMissionStatistics";
 
 export function MissionStatistics() {
@@ -46,7 +46,11 @@ export function MissionStatistics() {
             </p>
 
             <h3 className="mt-1 text-2xl font-bold">
-              {card.value}
+              {stats.loading ? (
+                <Loader2 className="h-5 w-5 animate-spin opacity-40" />
+              ) : (
+                card.value
+              )}
             </h3>
           </div>
         );

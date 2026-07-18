@@ -5,24 +5,35 @@ import { useRewardRedemptions } from "../hooks/useRewardRedemptions";
 import { RedemptionSummary } from "../components/RedemptionSummary";
 import { RedemptionTable } from "../components/RedemptionTable";
 
-export function RewardRedemptionsPage() {
+export default function RewardRedemptionsPage() {
   const [search, setSearch] = useState("");
+
   const [status, setStatus] = useState<
     "all" | "pending" | "approved" | "completed" | "rejected"
   >("all");
 
-  const { data, isLoading } = useRewardRedemptions();
+  const {
+    data = [],
+    isLoading,
+    error,
+  } = useRewardRedemptions();
 
   const filteredData = useMemo(() => {
-    const list = data ?? [];
+    return data.filter((item) => {
+      const keyword =
+        search.trim().toLowerCase();
 
-    return list.filter((item) => {
-      const matchSearch = item.reward_name
-        ? item.reward_name.toLowerCase().includes(search.toLowerCase())
-        : false;
+      const matchSearch =
+        keyword === ""
+          ? true
+          : (item.reward_name ?? "")
+              .toLowerCase()
+              .includes(keyword);
 
       const matchStatus =
-        status === "all" ? true : item.reward_status === status;
+        status === "all"
+          ? true
+          : item.reward_status === status;
 
       return matchSearch && matchStatus;
     });
@@ -30,41 +41,59 @@ export function RewardRedemptionsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-40 items-center justify-center text-sm font-medium text-gray-500">
-        <div className="flex flex-col items-center gap-2">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#bda752] border-t-transparent" />
-          <span>Loading redemptions...</span>
-        </div>
+      <div className="flex h-52 items-center justify-center">
+        Loading reward redemptions...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-red-500">
+        Failed to load reward redemptions.
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 pb-24">
-      <h1 className="mb-8 text-3xl font-black tracking-tight text-gray-900">
-        Reward Redemptions
-      </h1>
+    <div className="space-y-6 p-8">
 
-      {/* Summary Section */}
-      <RedemptionSummary data={data ?? []} />
+      <div>
 
-      {/* Search + Filter Container */}
-      <div className="mb-6 mt-6 flex gap-4">
-        {/* INPUT DENGAN IKON SEARCH ABSOLUTE */}
+        <h1 className="text-3xl font-black">
+          Reward Redemptions
+        </h1>
+
+        <p className="text-gray-500">
+          Manage reward redemption requests.
+        </p>
+
+      </div>
+
+      <RedemptionSummary
+        data={data}
+      />
+
+      <div className="flex gap-4">
+
         <div className="relative flex-1">
+
           <Search
             size={18}
             className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
           />
+
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) =>
+              setSearch(e.target.value)
+            }
             placeholder="Search reward..."
-            className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-11 pr-4 outline-none focus:border-[#bda752] transition-colors text-sm"
+            className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-11 pr-4"
           />
+
         </div>
 
-        {/* SELECT STATE FILTER */}
         <select
           value={status}
           onChange={(e) =>
@@ -77,45 +106,65 @@ export function RewardRedemptionsPage() {
                 | "rejected"
             )
           }
-          className="rounded-2xl border border-gray-200 bg-white px-4 outline-none focus:border-[#bda752] text-sm text-gray-700 transition-colors"
+          className="rounded-2xl border border-gray-200 bg-white px-4"
         >
-          <option value="all">All</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="completed">Completed</option>
-          <option value="rejected">Rejected</option>
+
+          <option value="all">
+            All
+          </option>
+
+          <option value="pending">
+            Pending
+          </option>
+
+          <option value="approved">
+            Approved
+          </option>
+
+          <option value="completed">
+            Completed
+          </option>
+
+          <option value="rejected">
+            Rejected
+          </option>
+
         </select>
+
       </div>
 
-      {/* INDIKATOR SHOWING STATS DI BAWAH SEARCH */}
-      <div className="mb-5 flex justify-between text-sm text-gray-500 font-medium px-1">
-        <span>
-          Showing
-          <strong className="mx-1 text-gray-800 font-bold">
-            {filteredData.length}
-          </strong>
-          of
-          <strong className="mx-1 text-gray-800 font-bold">
-            {data?.length ?? 0}
-          </strong>
-          redemptions
-        </span>
+      <div className="text-sm text-gray-500">
+
+        Showing{" "}
+
+        <strong>
+
+          {filteredData.length}
+
+        </strong>{" "}
+
+        of{" "}
+
+        <strong>
+
+          {data.length}
+
+        </strong>{" "}
+
+        redemptions
+
       </div>
 
-      {/* KONDISI EMPTY STATE VS REDEMPTION TABLE CONTAINER */}
       {filteredData.length === 0 ? (
-        <div className="rounded-3xl bg-white py-24 text-center shadow-sm border border-gray-100 max-w-2xl mx-auto">
-          <div className="text-5xl animate-bounce duration-1000">🎁</div>
-          <h3 className="mt-4 text-xl font-bold text-gray-800">
-            No reward redemption found
-          </h3>
-          <p className="mt-2 text-sm text-gray-500">
-            Try another keyword or change your filter status.
-          </p>
+        <div className="rounded-3xl bg-white p-16 text-center shadow">
+          No reward redemption found.
         </div>
       ) : (
-        <RedemptionTable redemptions={filteredData} />
+        <RedemptionTable
+          redemptions={filteredData}
+        />
       )}
+
     </div>
   );
 }

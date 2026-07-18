@@ -1,0 +1,16 @@
+{
+  "imports": {
+    "@std/http": "jsr:@std/http@0.224.5",
+    "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.110.2"
+  },
+  "lint": {
+    "rules": {
+      "tags": [
+        "recommended"
+      ]
+    }
+  },
+  "fmt": {
+    "lineWidth": 80
+  }
+}

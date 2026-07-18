@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { PlayCircle } from 'lucide-react'
 
 import { useVoksPlus } from '@/hooks/useVoksPlus'
+import { ErrorState } from "@/components/ui/ErrorState"
+import { EmptyState } from "@/components/ui/EmptyState"
 
 const FILTERS = [
   'All',
@@ -11,7 +13,6 @@ const FILTERS = [
   'Music Room',
 ]
 
-// 🌟 FUNGSI PEMBANTU: Mendekode entitas HTML (seperti &#8211;) menjadi teks normal
 function decodeHtmlEntities(text: string) {
   if (!text) return ''
   const parser = new DOMParser()
@@ -20,7 +21,7 @@ function decodeHtmlEntities(text: string) {
 }
 
 export function VoksPlusPage() {
-  const { data, isLoading } = useVoksPlus()
+  const { data, isLoading, isError, refetch } = useVoksPlus()
   const [filter, setFilter] = useState('All')
 
   if (isLoading) {
@@ -30,6 +31,14 @@ export function VoksPlusPage() {
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#bda752] border-t-transparent" />
           <span>Loading...</span>
         </div>
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="p-6">
+        <ErrorState message="Failed to load Voks+ content" onRetry={refetch} />
       </div>
     )
   }
@@ -65,7 +74,13 @@ export function VoksPlusPage() {
           ))}
         </div>
 
-        {/* GRID DAFTAR KONTEN */}
+        {filtered?.length === 0 && (
+          <div className="col-span-2">
+            <EmptyState title="No content found" message={`No ${filter.toLowerCase()} content available`} />
+          </div>
+        )}
+
+        {filtered && filtered.length > 0 && (
         <div className="grid grid-cols-2 gap-4">
           {filtered?.map((item) => {
             const image =
@@ -116,6 +131,7 @@ export function VoksPlusPage() {
             )
           })}
         </div>
+        )}
 
       </div>
   )

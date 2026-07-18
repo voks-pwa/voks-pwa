@@ -20,7 +20,6 @@ setUserId: (userId: string) => void
   toggleMute: () => void
   setStatus: (status: PlayerStatus) => void
   setError: (error: string | null) => void
-  listenTick: () => void
   disconnect: () => void
   stop: () => void
 }
