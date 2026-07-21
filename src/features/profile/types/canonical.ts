@@ -1,5 +1,11 @@
 import type { AdminPermission } from "@/features/admin/shared/permissions";
 import type { UserRole } from "../types";
+import type { UserBadge, UserStreak } from "@/features/retention/types";
+
+export interface CanonicalWallet {
+  balance: number;
+  lifetime_vxp: number;
+}
 
 export interface CanonicalUser {
   id: string;
@@ -27,4 +33,13 @@ export interface CanonicalUser {
     website: string | null;
   };
   permissions: AdminPermission[];
+  wallet: CanonicalWallet;
+  badges: UserBadge[];
+  streaks: UserStreak[];
+  created_at: string;
+  birthday: string | null;
+  gender: string | null;
+  favorite_program: string | null;
+  favorite_music: string | null;
+  referred_by: string | null;
 }

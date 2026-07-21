@@ -9,9 +9,12 @@ import { QuickAccess } from '@/components/home/QuickAccess'
 import { HostsSlider } from '@/components/home/HostsSlider'
 import { AudioPlayerCard } from '@/components/player/AudioPlayerCard'
 import { PromoBanner } from '@/components/ui/PromoBanner'
+import { Skeleton } from '@/components/ui/Skeleton'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { NotificationCenter } from '@/components/notifications/NotificationCenter'
 import { MissionWidget } from '@/features/missions/components/MissionWidget'
-import { isFeatureEnabled } from '@/features/flags'
+import { useIsFeatureEnabled } from '@/features/flags'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { useVoksPlus } from '@/hooks/useVoksPlus'
 import { usePrograms } from '@/hooks/usePrograms'
@@ -19,8 +22,9 @@ import { usePrograms } from '@/hooks/usePrograms'
 import 'swiper/css'
 
 export function HomePage() {
-  const { data: voksPlus } = useVoksPlus()
-  const { data: programs } = usePrograms()
+  const { data: voksPlus, isLoading: vpLoading, isError: vpError, refetch: vpRefetch } = useVoksPlus()
+  const { data: programs, isLoading: prLoading, isError: prError, refetch: prRefetch } = usePrograms()
+  const missionEnabled = useIsFeatureEnabled("mission")
 
   return (
     <>
@@ -33,7 +37,7 @@ export function HomePage() {
 
         <NotificationCenter />
 
-        {isFeatureEnabled("mission") && <MissionWidget />}
+        {missionEnabled && <MissionWidget />}
 
         <QuickAccess />
 
@@ -42,8 +46,19 @@ export function HomePage() {
         <section className="rounded-3xl bg-white p-6 shadow-sm">
           <SectionHeader title="Voks+" label="Premium Content" viewAllLink="/plus" />
           <div className="mt-5">
+            {vpLoading && (
+              <div className="flex gap-4 overflow-hidden">
+                <Skeleton className="h-64 w-[85%] shrink-0 rounded-3xl" />
+                <Skeleton className="h-64 w-[85%] shrink-0 rounded-3xl" />
+              </div>
+            )}
+            {vpError && <ErrorState message="Failed to load Voks+ content" onRetry={vpRefetch} />}
+            {!vpLoading && !vpError && (!voksPlus || voksPlus.length === 0) && (
+              <EmptyState title="No content yet" message="Check back soon for new premium content" />
+            )}
+            {!vpLoading && !vpError && voksPlus && voksPlus.length > 0 && (
             <Swiper modules={[Autoplay]} spaceBetween={16} slidesPerView={1.15}>
-              {voksPlus?.map((item) => {
+              {voksPlus.map((item) => {
                 const image =
                   item._embedded?.['wp:featuredmedia']?.[0]?.media_details?.sizes?.medium_large?.source_url ??
                   item._embedded?.['wp:featuredmedia']?.[0]?.source_url
@@ -84,13 +99,32 @@ export function HomePage() {
                 )
               })}
             </Swiper>
+            )}
           </div>
         </section>
 
         <section>
           <SectionHeader title="Programs" label="All Shows" viewAllLink="/programs" />
+          {prLoading && (
+            <div className="mt-5 grid grid-cols-2 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="overflow-hidden rounded-2xl bg-white shadow-sm">
+                  <Skeleton className="aspect-video w-full rounded-none" />
+                  <div className="p-3 space-y-2">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {prError && <ErrorState message="Failed to load programs" onRetry={prRefetch} />}
+          {!prLoading && !prError && (!programs || programs.length === 0) && (
+            <EmptyState title="No programs yet" message="Check back soon for new shows" />
+          )}
+          {!prLoading && !prError && programs && programs.length > 0 && (
           <div className="mt-5 grid grid-cols-2 gap-4">
-            {programs?.slice(0, 4).map((program) => {
+            {programs.slice(0, 4).map((program) => {
               const image =
                 program._embedded?.['wp:featuredmedia']?.[0]?.media_details?.sizes?.medium_large?.source_url ??
                 program._embedded?.['wp:featuredmedia']?.[0]?.source_url
@@ -119,6 +153,7 @@ export function HomePage() {
               )
             })}
           </div>
+            )}
         </section>
 
         <HostsSlider />

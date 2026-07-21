@@ -2,12 +2,39 @@ import { Link } from "react-router-dom";
 import { ChevronRight, Target } from "lucide-react";
 import { useMissionStore } from "../services/missionStore";
 import { MissionProgressBar } from "./MissionProgressBar";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export function MissionWidget() {
   const missions = useMissionStore((state) => state.missions);
   const progress = useMissionStore((state) => state.progress);
+  const loading = useMissionStore((state) => state.loading);
 
   const progressEntries = Object.values(progress);
+
+  if (loading && !progressEntries.length) {
+    return (
+      <section className="rounded-3xl bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-10 w-10 rounded-xl" />
+            <div>
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="mt-1 h-3 w-16" />
+            </div>
+          </div>
+          <Skeleton className="h-4 w-16" />
+        </div>
+        <div className="mt-5 space-y-3">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-2 w-full rounded-full" />
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-8 w-28 rounded-xl" />
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (!progressEntries.length) return null;
 

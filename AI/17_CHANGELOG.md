@@ -8,6 +8,783 @@ Version: 1.0
 
 ---
 
+## 2026-07-22
+
+### Sprint E.2 — Production Finalization ✅
+
+**Fraud Protection Hardening**:
+- Wallet Ledger V2: transaction_key UNIQUE INDEX prevents duplicate entries; check_duplicate RPC validates before creation; atomic two-phase commit/rollback
+- Economy Engine: validateTransaction() checks spending limits (daily/weekly/monthly) before debit; earning caps enforced
+- Marketplace Transaction: FOR UPDATE row locks on inventory; atomic order status transitions; rollback on failure
+- Reward Redeem: reserve_reward RPC with FOR UPDATE SKIP LOCKED; stock reservation with rollback; pending redemption check
+- XP Spending: calculateXP() with rule-based validation; mission claims use grantReward with duplicate check
+
+**Monitoring**:
+- Logging: console.error/warn in MissionClaimService (RPC errors, rejected claims), WalletEngine, EconomyEngine; Edge Functions have try/catch error handling
+- Health Check: system-health edge function checks DB connectivity (RPC + response time) + WordPress API connectivity + maintenance mode/version from system_config
+- Alerts: Error logging in place; structured alerting system noted as future enhancement
+
+**Performance Audit Final**:
+- Bundle Size: Main chunk 496KB (gzip 153KB) under 900KB target; LiveStudioPage 527KB lazy-loaded; AdminRoutes ~640KB lazy-loaded
+- Lazy Loading: 23 pages use React.lazy() with dynamic imports; Lazy wrapper component with Suspense fallback
+- Route Split: All public pages, admin routes, and dev sandbox lazy-loaded via React.lazy()
+- React Query Cache: QueryClient configured in main.tsx; staleTime configured on hooks (5min for economy config, 30s for transaction validation)
+- Repository Query: N+1 scan fixed in updateFulfillmentStatus; analytics via single aggregate RPCs
+- Image Optimization: 6 images with loading="lazy" across PromoBanner, HomePage, PromoList/Detail, RewardPreview, HostsSlider
+
+**Phase E Checklist Updated**:
+- AI/223_PHASE_E_MASTER_CHECKLIST.md: Fraud Protection ✅, Monitoring ✅, Performance ✅
+- AI/229_PROJECT_COMPLETION_CHECKLIST.md: Performance ✅, Monitoring ✅
+
+**Verification**: `tsc ✓`, `vite build ✓` (140 precache entries, 3313 KiB)
+
+---
+
+## 2026-07-21
+
+### Sprint E.1 — Production Hardening ✅ (Continued)
+
+**Feature Flags Bridge**:
+- Created `useIsFeatureEnabled()` hook — reads DB `feature_flags` table via React Query, falls back to hardcoded defaults
+- Updated all 5 call sites: `FeatureGuard`, `HomePage`, `MorePage`, `QuickAccess`, `useCampaignMissions`
+- Admin feature flag toggles now take effect client-side without redeploy
+- Added missing `auth.getUser()` verification to `admin-feature-flags` EF (security gap fixed)
+- Added `updated_by` tracking on flag toggle
+
+**Feature Flags Enabled**:
+- Database migration `20260821000002_fix_feature_flags_table.sql` applied to remote Supabase (created `feature_flags` table + upserted all 7 flags with `enabled = true`)
+- Static fallback in `src/features/flags/index.ts` updated: `mission.public_enabled = true`, `reward.public_enabled = true`
+- Both EFs (`admin-feature-flags`, `admin-campaign-update`) deployed to Supabase
+
+**Missing Edge Function Created**:
+- Created `admin-campaign-update` EF — updates campaign ACF fields (featured, priority) via WordPress REST API
+- Frontend no longer gets 404 on campaign feature/unfeature/priority actions
+
+**Edge Function Consistency**:
+- All 24 EF imports standardized to `npm:@supabase/supabase-js@2`
+- All 21 FE-facing EFs configured in `supabase/config.toml` with `verify_jwt = false`
+
+**UI Cleanup**:
+- Removed 4 "Your Experience" placeholder items from MorePage (no backend existed)
+- MissionWidget loading skeleton added
+
+**Security & Production Audits**:
+- RLS Audit: 65 tables scanned — 64 with RLS, 1 gap (`user_session_logs` in `20260811000000_operations_admin.sql` missing `ENABLE ROW LEVEL SECURITY`)
+- Secret Audit: no hardcoded secrets in `src/`; `.env` gitignored; no `service_role` key in frontend; advisory-only `console.log(authHeader)` in 3 EFs
+- Image optimization: 6 `<img>` tags using `loading="lazy"` across PromoBanner, HomePage, PromoList/Detail, RewardPreview, HostsSlider
+
+**Phase E Checklist Updated**:
+- AI/223_PHASE_E_MASTER_CHECKLIST.md: Edge Function Audit ✅, QA Items ✅, RLS/Security partial
+- Items remaining: package.json audit, bundle audit close-out, monitoring/alerting, live radio device testing
+
+**Verification**: `tsc ✓`, `vite build ✓` (140 precache entries, 3313 KiB)
+
+---
+
+## 2026-07-21
+
+### Sprint E.1 — Production Hardening ✅
+
+**Feature Flags Fix**:
+- Created `useIsFeatureEnabled()` hook — reads from DB `feature_flags` table via React Query, falls back to hardcoded defaults
+- Updated all 5 call sites: `FeatureGuard`, `HomePage`, `MorePage`, `QuickAccess`
+- Admin toggle di `/admin/settings/feature-flags` sekarang langsung berefek ke client (tanpa perlu redeploy)
+- Added missing `auth.getUser()` verification to `admin-feature-flags` edge function (security gap fixed)
+- Added `updated_by` tracking on flag toggle
+
+**Missing Edge Function**:
+- Created `admin-campaign-update` edge function — updates campaign ACF fields (featured, priority) via WordPress REST API
+- Frontend no longer gets 404 on campaign feature/unfeature/priority actions
+
+**Config & Consistency**:
+- Configured all 21 FE-facing edge functions in `supabase/config.toml` with `verify_jwt = false`
+- Standardized imports: all 24 edge functions now use JSR `@supabase/supabase-js` from shared `deno.json`
+
+**UI Cleanup**:
+- Removed 4 "Your Experience" placeholder items from MorePage (no backend implementation existed)
+- Added loading skeleton to MissionWidget (reads Zustand `loading` state)
+
+**Verification**: `tsc ✓`, `vite build ✓` (140 precache entries, 3313 KiB)
+
+**Runtime Fixes (Tier 1)**:
+- PostgREST schema cache refreshed (`NOTIFY pgrst, 'reload schema'`) — fixed activity_logs metadata column, get_transactions_admin, get_economy_config errors
+- Vite dev cache cleared (`node_modules/.vite`) — fixed AdminDashboardPage import path
+- AuthProvider: `setUser` changed to referential equality check (`prev?.id === newUser?.id`) — fixed mission scheduler start/stop loop
+- missionScheduler: added `currentUserId` guard — prevents scheduler init loop for unauthenticated users
+
+**Dead Code Cleanup (Tier 2)**:
+- Deleted 14 unused files: rankCalculator.ts, notificationService.ts, generateReferralCode.ts, useAchievements.ts, useBadges.ts, useMilestones.ts, useStreak.ts, reward-service.ts, media-api.ts, programs-api.ts, useDailyCheckin.ts, useRedeemReward.ts, useRewards.ts, data/programs.ts, GuestGuard.tsx
+- Build still passes (tsc + vite build ✓)
+
+**UI State Coverage (Tier 3)**:
+- HomePage Voks+ section: added loading skeleton, ErrorState with retry, EmptyState
+- HomePage Programs section: added loading skeleton grid, ErrorState with retry, EmptyState
+- ProfilePage: added loading skeleton (avatar + stats + form sections)
+- index.html: title updated to "Voks Radio — Interactive Community & Live Streaming", description aligned with platform features
+- AI/25_PRODUCT_POLISH_CHECKLIST: fully audited; 16/25 items verified, 9 marked for runtime/visual verification
+
+## 2026-07-20
+
+### Sprint C.6 — Commerce Engine ✅
+
+**Database Migration** (`20260805000000_commerce_engine.sql`):
+- `commerce_events` table: event log (event_type, user_id, order_id, product_id, amount, metadata, created_at)
+- `marketplace_fulfillment` table: fulfillment tracking with status lifecycle (PENDING/PROCESSING/SHIPPED/DELIVERED/COMPLETED/CANCELLED), tracking_number, carrier, notes
+- `refund_records` table: refund tracking with status (PENDING/APPROVED/REJECTED/COMPLETED), refund_method (WALLET/GATEWAY)
+- 5 RPCs: `record_commerce_event`, `create_fulfillment` (starts fulfillment + sets order PROCESSING), `update_fulfillment_status` (atomic + sets order COMPLETED on DELIVERED/COMPLETED), `process_refund` (atomic inventory restore + voucher restore + order REFUNDED), `get_commerce_analytics` (revenue, orders, fulfillments, refunds, top products, daily events)
+- RLS: user-scoped reads; service_role for admin operations
+
+**Commerce Engine Module** (`src/features/commerce/`):
+- Types: CommerceEvent, MarketplaceFulfillment, RefundRecord, CommerceAnalytics, CommerceActionResult
+- Repository: recordEvent/createFulfillment/updateFulfillmentStatus/processRefund RPC wrappers + direct queries for events, fulfillments, refunds
+- Service: recordEvent, createFulfillment, updateFulfillmentStatus (valid transition guard), processRefund, getAnalytics, getFulfillments, getRefunds, requestRefund, getEvents
+- 9 hooks: useCommerceAnalytics, useFulfillments, useRefunds, useCommerceEvents, useCreateFulfillment, useUpdateFulfillmentStatus, useProcessRefund, useRequestRefund, useRecordEvent
+- index.ts barrel exports
+
+**Checkout Integration**:
+- `executeCheckout()` records `purchase` commerce event after successful VXP debit
+
+**Admin Commerce** (`/admin/commerce`):
+- 3-tab page: Fulfillment | Refunds | Analytics
+- Fulfillment: queue with inline status/tracking/carrier edit
+- Refunds: approve (process) / reject PENDING refunds
+- Analytics: revenue, orders, fulfillments, refunds, refund amount, top products, daily events
+- Route `/admin/commerce` with sidebar Package icon
+
+### Sprint C.7 — Subscription & Membership ✅
+
+**Database Migration** (`20260806000000_subscription_membership.sql`):
+- `subscription_plans` table: plan catalog (plan_code FREE/PREMIUM/VIP/CORPORATE, billing_interval MONTHLY/QUARTERLY/YEARLY, price, currency, features JSONB)
+- `user_subscriptions` table: one per user with status (ACTIVE/GRACE/EXPIRED/CANCELLED/PAUSED), current_period_start/end, auto_renew, cancelled_at
+- `subscription_invoices` table: billing history (amount, payment_method, status PAID/PENDING/FAILED/REFUNDED, wallet_txn_id, period_start/end)
+- 7 RPCs: `create_subscription_plan` (upsert by code), `subscribe_user` (subscription + invoice + commerce event), `renew_subscription`, `cancel_subscription`, `change_subscription_plan` (upgrade/downgrade), `get_user_subscription`, `get_subscription_analytics`
+- Wallet debit performed in engine via Wallet Ledger V2 (REDEEM / SUBSCRIPTION reference)
+- RLS: user-scoped reads; service_role for admin operations
+
+**Subscription Module** (`src/features/subscription/`):
+- Types: SubscriptionPlan, UserSubscription, SubscriptionInvoice, SubscriptionDetail, SubscriptionAnalytics, enums
+- Repository: RPC wrappers + direct queries for plans, subscriptions, invoices
+- Service: createPlan, subscribe (wallet debit → subscribe RPC), renew, cancel, changePlan, getUserSubscription, getAnalytics, getPlans/Subscriptions/Invoices
+- 9 hooks: useSubscriptionPlans, useUserSubscription, useSubscriptions, useSubscriptionInvoices, useSubscriptionAnalytics, useSubscribe, useRenewSubscription, useCancelSubscription, useChangePlan, useCreatePlan
+- index.ts barrel exports
+
+**Admin Subscription** (`/admin/subscription`):
+- 3-tab page: Plans | Subscriptions | Invoices
+- Plans: list + add plan (code, name, interval, price)
+- Subscriptions: analytics cards (total/active/revenue) + list with change-plan / cancel actions
+- Invoices: billing history
+- Route `/admin/subscription` with sidebar Crown icon
+
+## 2026-07-21
+
+### Sprint D.6 — Finalization & Production Readiness ✅
+
+**Production Build Verification**:
+- TypeScript: PASS (`tsc --noEmit`)
+- ESLint: PASS
+- Production Build: PASS (74 entries, 3288 KiB, 688ms)
+- PWA service worker: generateSW mode, 74 precache entries
+- App version: 1.0.0 (build 20260721)
+
+**Documentation Finalization**:
+- All Phase D sprint entries consolidated in CHANGELOG
+- Phase D Master Checklist fully checked
+- Phase D marked as COMPLETE in CURRENT_TASK
+- SESSION_MEMORY and TECHNICAL_DEBT_REGISTER updated
+
+**Phase D Summary** (6 sprints):
+
+| Sprint | Module | Status |
+|--------|--------|--------|
+| D.1 | Automation (scheduler, queue, retry, dead-letter) | ✅ |
+| D.2 | Notification Channels (push, email, in-app, broadcast) | ✅ |
+| D.3 | Analytics & Reporting (wallet KPIs, CSV export) | ✅ |
+| D.4 | AI & Recommendation (popular + personalized, search, KB) | ✅ |
+| D.5 | Operations & Admin (health, flags, audit, maintenance) | ✅ |
+| D.6 | Finalization & Production Readiness | ✅ |
+
+**Total Phase D Deliverables**:
+- 6 database migrations (D.1–D.6)
+- 5 new edge functions (scheduler, recommendation-engine, system-health, admin-feature-flags)
+- 10 new feature modules (automation, analytics, recommendation, search, knowledge, operations)
+- 13 new admin pages
+- All verifiers: TypeScript PASS, ESLint PASS, Production Build PASS
+
+---
+
+## 2026-07-21
+
+### Sprint D.5 — Operations & Admin ✅
+
+**Database Migration** (`20260811000000_operations_admin.sql`):
+- `admin_audit_log` table — official migration for admin action audit trail (actor_id, action, entity, details, created_at)
+- `feature_flags` table — dynamic feature flags with key/enabled/description (seeded with 7 defaults)
+- `system_config` table — key/value app config (seeded with maintenance_mode + app_version)
+- `get_system_health` RPC — DB connectivity + table row counts (profiles, missions_progress, reward_redemptions, wallet_ledger)
+- RLS: admin/superadmin read audit logs; service_role ALL; public read feature_flags + system_config
+
+**Edge Functions**:
+- `system-health` — health check endpoint: DB (RPC + response time), WordPress API (connectivity + response time), maintenance mode + version from system_config
+- `admin-feature-flags` — CRUD: list all flags, update enabled/description
+
+**Operations Module** (`src/features/operations/`):
+- Types: SystemHealth, FeatureFlag, MaintenanceConfig, AppVersion, AuditLogEntry
+- Repository: 8 data access functions (system-health edge fn, feature flags edge fn, system_config direct, admin_audit_log direct)
+- Query keys + 7 hooks: useSystemHealth, useFeatureFlags, useUpdateFeatureFlag, useMaintenanceConfig, useUpdateMaintenance, useAppVersion, useAuditLogs
+- index.ts barrel exports
+
+**Admin Operations** (`/admin/operations`):
+- 3-tab page: System Health | Maintenance Mode | Version Info
+- System Health: DB + WordPress API status cards with response time + table counts
+- Maintenance Mode: toggle + message editor with save
+- Version Info: version, build number, build date display
+- Route + sidebar Activity icon
+
+**Admin Feature Flags** (`/admin/feature-flags`):
+- Toggle list: all 7 feature flags with ON/OFF toggle buttons + descriptions
+- Real-time enabled/disabled status badges
+- Route + sidebar ToggleLeft icon
+
+**Admin Audit Log** (`/admin/audit`):
+- Full log table: time, actor, action, entity, entity ID, details
+- Search/filter by action, entity, or actor name
+- Auto-refresh every 30s
+- Up to 100 most recent entries
+- Route + sidebar Shield icon
+
+**Verification**:
+- TypeScript: PASS (`tsc --noEmit`)
+- ESLint: PASS
+- Production Build: PASS (74 entries, 3288 KiB, 675ms)
+
+---
+
+## 2026-07-21
+
+### Sprint D.4 — AI & Recommendation ✅
+
+**Database Migration** (`20260810000000_ai_recommendation.sql`):
+- `knowledge_articles` table: knowledge base for support/content with slug, category, tags, published flag, RLS (service_role ALL, anon/authenticated read published)
+- `search_content` RPC — ILIKE search across knowledge_articles
+- `get_popular_reward_ids` RPC — top redeemed reward IDs from reward_redemptions
+- `get_popular_mission_ids` RPC — most completed mission IDs from missions_progress
+- `get_user_recommendation_ids` RPC — collaborative filtering recs (users who did same missions)
+
+**Recommendation Engine Edge Function** (`supabase/functions/recommendation-engine/`):
+- 3 modes: `popular-missions`, `popular-rewards`, `personalized` (per user)
+- Enriches Supabase aggregate IDs with WordPress content titles (mission title, reward image)
+- Read-only: no wallet access, no ledger access, no business logic mutations
+
+**Recommendation Module** (`src/features/recommendation/`):
+- Types: RecommendedMission, RecommendedReward, UserRecommendations
+- Repository: 3 edge function wrappers
+- Query keys: recommendationKeys factory
+- 3 hooks: usePopularMissions, usePopularRewards, useUserRecommendations
+- index.ts barrel exports
+
+**Search Module** (`src/features/search/`):
+- Types: SearchResult, SearchResponse
+- Repository: search_content RPC wrapper
+- Query keys + useSearch hook (enabled at 2+ chars)
+- index.ts barrel exports
+
+**Knowledge Base Module** (`src/features/knowledge/`):
+- Types: KnowledgeArticle, KnowledgeActionResult
+- Repository: full CRUD (list, getBySlug, create, update, delete)
+- Query keys + 5 hooks (useKnowledgeArticles, usePublishedArticles, useKnowledgeArticle, useCreateKnowledgeArticle, useUpdateKnowledgeArticle, useDeleteKnowledgeArticle)
+- index.ts barrel exports
+
+**Admin AI & Recommendation** (`/admin/recommendation`):
+- Popular Missions ranking (top 10 with medal icons)
+- Popular Rewards ranking (top 10 with redeem counts)
+- Recommendation Engine info card (method, data source, scope)
+- Route `/admin/recommendation` with sidebar Bot icon
+
+**Admin Knowledge Base** (`/admin/knowledge`):
+- Full CRUD table: create, edit, delete articles
+- Search/filter by title or category
+- Category selector, tags input, markdown content
+- Publish/draft toggle
+- Route `/admin/knowledge` with sidebar BookOpen icon
+
+**Verification**:
+- TypeScript: PASS (`tsc --noEmit`)
+- ESLint: PASS
+- Production Build: PASS (74 entries, 3273 KiB)
+
+---
+
+## 2026-07-21
+
+### Sprint D.3 — Analytics & Reporting ✅
+
+**Database Migration** (`20260809000000_analytics.sql`):
+- `get_wallet_analytics` RPC — VXP minted / spent / net / transaction count / active wallets from wallet_ledger
+- `get_campaign_analytics` RPC — campaign totals, active, rewards granted, participants, VXP distributed
+- `get_commerce_kpis` RPC — unified KPI rollup (revenue, orders, fulfillments, refunds, subscriptions, wallet minted/spent, campaign participants)
+
+**Analytics Module** (`src/features/analytics/`):
+- Types: WalletAnalytics, CampaignAnalytics, CommerceKpis, UserAnalytics, MissionAnalytics, ReportExport
+- Repository: 6 RPC wrappers for wallet/campaign/commerce-kpis/user/mission/admin edge function
+- Query keys: analyticsKeys factory (wallet/campaign/commerceKpis/user/mission/admin)
+- 6 hooks: useWalletAnalytics, useCampaignAnalytics, useCommerceKpis, useUserAnalytics, useMissionAnalytics, useAdminAnalytics
+- index.ts barrel exports
+
+**Admin Wallet Analytics** (`/admin/wallet-analytics`):
+- KPI cards: Minted, Spent, Net, Active Wallets, Total Transactions
+- Period filter: 7d / 30d / 90d
+- Route `/admin/wallet-analytics` with sidebar Wallet icon
+
+**Admin Reporting** (`/admin/reporting`):
+- 5-section tabbed view: Executive Overview, Wallet, Commerce, Subscription, Campaign
+- Period filter: 7d / 30d / 90d
+- CSV export per section with BOM for Excel compatibility
+- Metric cards per section
+- Route `/admin/reporting` with sidebar FileSpreadsheet icon
+
+**Verification**:
+- TypeScript: PASS (`tsc --noEmit`)
+- ESLint: PASS
+
+---
+
+## 2026-07-20
+
+### Sprint D.2 — Notification Channels ✅
+
+**Database Migration** (`20260808000000_notification_channels.sql`):
+- `push_subscriptions` table: Web Push subscription storage per user (endpoint UNIQUE, p256dh, auth, device_type, is_active)
+- RLS: user-scoped read/write/delete + service_role ALL
+- 2 RPCs: `register_push_subscription` (upsert by endpoint, auth.uid()), `unregister_push_subscription` (soft delete is_active=false)
+
+**Notification Delivery** (channels: IN_APP / PUSH / EMAIL / BROADCAST):
+- `notifyInApp` / `notifyPush` / `notifyEmail` helpers in automationEngine → enqueue to `notification_queue`
+- Push subscription register/unregister service + hooks in notifications feature (`pushSubscriptionService`, `usePushSubscription`)
+- Scheduler Edge Function extended: IN_APP → notifications table; PUSH → fetch push_subscriptions (delivery via webpush/VAPID keys — integration point); EMAIL → provider integration point
+
+**Admin Notification Composer** (`/admin/notification`):
+- Compose + enqueue notification by channel (IN_APP/PUSH/EMAIL/BROADCAST) to a user or broadcast
+- Route `/admin/notification` with sidebar Bell icon
+
+**Notes**:
+- Push/Email real delivery gated on VAPID / SMTP provider keys (out of scope); queue + retry + dead-letter machinery fully functional
+- In-App delivery active end-to-end via existing dispatchEvent
+
+### Sprint D.1 — Automation ✅
+
+**Database Migration** (`20260807000000_automation.sql`):
+- `scheduled_jobs` table: event-driven background job scheduler (job_type MISSION_SCHEDULE/CAMPAIGN_SCHEDULE/SUBSCRIPTION_GRACE/SUBSCRIPTION_EXPIRY/BROADCAST_SEND/CUSTOM), status (PENDING/CLAIMED/DONE/FAILED), run_at, attempts, max_attempts
+- `notification_queue` table: async dispatch queue with channel (IN_APP/PUSH/EMAIL/BROADCAST), status (PENDING/CLAIMED/SENT/FAILED/DEAD), attempts, max_attempts, next_retry_at
+- 9 RPCs: `create_scheduled_job`, `claim_due_jobs` (FOR UPDATE SKIP LOCKED), `mark_job_done`, `mark_job_failed` (exponential backoff or FAILED), `enqueue_notification`, `claim_notification_batch` (SKIP LOCKED), `mark_notification_sent`, `mark_notification_failed` (backoff or DEAD), `requeue_dead_notifications`
+- RLS: service_role ALL (worker-only tables)
+
+**Automation Module** (`src/features/automation/`):
+- Types: ScheduledJob, NotificationQueueItem, AutomationActionResult, enums
+- Repository: 11 RPC wrappers + direct queries for jobs/queue/dead
+- Service: scheduleJob/scheduleMission/scheduleCampaign, enqueueNotification, processDueJobs, processNotificationQueue (retry-safe), requeueDead, getters
+- Hooks: useScheduledJobs, useNotificationQueue, useDeadQueue, useScheduleJob, useEnqueueNotification, useRequeueDead, useProcessJobs, useProcessQueue
+- index.ts barrel exports
+
+**Scheduler Edge Function** (`supabase/functions/scheduler/`):
+- Worker (Deno): claims due scheduled jobs → enqueues notifications; claims notification batch → dispatches IN_APP + marks sent/failed
+- Retry-safe with dead-letter; CORS handler
+
+**Admin Automation** (`/admin/automation`):
+- 3-tab page: Scheduler | Queue | Dead Letter
+- Scheduler: job list with type/status/attempts/error
+- Queue: dispatch queue with channel/status/attempts
+- Dead Letter: failed items + "Requeue All Dead" action
+- Route `/admin/automation` with sidebar CalendarClock icon
+
+**Integration**:
+- Processors reuse existing in-app `dispatchEvent` / `notifications` table for IN_APP channel
+- No wallets, no ledger, no profiles direct queries (respects architecture rules)
+
+### Sprint C.8 — Commerce Stabilization ✅
+
+**Verification**:
+- TypeScript: PASS (`tsc --noEmit`)
+- ESLint: PASS
+- Production Build: PASS (main chunk 498 KB, AdminRoutes chunk ~640 KB)
+
+**Security Audit**:
+- All commerce/membership tables have RLS (user-scoped SELECT + service_role ALL)
+- No secrets/API keys committed; gateway uses simulated redirect URLs
+- No direct queries to profiles / wallet_summary / user_badges / user_streaks in commerce modules
+
+**Performance Audit**:
+- Fixed N+1 scan in `updateFulfillmentStatus`: replaced `getAllFulfillments().find()` with direct `getFulfillmentById(id)` repository query
+- Analytics via single aggregate RPCs (no per-row loops)
+
+**Bundle Audit**:
+- Confirmed code-splitting; commerce/subscription admin pages lazy-loaded via AdminRoutes chunk
+- Lucide icons tree-shaken per-component
+
+**Wallet Audit**:
+- All commerce debits through Wallet Ledger V2 (checkout, subscription)
+- Fixed WALLET refund gap: `commerceEngine.processRefund` now credits wallet via `walletEngine.credit` (REFUND) after atomic order/inventory/voucher restore
+- GATEWAY refunds correctly skip wallet credit
+
+**Marketplace Audit**:
+- Inventory lock (FOR UPDATE) before payment; release on failure (rollback)
+- Order state machine intact; voucher reservation uses FOR UPDATE SKIP LOCKED
+- Refund restores inventory + assigned vouchers atomically
+
+### Sprint C.5 — Voucher & Payment ✅
+
+**Database Migration** (`20260804000000_voucher_and_payment.sql`):
+- `marketplace_voucher_pool` table: voucher codes for marketplace products with status lifecycle (AVAILABLE/RESERVED/ASSIGNED/USED/EXPIRED/VOID), assigned user, TTL
+- `payment_records` table: multi-gateway payment tracking with idempotency key, payment_method enum (VXP/MIDTRANS/XENDIT/QRIS/BANK_TRANSFER/CREDIT_CARD)
+- `payment_webhook_log` table: gateway webhook audit trail
+- 8 RPCs: `reserve_marketplace_voucher` (FOR UPDATE SKIP LOCKED), `assign_marketplace_voucher`, `use_marketplace_voucher`, `refund_marketplace_voucher`, `create_payment` (idempotent), `update_payment_status` (atomic payment + order), `expire_marketplace_vouchers`
+- RLS: user-scoped reads; service_role for admin operations
+
+**Marketplace Voucher Module** (`src/features/marketplace-voucher/`):
+- Types: MarketplaceVoucher, VoucherStatus, VoucherActionResult
+- Repository: reserve/assign/use/refund RPC calls + seed/getAll/getAvailable/getUser
+- Service: requestVoucher, confirmVoucherAssignment, useVoucherCode, returnVoucher
+- 4 hooks: useMarketplaceVoucherPool, useUserMarketplaceVouchers, useAvailableMarketplaceVouchers, useRequestMarketplaceVoucher
+
+**Payment Engine** (`src/features/payment/`):
+- Types: PaymentMethod, PaymentStatus, PaymentRecord, PaymentResult, WebhookPayload
+- Repository: createPaymentRecord (idempotent via RPC), updatePaymentStatus, getByOrderId/getById/getByUser/getAllPayments
+- Service: initiatePayment (VXP = instant debit; gateway = redirect flow), processPaymentCallback (webhook), getPaymentDetail
+- 3 hooks: usePaymentByOrder, useUserPayments, useInitiatePayment
+
+**Webhook Edge Function** (`supabase/functions/payment-webhook/`):
+- POST handler with CORS, signature verification
+- Raw payload logged to `payment_webhook_log` for audit
+- Gateway status mapping → SUCCESS or FAILED
+- Atomic `update_payment_status` RPC; marks webhook as processed
+
+**Enhanced Checkout Service**:
+- `executeCheckout()` supports paymentMethod param (VXP | MIDTRANS | XENDIT | etc.)
+- VXP: instant wallet debit flow
+- Gateway: creates payment record, returns redirect_url
+- Inventory lock + rollback in both flows
+
+**Admin Payments** (`/admin/payments`):
+- 2-tab page: Payments | Vouchers
+- Payments: list by amount/method/status/gateway; SUCCESS/FAILED actions for PENDING
+- Vouchers: list by code/product/status; seed new codes, delete unassigned
+- Route `/admin/payments` with sidebar CreditCard icon
+
+### Sprint C.4 — Checkout Engine ✅
+
+**Database Migration** (`20260803000000_checkout_engine.sql`):
+- `expires_at` column on marketplace_orders (7-day cart TTL)
+- 7 RPCs: `get_cart`, `add_to_cart` (atomic upsert + auto-create DRAFT), `remove_from_cart`, `clear_cart`, `lock_inventory` (FOR UPDATE row lock), `release_inventory`, `deduct_inventory`
+- UNIQUE constraint on `marketplace_order_items(order_id, product_id)`
+
+**Feature Module** (`src/features/checkout/`):
+- `types.ts` — CartItem, Cart, CheckoutResult
+- `repositories/cartRepository.ts` — cart CRUD via RPCs
+- `repositories/checkoutRepository.ts` — inventory locking + order status management
+- `services/cartService.ts` — product validation + stock check before add_to_cart
+- `services/checkoutService.ts` — executeCheckout: validate wallet → lock inventory → set PENDING → debit wallet → set PAID → deduct inventory → set PROCESSING; full rollback
+- `hooks/useCart.ts` — 4 hooks (useCart, useAddToCart, useRemoveFromCart, useClearCart)
+- `hooks/useCheckout.ts` — useCheckout mutation with cache invalidation
+
+**Checkout Flow**:
+1. Get cart → validate wallet via economy engine
+2. Lock inventory via RPC (row-level FOR UPDATE)
+3. Set order to PENDING → debit wallet via Wallet Ledger v2
+4. Set PAID → deduct inventory → set PROCESSING
+5. On failure: release inventory + cancel order
+
+Verification:
+- TypeScript: exit 0
+- ESLint: exit 0
+- Production Build: exit 0 (main chunk 498 KB)
+
+---
+
+## 2026-07-20
+
+### Sprint C.3 — Marketplace Foundation ✅
+
+**Database Migration** (`20260802000000_marketplace_foundation.sql`):
+- `marketplace_categories` — product taxonomy with parent hierarchy, sort_order, RLS
+- `marketplace_products` — master product catalog: reward_id FK to reward_catalog, product_type enum, price, featured, images JSONB, metadata JSONB
+- `marketplace_inventory` — stock per product: total/reserved/warning/unlimited
+- `marketplace_orders` — order lifecycle (DRAFT→PENDING→PAID→PROCESSING→COMPLETED→CANCELLED→REFUNDED)
+- `marketplace_order_items` — line items with product snapshot
+- Seed: 6 default categories, existing rewards linked to marketplace_products + inventory
+
+**Feature Module** (`src/features/marketplace/`):
+- `types.ts` — 7 interfaces: ProductType, OrderStatus, Product/Category/Inventory/Order/Item
+- 3 repositories (marketplace, category, inventory) with full CRUD
+- 2 services (marketplaceService, inventoryService) with merged product+stock views
+- 4 hooks (useMarketplaceProducts, useMarketplaceProduct, useMarketplaceCategories, useMarketplaceInventory)
+
+**Admin Marketplace** (`src/features/admin/marketplace/`):
+- 3-tab page (Products | Inventory | Categories) with inline CRUD
+- Products: inline edit name/price/active, create new, delete non-reward-linked
+- Inventory: inline edit stock/warning/unlimited, low-stock highlighting
+- Categories: inline edit name/order/active, create, delete
+- Route: `/admin/marketplace` with Store icon in sidebar
+- React Query with mutations + cache invalidation per tab
+
+Verification:
+- TypeScript: exit 0
+- ESLint: exit 0
+- Production Build: exit 0 (main chunk 498 KB, AdminRoutes 617 KB)
+
+---
+
+## 2026-07-20
+
+### Sprint C.2 — Wallet Ledger v2 ✅
+
+**Database Migration** (`20260801000000_wallet_ledger_v2.sql`):
+- Extended `wallet_ledger` with: `transaction_key` (UNIQUE INDEX for idempotency), `before_balance`, `after_balance`, `status` (PENDING/SUCCESS/FAILED/ROLLED_BACK/EXPIRED), `updated_at`, `rolled_back_at`, `rolled_back_by`, `metadata` (JSONB)
+- `wallet_rollbacks` table — rollback audit trail with RLS
+- 9 RPCs: `create_transaction` (PENDING entry + balance snapshot + duplicate check), `commit_transaction` (atomic SUCCESS + profile update), `fail_transaction`, `rollback_transaction` (reversal entry + audit), `retry_transaction` (FAILED → PENDING → commit), `get_transactions_admin` (paginated with filters), `check_duplicate`
+
+**Wallet Engine — Ledger-First Lifecycle**:
+- `credit()`/`debit()`: create_transaction (PENDING) → commit_transaction (SUCCESS + profile update) — atomic two-phase
+- Auto-rollback on commit failure → `fail_transaction()` called
+- `generateTransactionKey()` for deterministic idempotency keys
+
+**Fraud Protection**:
+- `transaction_key` UNIQUE INDEX prevents duplicate ledger entries
+- `create_transaction` checks duplicate before creation
+- Cannot rollback already-rolled-back; can only retry FAILED
+
+**Admin Ledger Management**:
+- `TransactionTable.tsx` — full admin table with ID, user, type, amount, before/after balance, status badge, actions
+- `useTransactions.ts` — React Query with pagination, filters, rollback/retry mutations with cache invalidation
+- `TransactionsPage.tsx` — filters bar, pagination, confirmation dialog for destructive actions
+- Retry (FAILED only), Rollback (creates reversal + audit trail)
+
+**Types Updated**:
+- `TransactionStatus` type, `CreateTransactionInput`, `AdminTransactionResult`
+- `WalletLedgerEntry` + `WalletResult` extended with v2 fields
+- `ROLLBACK` added to `WalletTransactionType`
+
+Verification:
+- TypeScript: exit 0
+- ESLint: exit 0
+- Production Build: exit 0 (main chunk 498 KB)
+
+---
+
+## 2026-07-20
+
+### Sprint C.1 — XP Economy Rules ✅
+
+**Database Migration** (`20260731000000_xp_economy_rules.sql`):
+- `xp_rules` table — 17 columns: id (UUID), slug (UNIQUE), title, source, base_xp, enabled, priority, cooldown_minutes, daily_limit, weekly_limit, monthly_limit, minimum_level, maximum_level, metadata (JSONB), created_at, updated_at + RLS + indexes
+- `xp_multipliers` table — 12 columns: id (UUID), slug (UNIQUE), title, multiplier (NUMERIC), type (global/event/vip/campaign/holiday/weekend/level), enabled, priority, start_date, end_date, conditions (JSONB), created_at, updated_at + RLS + indexes
+- `economy_settings` table — key-value config with setting_type validation
+- Seed: 31 xp_rules (19 master sources + 12 milestones + 8 achievements), 4 multipliers, 5 settings
+- RPCs: `admin_update_xp_rule` (partial update by slug), `admin_update_multiplier` (partial update by slug)
+
+**Economy Engine — `calculateXP()`**:
+- `sources.ts` — `XP_FALLBACKS` registry (19 entries), `getFallbackXP()`, `XP_SOURCE_LABELS`
+- `multiplierEngine.ts` — `computeMultiplier()` chains Global → Event → VIP → Level bonus; respects time windows (start_date/end_date); level bonus scales per-10-levels
+- `economyEngine.ts` — `calculateXP({ source, userId, context? })`: lookup rule → fallback → apply multipliers → return { baseXP, multiplier, bonus, finalXP, breakdown, fromFallback }
+- Repository: `getXpRule(slug)`, `getAllXpRules()`, `getActiveMultipliers()`, `getAllMultipliers()`, `updateXpRule()`, `updateMultiplier()`, `getEconomySetting()`
+- Hooks: `useXpRules()`, `useActiveMultipliers()`, `useAllMultipliers()`, `useCalculateXP()`
+
+**Business Module Migrations** (4 modules migrated):
+- `loginRewardEngine.ts` — `loginRewardForStreak()` now calls `calculateXP("DAILY_LOGIN")` + `calculateXP("STREAK_LOGIN")`; max capped by config
+- `MissionClaimService.ts` — mission reward calculated via `calculateXP()` based on period (MISSION_DAILY/WEEKLY/MONTHLY/COMPLETE) instead of `mission.reward`
+- `milestoneEngine.ts` — XP grant uses `calculateXP("MILESTONE_{key}")` instead of `def.reward_vxp`
+- `achievementEngine.ts` — XP grant uses `calculateXP("ACHIEVEMENT_{slug}")` instead of `item.reward_vxp`
+
+**Admin Economy UI** (3 tabs):
+- **Wallet Caps** — earning/spending caps with controlled inputs (was existing)
+- **XP Rules** — inline-editable table grouped by source category; edit base_xp + toggle enabled; save per-row
+- **Multipliers** — inline-editable table; edit multiplier value + toggle enabled; save per-row
+
+**Fallback Strategy** (per spec):
+- calculateXP() → lookup xp_rules → rule found? DB value | not found? fallback constant → continue transaction
+- Catalog values (milestoneCatalog, achievementCatalog) kept as seed data
+- `XP_FALLBACKS` ensures zero disruption if DB table not yet seeded
+
+Verification:
+- TypeScript: exit 0
+- ESLint: exit 0
+- Production Build: exit 0 (main chunk 498 KB)
+
+---
+
+## 2026-07-20
+
+### Sprint C.0 — Economy Foundation ✅
+
+**Economy Feature Module** (`src/features/economy/`) — new central orchestration layer:
+- `types.ts` — `CurrencyType` (VXP | PREMIUM), `EconomyConfig`, `SpendingLimitResult`, `BalanceSnapshot`, `EconomyResult`
+- `repositories/economyRepository.ts` — wraps 4 RPCs: `get_economy_config`, `check_spending_limit`, `log_spending`, `snapshot_balance`
+- `services/economyEngine.ts` — `validateTransaction()` (checks spending limits before debit/credit), `recordSpending()`, `loadEconomyConfig()`
+- `services/pricingEngine.ts` — `getEffectivePrice()` (base pricing), `applyQuantityPricing()` (bulk discount: 5+ = 10%, 10+ = 15%)
+- `hooks/useEconomy.ts` — `useEconomyConfig()` (5min stale), `useTransactionValidation()` (30s stale)
+- `index.ts` — barrel exports
+
+**Database migration** (`20260730000000_economy_foundation.sql`):
+- `currency_type TEXT DEFAULT 'VXP'` on `wallet_ledger` (non-breaking ADD column) + index
+- `economy_config` table — key-value store (CURRENCIES, VXP_EARNING_DAILY_CAP, VXP_SPENDING_DAILY_CAP, VXP_SPENDING_WEEKLY_CAP, VXP_SPENDING_MONTHLY_CAP, VXP_MIN_BALANCE_FOR_REDEMPTION, ECONOMY_VERSION)
+- `economy_spending_limits` table — per-user `daily/weekly/monthly` caps with unique constraint on `(user_id, currency_type, period, period_start)`
+- `balance_snapshots` table — daily balance snapshots for analytics
+- 5 RPCs: `get_economy_config`, `check_spending_limit` (validates proposed spend against all 3 periods), `log_spending` (upserts period tracking), `snapshot_balance`, `admin_update_economy_config`
+- All tables have RLS: authenticated SELECT own, service_role write
+- Seed data: default caps (daily earn 200, daily spend 500, weekly 2000, monthly 8000, min balance 100)
+
+**Wallet Integration**:
+- `walletEngine.ts` — `credit()` and `debit()` now call `validateTransaction()` before executing
+- Debit: spending limit check + `recordSpending()` on success
+- Credit: earning cap validation
+- Non-breaking: economy engine failures log warning, transaction continues if validation unavailable
+
+**Admin Economy Dashboard** (`src/features/admin/economy/`):
+- `api/economy.ts` — `getAdminEconomyConfig()`, `updateEconomyConfig()` via RPC
+- `hooks/useAdminEconomy.ts` — React Query with mutation + cache invalidation
+- `pages/EconomyPage.tsx` — admin UI for managing earning caps, spending limits, min balance with validation
+- Route: `/admin/economy` with Coins icon in sidebar
+
+Verification:
+- TypeScript: exit 0
+- ESLint: exit 0
+- Production Build: exit 0 (main chunk 497 KB)
+
+---
+
+## 2026-07-20
+
+### Sprint B.1 — Canonical Migration Finalization
+
+**Campaign** ✅ — Zero direct user table queries (no changes needed).
+
+**Referral** ✅ — Migrated referral_code reads to CanonicalUser:
+- `src/pages/ProfilePage.tsx` — Added `useCanonicalUser()` for referral_code display; referral link and referral section now read from CanonicalUser instead of `useProfile()`
+- Referral data (`referral_code`, `referred_by`) now sourced exclusively through CanonicalUser
+
+**Achievement** ✅ — Migrated Retention module to use CanonicalUser + repositories:
+- `src/features/retention/services/metricReader.ts` — Replaced direct `supabase.from("user_streaks")` with `streakRepository.getStreak()` for `current_streak` metric
+- `src/features/retention/hooks/useStreak.ts` — Replaced direct `supabase.from("user_streaks")` with `streakRepository.getStreak()`
+- `src/features/retention/hooks/useAchievements.ts` — Replaced direct `supabase.from("user_achievements").select("*, achievements (*)")` with `achievementRepository.getEarnedAchievements()` + `getCatalog()`
+- Zero direct queries to `user_streaks`, `user_badges`, `profiles`, `wallet_summary` in retention business layer
+
+**Leaderboard** ✅ — Already compliant (no changes needed):
+- Zero direct queries to `profiles`, `wallet_summary`, `user_badges`, `user_streaks` di frontend
+- Semua data melalui Edge Function `supabase.functions.invoke("leaderboard")`
+- Zero duplicate cache (`useProfile`, `useWallet`, `useBadges` tidak digunakan)
+- Arsitektur sudah sesuai 6-layer flow
+- Catatan: `rankCalculator.ts` dead code (tidak dipakai UI), beberapa field type dead (`current_streak`, `mission_completed`, `referral_count`, `listening_minutes`)
+
+**Notification** ✅ — Already compliant (no changes needed):
+- Zero direct queries to `profiles`, `wallet_summary`, `user_badges`, `user_streaks`
+- Repository hanya mengakses `notifications` table
+- Zero duplicate cache (`useProfile`, `useWallet`, `useBadges` tidak digunakan)
+- Module menggunakan Zustand + Context (bukan React Query)
+- Notifikasi tidak menyimpan atau menampilkan data user (display_name, avatar_url)
+
+**Inventory** ✅ — Already compliant (no changes needed):
+- Zero direct queries to `profiles`, `wallet_summary`, `user_badges`, `user_streaks`
+- Repository hanya mengakses `reward_inventory` + `reward_inventory_ledger`
+- Inventory Engine tidak membutuhkan data user (murni operasi stok)
+- Redeem Engine sudah pakai `getCanonicalUser()` untuk validasi user
+- Zero duplicate cache. Query keys: `["inventory"]`, `["inventory", rewardId]`
+
+**Analytics** ✅ — Already compliant (no changes needed):
+- Zero direct queries to `profiles`, `wallet_summary`, `user_badges`, `user_streaks` di analytics frontend
+- Semua analytics via Edge Function (`admin-analytics`, `reward-analytics`, `campaign-analytics`, `admin-dashboard`)
+- Satu-satunya frontend direct query: `campaignStatsRepository` — tapi hanya ke business tables (`missions_progress`, `mission_completions`, `campaigns`, `campaign_rewards`)
+- Zero duplicate cache (`useProfile`, `useWallet`, `useBadges` tidak digunakan)
+
+### Sprint B.1 — Canonical Migration COMPLETE 🎉
+
+**Final Canonical Audit** — Hasil scan seluruh `src/`:
+
+| Table | Remaining Direct Query | Valid? |
+|-------|----------------------|--------|
+| `profiles` | 6 (5 di profileRepository, 1 di pilotConfig) | ✅ — repository layer + pilot exception |
+| `wallet_summary` | 0 | ✅ |
+| `user_badges` | 3 (1 di userCanonicalService, 2 di badgeRepository) | ✅ — canonical builder + repository |
+| `user_streaks` | 3 (1 di userCanonicalService, 2 di streakRepository) | ✅ — canonical builder + repository |
+
+**Zero business module violations.** Semua modul sudah menggunakan CanonicalUser.
+
+---
+
+## 2026-07-18
+
+### Sprint 14.95B — Canonical User Service (Phase B)
+
+**Single Source of Truth** — CanonicalUser now merges 4 data sources:
+
+- `profiles` (identity, vxp, social, referral)
+- `wallet_summary` (current_vxp + lifetime_vxp → `wallet` field)
+- `user_badges` → `badges: UserBadge[]`
+- `user_streaks` → `streaks: UserStreak[]`
+
+**New files / changes**:
+- `src/features/profile/types/canonical.ts` — `CanonicalUser` extended: `wallet`, `badges`, `streaks`, `created_at`, `birthday`, `gender`, `favorite_program`, `favorite_music`, `referred_by`
+- `src/features/profile/services/userCanonicalService.ts` — `getCanonicalUser` fetches profiles + badges + streaks in parallel; `refreshCanonicalUser()` invalidates cache; logging added: `[CANONICAL USER] loaded`, `[CANONICAL USER] refreshed`
+- `src/features/profile/hooks/useCanonicalUser.ts` — React Query cache by user id (`["canonical-user", id]`), `staleTime: 5min`, logging: `[CANONICAL USER] cache hit`
+
+**Engines replaced to consume CanonicalUser** (no business logic changed):
+- Mission Engine: `milestoneEngine.ts`, `metricReader.ts` (already on CanonicalUser)
+- Reward Engine: `redeemEngine.ts`, `walletValidationService.ts` — `walletValidationService` now uses `canonical.badges` instead of separate `getBadges` query (removed duplicate)
+- Wallet Engine: `walletEngine.balance()` now sourced from `getCanonicalUser` instead of `getWalletBalance` RPC
+- Admin User Detail: `UserDetailPage.tsx` — profile display (Identity, Profile, Social, Referral, Admin Actions) now sourced from `useCanonicalUser(id)`; stats/transactions still from admin edge function; admin mutations refetch both queries
+
+Verification:
+- TypeScript check: exit 0
+- Production build: exit 0 (main chunk 497 KB)
+- ESLint: exit 0
+
+---
+
+## 2026-07-18
+
+### Sprint 14.95 — Performance Refactor (Bundle Optimization)
+
+**Route-based code splitting** — all page components converted to `React.lazy()` + `Suspense` in `src/routes/AppRoutes.tsx`:
+- Public routes (Programs, Announcers, Schedule, Live, Plus, Search, Notifications, Promo, Missions, Reward, Leaderboard, Campaigns) lazy-loaded
+- `AdminRoutes` lazy-loaded — recharts/admin modules no longer in main bundle
+- `DeveloperMissionSandbox` lazy-loaded
+- Added `Lazy` Suspense wrapper component with spinner fallback
+
+**Bundle results** (from `npm run build`):
+- Main chunk: **1,983 KB → 496 KB** (gzip 153 KB) ✅ under 900 KB target
+- `LiveStudioPage` (hls.js): 526 KB — lazy, only on `/live`
+- `AdminRoutes` (recharts): 579 KB — lazy, only on `/admin/*`
+- `supabase`: 203 KB — lazy via dynamic import
+
+### Deployment Stabilization ✅
+
+- `wrangler.jsonc` — Wrangler v4 format: `assets.directory: ./dist`, `not_found_handling: single-page-application`
+- `wrangler: ^4.107.0` in package.json
+- Release pipeline: `npm run deploy` = `npm run build && wrangler deploy`
+
+### Canonical User Service ✅ (verified)
+
+- `src/features/profile/services/userCanonicalService.ts` — `getCanonicalUser`, `getCanonicalUserByReferralCode`
+- `src/features/profile/types/canonical.ts` — `CanonicalUser` type
+- `src/features/profile/hooks/useCanonicalUser.ts` — `useCanonicalUser` hook
+- Consumed by: useUserVXP, walletValidationService, redeemEngine, milestoneEngine, metricReader, ProfileValidator, ReferralValidator, AuthProvider
+
+### Admin User Detail ✅ (verified)
+
+- `src/features/admin/users/pages/UserDetailPage.tsx` — Identity, Profile, Social Media, Referral, Wallet/Stats, Recent XP Transactions, Admin Actions (Ban, Unban, Delete, Adjust VXP)
+- `AdminUser` type: birthday, favorite_music, referred_by, social media fields, profile_completed
+- `admin-user-actions` edge function for ban/unban/delete/adjust_vxp
+
+### Mission / Reward Stabilization ✅ (verified)
+
+- Feature flags: `src/features/flags/index.ts` (mission/reward `public_enabled: false`)
+- `ComingSoon` + `FeatureGuard` components
+- MorePage, QuickAccess, HomePage (MissionWidget), AppRoutes guarded
+
+Verification:
+- TypeScript check: exit 0
+- Production build: exit 0
+- ESLint: exit 0
+
+---
+
 ## 2026-07-18
 
 ### RC-1 — Release Candidate v1.0

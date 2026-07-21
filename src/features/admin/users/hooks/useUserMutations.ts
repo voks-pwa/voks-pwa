@@ -38,3 +38,67 @@ export function useUpdateUserRole() {
     },
   });
 }
+
+export async function banUser(userId: string, actorId?: string) {
+  const { error } = await supabase.functions.invoke("admin-user-actions", {
+    body: { action: "ban", userId, actorId },
+  });
+  if (error) throw error;
+}
+
+export async function unbanUser(userId: string, actorId?: string) {
+  const { error } = await supabase.functions.invoke("admin-user-actions", {
+    body: { action: "unban", userId, actorId },
+  });
+  if (error) throw error;
+}
+
+export async function deleteUser(userId: string, actorId?: string) {
+  const { error } = await supabase.functions.invoke("admin-user-actions", {
+    body: { action: "delete", userId, actorId },
+  });
+  if (error) throw error;
+}
+
+export async function adjustUserVxp(userId: string, amount: number, reason: string, actorId?: string) {
+  const { error } = await supabase.functions.invoke("admin-user-actions", {
+    body: { action: "adjust_vxp", userId, amount, reason, actorId },
+  });
+  if (error) throw error;
+}
+
+export function useBanUser() {
+  const { data: profile } = useProfile();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      await banUser(userId, profile?.id);
+    },
+  });
+}
+
+export function useUnbanUser() {
+  const { data: profile } = useProfile();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      await unbanUser(userId, profile?.id);
+    },
+  });
+}
+
+export function useDeleteUser() {
+  const { data: profile } = useProfile();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      await deleteUser(userId, profile?.id);
+    },
+  });
+}
+
+export function useAdjustVxp() {
+  const { data: profile } = useProfile();
+  return useMutation({
+    mutationFn: async ({ userId, amount, reason }: { userId: string; amount: number; reason: string }) => {
+      await adjustUserVxp(userId, amount, reason, profile?.id);
+    },
+  });
+}

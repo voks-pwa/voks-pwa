@@ -3,6 +3,7 @@ import { useCampaign } from "@/features/campaigns/hooks/useCampaigns";
 import { CampaignDetail } from "@/features/campaigns/components/CampaignDetail";
 import { CampaignListSkeleton } from "@/features/campaigns/components/CampaignSkeleton";
 import { CampaignEmptyState } from "@/features/campaigns/components/CampaignEmptyState";
+import { MissionCard } from "@/features/missions/components/MissionCard";
 
 export function CampaignDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -16,5 +17,12 @@ export function CampaignDetailPage() {
     return <CampaignEmptyState />;
   }
 
-  return <CampaignDetail campaign={campaign} />;
+  return (
+    <CampaignDetail
+      campaign={campaign}
+      renderMissionCard={(mission, progress) => (
+        <MissionCard mission={mission as never} progress={progress as never} />
+      )}
+    />
+  );
 }

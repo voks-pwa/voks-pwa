@@ -10,14 +10,16 @@ import type {
 import { supabase } from "@/lib/supabase";
 
 import { getProfile } from "@/features/profile";
-import { findProfileByReferralCode, updateProfileRow } from "@/features/profile/services/profileRepository";
+import { updateProfileRow } from "@/features/profile/services/profileRepository";
 
 import { AuthContext } from "./AuthContext";
+import { processReferralAfterLogin } from "./authService";
 
 import {
   subscribeAction,
   missionConsumer,
   retentionConsumer,
+  track,
 } from "@/core/action-engine";
 
 import { notificationConsumer } from "@/features/notifications/services/notificationSubscriber";
@@ -28,45 +30,6 @@ import {
 } from "@/features/missions/services/missionScheduler";
 
 import { bootstrapRetention } from "@/features/retention";
-
-import { track } from "@/core/action-engine";
-
-import { getReferralCode, clearReferralCode } from "@/lib/referralStorage";
-
-async function processReferralAfterLogin(userId: string) {
-  const refCode = getReferralCode();
-  if (!refCode) return;
-
-  clearReferralCode();
-
-  try {
-    const referrer = await findProfileByReferralCode(refCode);
-
-    if (!referrer || referrer.id === userId) return;
-
-    await updateProfileRow(userId, { referred_by: referrer.id });
-
-    const { count: existingCount } = await supabase
-      .from("referrals")
-      .select("*", { count: "exact", head: true })
-      .eq("referrer_id", referrer.id);
-
-    if (!existingCount) {
-      await supabase.from("referrals").insert({
-        referrer_id: referrer.id,
-        reward_granted: false,
-      });
-    }
-
-    track("REFERRAL_SUCCESS", referrer.id, {
-      referrer_id: referrer.id,
-      referred_id: userId,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err) {
-    console.error("[REFERRAL] processing failed:", err);
-  }
-}
 
 async function syncAuthProfile(authUser: User) {
   try {
@@ -191,11 +154,13 @@ export function AuthProvider({
     } =
       supabase.auth.onAuthStateChange(
 
-        async (_event, session) => {
+        async (event: string, session) => {
 
-          setUser(
-  session?.user ?? null
-);
+  const newUser = session?.user ?? null;
+  setUser((prev) => {
+    if (prev?.id === newUser?.id) return prev;
+    return newUser;
+  });
 
  if (session?.user) {
 
@@ -203,7 +168,7 @@ export function AuthProvider({
      "redirectAfterLogin"
    );
 
-    if (_event === "SIGNED_IN") {
+    if (event === "SIGNED_IN") {
       track("USER_LOGIN", session.user.id, {
         at: new Date().toISOString(),
       });

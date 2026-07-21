@@ -12,6 +12,7 @@
     "lint": "eslint .",
     "preview": "npm run build && wrangler dev",
     "generate:icons": "node scripts/generate-pwa-icons.mjs",
+    "prototype:mission": "npx tsx src/features/missions/prototype/tui.ts",
     "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
@@ -22,6 +23,8 @@
     "axios": "^1.18.1",
     "hls.js": "^1.6.16",
     "lucide-react": "^1.20.0",
+    "pdf-parse": "^2.4.5",
+    "pdfjs-dist": "^6.1.200",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-icons": "^5.6.0",

@@ -1,6 +1,6 @@
 export const featureFlags = {
-  mission: { public_enabled: false },
-  reward: { public_enabled: false },
+  mission: { public_enabled: true },
+  reward: { public_enabled: true },
   admin: { public_enabled: true },
   campaign: { public_enabled: true },
   leaderboard: { public_enabled: true },
@@ -13,3 +13,5 @@ export type FeatureKey = keyof typeof featureFlags;
 export function isFeatureEnabled(feature: FeatureKey): boolean {
   return featureFlags[feature].public_enabled;
 }
+
+export { useIsFeatureEnabled } from './useIsFeatureEnabled'

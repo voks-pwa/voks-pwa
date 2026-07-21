@@ -35,22 +35,35 @@ Read AI/ docs in this sequence before coding:
 ## Key conventions
 
 - **Path alias**: `@/` → `src/`
-- **Import order**: React → third-party → `@/lib` → `@/features` → relative
+- **Import order**: React → third-party → `@/lib` → `@/core` → `@/features` → `@/hooks` → `@/components` → relative
 - **Types**: per-feature `types.ts`, never redefine in components
 - **No `any`** — use `unknown` for unparsed data
 - **Tailwind only**, **Lucide icons**, **async/await**, **function components only**
-- Feature folders use: `components/`, `hooks/`, `services/`, `repositories/`, `types.ts` (add `engine/` for complex flows)
+- Feature folders use: `components/`, `hooks/`, `services/`, `repositories/`, `types.ts` (add `engine/` for complex flows). Admin features may use `api/` as an alternative to `repositories/`.
 - Edge Functions: `npm:@supabase/supabase-js@2` (Deno import), JSR deps in `supabase/functions/deno.json`
 - VS Code: Deno extension enabled only for `supabase/functions`
 
 ## Gotchas
 
-- **Known build errors** exist in Broadcast, Missions, Rewards, Leaderboard modules — pre-existing, do not assume breakage from your changes
 - **Swiper + Vite**: if "Invalid hook call" appears, clear `node_modules/.vite` and verify `optimizeDeps.include` in `vite.config.ts` has `react`, `react-dom`, `swiper/react`, `swiper/modules`
 - **PWA dev build** generates `dev-dist/` (alongside `dist/` for production)
 - **No test framework** is configured — verify changes by `npm run check && npm run build`
 - **`verbatimModuleSyntax`** is on — use `import type` for type-only imports
 - **Supabase env**: `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` in `.env` (or `.env.local`)
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical roles, each with its default label name. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context — one `CONTEXT.md` + `docs/adr/` at the root. See `docs/agents/domain.md`.
 
 ## Session close-out
 

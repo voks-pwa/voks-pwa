@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/features/auth/useAuth'
+import { useCanonicalUser } from '@/features/profile/hooks/useCanonicalUser'
 import { useProfile } from '@/features/profile/hooks/useProfile'
 import { useUpdateProfile } from '@/features/profile/hooks/useUpdateProfile'
 import { useProfileStore } from '@/stores/profile-store'
 import { calculateProfileCompletion } from '@/features/profile/utils/profileCompletion'
 import { ArrowLeft, LogOut, Camera, Loader2 } from 'lucide-react'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { useNavigate } from 'react-router-dom'
 import { getUserRank } from '@/lib/getUserRank'
 import { calculateLevel } from "@/features/xp/utils/level"
@@ -94,7 +96,8 @@ function getAvatarSrc(profileAvatar: string | null, userMetadata: Record<string,
 export function ProfilePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { data: profile, refetch } = useProfile()
+  const { data: profile, refetch, isLoading: profileLoading } = useProfile()
+  const { data: canonical, isLoading: canonicalLoading } = useCanonicalUser()
   const { mutateAsync: saveProfileMutation, isPending: isMutating } = useUpdateProfile()
 
   const { isSaving, setSaving, setDirty } = useProfileStore()
@@ -126,7 +129,7 @@ export function ProfilePage() {
   const rank = getUserRank(profile?.lifetime_vxp ?? 0)
   const lifetime = profile?.lifetime_vxp ?? 0
   const levelData = calculateLevel(lifetime)
-  const referralLink = `${window.location.origin}/login?ref=${profile?.referral_code ?? ''}`
+  const referralLink = `${window.location.origin}/login?ref=${canonical?.referral_code ?? ''}`
 
   const progressPercent =
     rank.max === Infinity ? 100
@@ -253,6 +256,24 @@ export function ProfilePage() {
     )
   }
 
+  if (profileLoading || canonicalLoading) {
+    return (
+      <div className="space-y-6 p-4">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-10 rounded-full" />
+          <Skeleton className="h-5 w-20" />
+        </div>
+        <div className="flex flex-col items-center gap-3">
+          <Skeleton className="h-24 w-24 rounded-full" />
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-4 w-60" />
+        </div>
+        <Skeleton className="h-32 w-full rounded-3xl" />
+        <Skeleton className="h-48 w-full rounded-3xl" />
+      </div>
+    )
+  }
+
   const saving = isSaving || isMutating
 
   return (
@@ -363,7 +384,7 @@ export function ProfilePage() {
           </div>
         </div>
 
-        {profile?.referral_code && (
+        {canonical?.referral_code && (
           <div className="rounded-2xl bg-white/10 border border-white/5 p-4 mt-5 backdrop-blur-sm">
             <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">Referral Link</p>
             <p className="mt-1.5 break-all text-xs font-medium text-white/90 bg-black/10 p-2.5 rounded-xl border border-black/5 select-all">

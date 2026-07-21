@@ -18,7 +18,9 @@ export type { NotificationContextValue } from "./context/NotificationContextValu
 export { useNotifications } from "./hooks/useNotifications";
 export { useNotificationBadge } from "./hooks/useNotificationBadge";
 
-export { NotificationCenter } from "./components/NotificationCenter";
+export { registerPush, unregisterPush, listMyPushSubscriptions, registerBrowserPush } from "./services/pushSubscriptionService";
+export type { PushSubscriptionRecord } from "./repositories/pushSubscriptionRepository";
+export { useMyPushSubscriptions, useRegisterPush, useUnregisterPush, useRegisterBrowserPush } from "./hooks/usePushSubscription";
 export { NotificationBadge } from "./components/NotificationBadge";
 export { NotificationList } from "./components/NotificationList";
 export { NotificationCard } from "./components/NotificationCard";

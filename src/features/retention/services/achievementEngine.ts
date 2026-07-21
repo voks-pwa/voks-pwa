@@ -6,14 +6,8 @@ import {
 import { readMetric } from "./metricReader";
 import { grantReward } from "@/core/reward-engine";
 import { track } from "@/core/action-engine/engine";
+import { calculateXP } from "@/features/economy/services/economyEngine";
 
-/**
- * Evaluates all active achievements for a user based on current metric values.
- * Achievements are completed when progress >= target. On completion the
- * Badge Engine grants a permanent badge and the Reward Engine awards XP.
- *
- * Pure event consumer — never reads UI or React state.
- */
 export async function evaluateAchievements(userId: string): Promise<void> {
   const catalog = await getCatalog();
   const earned = await getEarnedAchievements(userId);
@@ -38,10 +32,19 @@ export async function evaluateAchievements(userId: string): Promise<void> {
       continue;
     }
 
+    const calc = completed
+      ? await calculateXP({
+          source: `ACHIEVEMENT_${item.slug}`,
+          userId,
+          context: { trigger_type: item.trigger_type, target_value: item.target_value },
+        })
+      : null;
+    const amount = calc?.finalXP ?? 0;
+
     await upsertUserAchievement(userId, item.id, {
       progress,
       earned_at: completed ? new Date().toISOString() : new Date(0).toISOString(),
-      reward_vxp: completed ? item.reward_vxp : 0,
+      reward_vxp: amount,
     });
 
     if (completed) {
@@ -49,7 +52,7 @@ export async function evaluateAchievements(userId: string): Promise<void> {
         userId,
         source: "achievement",
         referenceId: item.slug,
-        amount: item.reward_vxp,
+        amount,
         reason: `Achievement: ${item.title}`,
         badge: {
           badge_key: item.slug,
@@ -65,7 +68,7 @@ export async function evaluateAchievements(userId: string): Promise<void> {
       track("ACHIEVEMENT_UNLOCK", userId, {
         slug: item.slug,
         title: item.title,
-        reward_vxp: item.reward_vxp,
+        reward_vxp: amount,
       });
     }
   }

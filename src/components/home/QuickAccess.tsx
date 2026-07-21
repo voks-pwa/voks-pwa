@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Radio, Mic2, Calendar, Gift, Clock } from "lucide-react";
-import { isFeatureEnabled } from "@/features/flags";
+import { useIsFeatureEnabled } from "@/features/flags";
 
 const links = [
   { to: "/programs", icon: Radio, label: "Programs" },
@@ -10,7 +10,7 @@ const links = [
 ];
 
 export function QuickAccess() {
-  const rewardEnabled = isFeatureEnabled("reward");
+  const rewardEnabled = useIsFeatureEnabled("reward");
 
   return (
     <div className="grid grid-cols-4 gap-3">

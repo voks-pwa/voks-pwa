@@ -416,9 +416,84 @@ enabled = true
 [functions.xp-transaction]
 enabled = true
 verify_jwt = false
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
 entrypoint = "./functions/xp-transaction/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/xp-transaction/*.html" ]
+
+[functions.admin-dashboard]
+enabled = true
+verify_jwt = false
+
+[functions.admin-feature-flags]
+enabled = true
+verify_jwt = false
+
+[functions.admin-users]
+enabled = true
+verify_jwt = false
+
+[functions.admin-user-detail]
+enabled = true
+verify_jwt = false
+
+[functions.admin-user-actions]
+enabled = true
+verify_jwt = false
+
+[functions.admin-rewards]
+enabled = true
+verify_jwt = false
+
+[functions.admin-reward-update]
+enabled = true
+verify_jwt = false
+
+[functions.admin-update-redemption]
+enabled = true
+verify_jwt = false
+
+[functions.admin-missions]
+enabled = true
+verify_jwt = false
+
+[functions.admin-mission-update]
+enabled = true
+verify_jwt = false
+
+[functions.admin-campaign-update]
+enabled = true
+verify_jwt = false
+
+[functions.admin-settings]
+enabled = true
+verify_jwt = false
+
+[functions.admin-broadcast]
+enabled = true
+verify_jwt = false
+
+[functions.admin-broadcast-wp]
+enabled = true
+verify_jwt = false
+
+[functions.admin-analytics]
+enabled = true
+verify_jwt = false
+
+[functions.system-health]
+enabled = true
+verify_jwt = false
+
+[functions.reward-analytics]
+enabled = true
+verify_jwt = false
+
+[functions.leaderboard]
+enabled = true
+verify_jwt = false
+
+[functions.campaign-analytics]
+enabled = true
+verify_jwt = false
+
+[functions.recommendation-engine]
+enabled = true
+verify_jwt = false

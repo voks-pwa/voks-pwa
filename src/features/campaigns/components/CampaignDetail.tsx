@@ -1,6 +1,6 @@
+import type { ReactNode } from "react";
 import { ArrowLeft, CalendarDays, Megaphone, Trophy, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { MissionCard } from "@/features/missions/components/MissionCard";
 import type { CampaignView } from "../services/campaignService";
 import { Countdown } from "./Countdown";
 import { StatusBadge } from "./StatusBadge";
@@ -31,7 +31,7 @@ function formatDuration(
  * `campaign_slug`; all mission state is rendered from the Mission Engine.
  * Campaign never computes XP, progress, or rewards itself.
  */
-export function CampaignDetail({ campaign }: { campaign: CampaignView }) {
+export function CampaignDetail({ campaign, renderMissionCard }: { campaign: CampaignView; renderMissionCard?: (mission: unknown, progress?: unknown) => ReactNode }) {
   const navigate = useNavigate();
   const { state, isLoading: missionsLoading } = useCampaignMissions(
     campaign.slug,
@@ -152,11 +152,12 @@ export function CampaignDetail({ campaign }: { campaign: CampaignView }) {
         ) : (
           <div className="mt-4 space-y-3">
             {state.missions.map((mission) => (
-              <MissionCard
-                key={mission.id}
-                mission={mission}
-                progress={state.progressByMission.get(mission.id)}
-              />
+              renderMissionCard ? renderMissionCard(mission, state.progressByMission.get(mission.id)) : (
+                <div key={mission.id} className="rounded-2xl border border-gray-200 p-4 text-sm">
+                  <p className="font-bold">{mission.title}</p>
+                  <p className="text-xs text-gray-500">Mission #{mission.id}</p>
+                </div>
+              )
             ))}
           </div>
         )}

@@ -3,6 +3,7 @@ import { getMilestones, grantMilestone } from "../repositories/milestoneReposito
 import { MILESTONE_CATALOG, type MilestoneDefinition } from "./milestoneCatalog";
 import { grantReward } from "@/core/reward-engine";
 import { track } from "@/core/action-engine/engine";
+import { calculateXP } from "@/features/economy/services/economyEngine";
 import { supabase } from "@/lib/supabase";
 
 async function readMilestoneMetric(
@@ -37,7 +38,6 @@ async function readMilestoneMetric(
         .eq("user_id", userId)
         .eq("mission_id", listenMissionId())
         .maybeSingle();
-      // progress stored in seconds → hours
       return Math.floor((data?.progress ?? 0) / 3600);
     }
     case "shares": {
@@ -65,11 +65,6 @@ function listenMissionId(): number {
   return cachedListenMissionId ?? -1;
 }
 
-/**
- * Evaluates all milestones for a user. When a metric crosses a threshold
- * the milestone is earned once (UNIQUE constraint) and the Reward Engine
- * awards XP.
- */
 export async function evaluateMilestones(userId: string): Promise<void> {
   const earned = await getMilestones(userId);
   const earnedKeys = new Set(earned.map((e) => e.milestone_key));
@@ -80,11 +75,18 @@ export async function evaluateMilestones(userId: string): Promise<void> {
     const value = await readMilestoneMetric(def.metric, userId);
     if (value < def.threshold) continue;
 
+    const calc = await calculateXP({
+      source: `MILESTONE_${def.key}`,
+      userId,
+      context: { metric: def.metric, threshold: def.threshold },
+    });
+    const amount = calc.finalXP;
+
     const guard = await grantReward({
       userId,
       source: "milestone",
       referenceId: def.key,
-      amount: def.reward_vxp,
+      amount,
       reason: `Milestone: ${def.name}`,
     });
 
@@ -95,13 +97,13 @@ export async function evaluateMilestones(userId: string): Promise<void> {
       milestone_name: def.name,
       metric: def.metric,
       threshold_value: def.threshold,
-      reward_vxp: def.reward_vxp,
+      reward_vxp: amount,
     });
 
     track("MILESTONE_UNLOCK", userId, {
       key: def.key,
       name: def.name,
-      reward_vxp: def.reward_vxp,
+      reward_vxp: amount,
     });
   }
 }

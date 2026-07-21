@@ -1,187 +1,265 @@
-Sprint 8.8 — Mission Engine Stabilization
+# VOKS NEXT — CURRENT TASK EXECUTION PROMPT
 
-Read
+## Context
 
-AI/168_MISSION_ENGINE_STABILIZATION.md
+Anda adalah Senior Software Architect untuk project **VOKS NEXT PWA**.
 
-AI/169_PROFILE_COMPLETION_SPEC.md
+Ikuti seluruh spesifikasi yang ada pada:
 
-AI/170_REFERRAL_ENGINE_VALIDATION.md
+* AI/15_CURRENT_TASK.md
+* AI/186_CANONICAL_MIGRATION_FINALIZATION.md
+* AI/187_MODULE_DEPENDENCY_GRAPH.md
+* AI/188_CANONICAL_API_RULES.md
+* AI/189_CANONICAL_MIGRATION_CHECKLIST.md
 
-AI/171_PROFILE_MEDIA_STORAGE.md
+Semua keputusan harus mengikuti dokumen tersebut.
 
-AI/172_WALLET_REWARD_TRACEABILITY.md
+---
 
-AI/15_CURRENT_TASK.md
+# OBJECTIVE
 
-Implement the following:
+Melanjutkan Phase B:
 
-================================================
+## Sprint B.1 — Canonical Migration Finalization
 
-PROFILE COMPLETION
+Target sprint ini adalah menyelesaikan migrasi seluruh Business Module agar hanya menggunakan **CanonicalUserService**.
 
-================================================
+CanonicalUser sekarang merupakan **Single Source of Truth**.
 
-Profile Complete MUST use:
+Business Module tidak boleh lagi mengakses:
 
-Mandatory Basic Information
+* profiles
+* wallet_summary
+* user_badges
+* user_streaks
 
-- Full Name
-- Display Name
-- Phone Number
-- Birthday
-- Gender
-- Province
-- City
-- Favorite Program
-- Favorite Music
+secara langsung.
 
-Mandatory Social
+Semua modul WAJIB menggunakan:
 
-- Instagram
-- TikTok
+* getCanonicalUser()
+* useCanonicalUser()
 
-Optional
+---
 
-- Facebook
-- Youtube
-- Threads
-- Website
+# PRIORITY ORDER
 
-Optional fields MUST NOT affect profile completion.
+Kerjakan satu modul sampai selesai sebelum lanjut ke modul berikut.
 
-Complete Profile Mission
+Urutan:
 
-Auto Complete
+1.
 
-Auto Claim
+Campaign
 
-150 VXP
+↓
 
-Only Once
+2.
 
-================================================
+Referral
 
-REFERRAL
+↓
 
-================================================
+3.
 
-Every profile must always have
+Achievement
 
-referral_code
+↓
 
-referral_url
+4.
 
-Copy Link Button
+Leaderboard
 
-Restore Referral section on Profile Page.
+↓
 
-Referral Mission must validate
+5.
 
-profiles.referred_by
+Notification
 
-AND
+↓
 
-referrals table
+6.
 
-Never award automatically.
+Inventory
 
-================================================
+↓
 
-AVATAR
+7.
 
-================================================
+Analytics
 
-Fix
+---
 
-Bucket not found.
+# FOR EACH MODULE
 
-Create / verify Storage Bucket
+Lakukan proses berikut.
 
-avatars
+## STEP 1
 
-Upload path
+Audit module.
 
-avatars/{user_id}
+Temukan:
 
-Never fail Profile Save.
+* direct Supabase query
+* duplicate query
+* duplicate cache
+* duplicate wallet lookup
+* duplicate badge lookup
 
-================================================
+---
 
-MISSION
+## STEP 2
 
-================================================
+Ganti seluruh dependency menjadi:
 
-Fix
+CanonicalUser
 
-Complete Profile Mission
+---
 
-Share Mission
+## STEP 3
 
-Referral Mission
+Hapus seluruh query lama.
 
-Mission History
+Jangan menyisakan query:
 
-Mission Progress
+```ts
+.from("profiles")
 
-================================================
+.from("wallet_summary")
 
-ACTION ENGINE
+.from("user_badges")
 
-================================================
+.from("user_streaks")
+```
 
-Fix activity_logs 400.
+di Business Layer.
 
-Audit payload.
+---
 
-Match schema.
+## STEP 4
 
-================================================
+Update React Query.
 
-STREAK
+Gunakan:
 
-================================================
+```ts
+["canonical-user", userId]
+```
 
-Verify
+sebagai cache utama.
 
-user_streaks
+Tidak boleh ada cache user lain.
 
-exists.
+---
 
-Apply migration if missing.
+## STEP 5
 
-================================================
+Testing
 
-WALLET
+Setelah satu modul selesai:
 
-================================================
+* TypeScript
+* ESLint
+* Production Build
 
-Every VXP transaction must contain
+Semua harus PASS.
 
-source_engine
+---
 
-reason
+# IMPORTANT RULES
 
-event_id
+Jangan mengubah:
 
-No anonymous rewards.
+* Reward Engine
 
-================================================
+* Mission Engine
 
-Verification
+* Wallet Engine
 
-================================================
+* Admin User Detail
 
-Run
+karena sudah stabil.
 
-npm run check
+Jangan mengubah struktur CanonicalUser.
 
-npm run build
+Jika ada field baru diperlukan, tambahkan melalui CanonicalUserService, bukan query baru.
 
-npm run lint
+---
 
-Update
+# OUTPUT FORMAT
 
-AI/17_CHANGELOG.md
+Untuk setiap modul tampilkan:
 
-Stop after Mission Engine v1.1 becomes Production Stable.
+## Audit
+
+* Temuan
+
+## Root Cause
+
+* Penyebab
+
+## Fix
+
+* File yang diubah
+
+## Verification
+
+* Build
+* TypeScript
+* ESLint
+
+## Remaining
+
+* Apa yang belum selesai
+
+---
+
+# STOP RULE
+
+Setelah satu modul selesai,
+
+BERHENTI.
+
+Jelaskan:
+
+* Mengapa solusi ini benar.
+* Dampaknya terhadap modul lain.
+* Apa yang perlu diverifikasi.
+* Tunggu approval sebelum melanjutkan ke modul berikut.
+
+Jangan mengerjakan modul berikutnya tanpa approval.
+
+---
+
+# SUCCESS CRITERIA
+
+Sprint selesai apabila:
+
+✓ Zero direct query ke profiles.
+
+✓ Zero duplicate wallet query.
+
+✓ Zero duplicate badge query.
+
+✓ Zero duplicate streak query.
+
+✓ Semua Business Module menggunakan CanonicalUser.
+
+✓ Canonical Architecture Audit lulus.
+
+✓ React Query hanya memiliki satu cache user.
+
+✓ Production build PASS.
+
+✓ Tidak ada regression pada Mission Engine maupun Reward Engine.
+
+---
+
+Sebelum mulai implementasi, jelaskan secara rinci:
+
+1. Modul mana yang akan dikerjakan terlebih dahulu.
+2. File yang diperkirakan berubah.
+3. Risiko migrasi.
+4. Cara rollback jika terjadi regression.
+
+Setelah itu tunggu approval sebelum menulis kode.

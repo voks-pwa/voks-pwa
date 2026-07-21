@@ -1,4 +1,5 @@
 import { getCanonicalUser } from "@/features/profile/services/userCanonicalService";
+import { getStreak } from "../repositories/streakRepository";
 import { supabase } from "@/lib/supabase";
 import type { AchievementMetric } from "../types";
 
@@ -47,13 +48,8 @@ export async function readMetric(
     }
 
     case "current_streak": {
-      const { data } = await supabase
-        .from("user_streaks")
-        .select("current_streak")
-        .eq("user_id", userId)
-        .eq("streak_type", "daily")
-        .maybeSingle();
-      return data?.current_streak ?? 0;
+      const streak = await getStreak(userId, "daily");
+      return streak?.current_streak ?? 0;
     }
 
     case "claimed_mission_count": {

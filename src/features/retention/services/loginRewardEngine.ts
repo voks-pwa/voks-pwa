@@ -5,26 +5,29 @@ import {
 import { recordDailyActivity } from "./streakEngine";
 import { grantReward } from "@/core/reward-engine";
 import { track } from "@/core/action-engine/engine";
+import { calculateXP, loadEconomyConfig } from "@/features/economy/services/economyEngine";
 
-/** Streak-based daily login reward. Reward grows with streak, capped. */
-export function loginRewardForStreak(streakDay: number): number {
-  if (streakDay >= 7) return 50;
-  return 10 + (streakDay - 1) * 5;
+export async function loginRewardForStreak(userId: string, streakDay: number): Promise<number> {
+  const config = await loadEconomyConfig();
+
+  const dailyCalc = await calculateXP({ source: "DAILY_LOGIN", userId, context: { streakDay } });
+  const streakCalc = await calculateXP({ source: "STREAK_LOGIN", userId, context: { streakDay } });
+
+  const value = dailyCalc.finalXP + (streakDay - 1) * streakCalc.finalXP;
+  const maxXp = config?.VXP_EARNING_DAILY_CAP ?? 200;
+
+  return Math.min(value, maxXp);
 }
 
-/**
- * Grants a daily login reward once per calendar day via the Reward Engine.
- * Also advances the daily streak. Idempotent per day.
- */
 export async function processDailyLoginReward(userId: string): Promise<void> {
   const today = new Date().toISOString().split("T")[0];
 
   const existing = await getLoginRewardForDate(userId, today);
-  if (existing) return; // already rewarded today
+  if (existing) return;
 
   const streak = await recordDailyActivity(userId);
   const streakDay = streak?.current_streak ?? 1;
-  const reward = loginRewardForStreak(streakDay);
+  const reward = await loginRewardForStreak(userId, streakDay);
 
   await recordLoginReward(userId, {
     reward_date: today,

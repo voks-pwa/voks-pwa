@@ -1,26 +1,31 @@
-export interface TransactionProfile {
-  id: string;
-  display_name: string;
-  email: string;
-  avatar_url: string | null;
-  role: string;
-  level: number;
-  badge_name: string;
-}
+export type TransactionStatus = "PENDING" | "SUCCESS" | "FAILED" | "ROLLED_BACK" | "EXPIRED";
 
 export interface AdminTransaction {
-  id: string;
+  id: number;
   user_id: string;
-
   amount: number;
-
   transaction_type: string;
-
-  reason: string;
-
-  reference_id: string | null;
-
+  source: string;
+  reference_id: string;
+  description: string;
+  transaction_key: string;
+  before_balance: number;
+  after_balance: number;
+  status: string;
   created_at: string;
+  updated_at: string | null;
+  rolled_back_at: string | null;
+}
 
-  profile: TransactionProfile | null;
+export interface AdminTransactionsResponse {
+  data: AdminTransaction[];
+  total: number;
+}
+
+export interface TransactionFilters {
+  status?: string;
+  userId?: string;
+  source?: string;
+  page?: number;
+  pageSize?: number;
 }

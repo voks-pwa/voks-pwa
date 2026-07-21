@@ -6,10 +6,9 @@ import {
   Hash, MapPin, Phone, Cake, Link,
 } from "lucide-react";
 
-import { supabase } from "@/lib/supabase";
 import { useUserDetail } from "../hooks/useUser";
-import { useUpdateUserRole } from "../hooks/useUserMutations";
-import { useProfile } from "@/features/profile/hooks/useProfile";
+import { useUpdateUserRole, useBanUser, useUnbanUser, useDeleteUser, useAdjustVxp } from "../hooks/useUserMutations";
+import { useCanonicalUser } from "@/features/profile/hooks/useCanonicalUser";
 import type { AdminUser } from "../types";
 import { showToast } from "@/components/ui/showToast";
 
@@ -17,10 +16,14 @@ export function UserDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data, isLoading, error, refetch } = useUserDetail(id);
+  const { data: canonical, refetch: refetchCanonical } = useCanonicalUser(id);
   const updateRole = useUpdateUserRole();
-  const { data: adminProfile } = useProfile();
   const [adjustAmount, setAdjustAmount] = useState("");
   const [adjustReason, setAdjustReason] = useState("");
+  const banMutation = useBanUser();
+  const unbanMutation = useUnbanUser();
+  const deleteMutation = useDeleteUser();
+  const adjustMutation = useAdjustVxp();
 
   return (
     <div className="space-y-6 p-8">
@@ -40,23 +43,23 @@ export function UserDetailPage() {
         </div>
       )}
 
-      {!isLoading && data?.profile && (
+      {!isLoading && canonical && (
         <div className="space-y-6">
           <div className="flex items-center gap-5">
             <img
               src={
-                data.profile.avatar_url ??
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(data.profile.display_name ?? "User")}&background=bda752&color=fff&size=80`
+                canonical.avatar_url ??
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(canonical.display_name ?? "User")}&background=bda752&color=fff&size=80`
               }
               className="h-20 w-20 rounded-full border-2 border-[#bda752] object-cover"
             />
             <div>
               <h2 className="text-2xl font-black">
-                {data.profile.display_name ?? "Unknown"}
+                {canonical.display_name ?? "Unknown"}
               </h2>
-              <p className="text-gray-500">{data.profile.email}</p>
+              <p className="text-gray-500">{canonical.email}</p>
               <p className="mt-1 text-xs text-gray-400">
-                Joined {new Date(data.profile.created_at).toLocaleDateString()}
+                Joined {new Date(canonical.created_at).toLocaleDateString()}
               </p>
             </div>
           </div>
@@ -67,8 +70,8 @@ export function UserDetailPage() {
               <div className="flex items-center gap-2">
                 <Shield size={14} className="text-gray-400" />
                 <select
-                  value={data.profile.role}
-                  onChange={(e) => updateRole.mutate({ id: data.profile.id, role: e.target.value as AdminUser['role'] })}
+                  value={canonical.role}
+                  onChange={(e) => updateRole.mutate({ id: canonical.id, role: e.target.value as AdminUser['role'] })}
                   className="rounded-lg border px-2 py-1 text-xs font-semibold outline-none"
                 >
                   <option value="member">Member</option>
@@ -79,63 +82,63 @@ export function UserDetailPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-5">
-              <Field label="Badge" value={data.profile.badge_name} />
-              <Field label="Level" value={`Lv.${data.profile.level}`} />
-              <Field label="Current VXP" value={data.profile.current_vxp.toLocaleString()} />
-              <Field label="Lifetime VXP" value={data.profile.lifetime_vxp.toLocaleString()} />
-              <Field label="Profile Complete" value={data.profile.profile_completed ? "Yes" : "No"} />
+              <Field label="Badge" value={canonical.badge} />
+              <Field label="Level" value={`Lv.${canonical.level}`} />
+              <Field label="Current VXP" value={canonical.current_vxp.toLocaleString()} />
+              <Field label="Lifetime VXP" value={canonical.lifetime_vxp.toLocaleString()} />
+              <Field label="Profile Complete" value={canonical.profile_completed ? "Yes" : "No"} />
             </div>
           </div>
 
           <div className="rounded-3xl bg-white p-6 shadow-sm">
             <h3 className="mb-4 font-bold">Profile</h3>
             <div className="grid grid-cols-2 gap-5">
-              <Field label="Phone" value={data.profile.phone_number} icon={<Phone size={12} />} />
-              <Field label="Birthday" value={data.profile.birthday} icon={<Cake size={12} />} />
-              <Field label="Gender" value={data.profile.gender} />
-              <Field label="Province" value={data.profile.province} icon={<MapPin size={12} />} />
-              <Field label="City" value={data.profile.city} icon={<MapPin size={12} />} />
-              <Field label="Favorite Program" value={data.profile.favorite_program} />
-              <Field label="Favorite Music" value={data.profile.favorite_music} />
+              <Field label="Phone" value={canonical.phone} icon={<Phone size={12} />} />
+              <Field label="Birthday" value={canonical.birthday} icon={<Cake size={12} />} />
+              <Field label="Gender" value={canonical.gender} />
+              <Field label="Province" value={canonical.province} icon={<MapPin size={12} />} />
+              <Field label="City" value={canonical.city} icon={<MapPin size={12} />} />
+              <Field label="Favorite Program" value={canonical.favorite_program} />
+              <Field label="Favorite Music" value={canonical.favorite_music} />
             </div>
           </div>
 
           <div className="rounded-3xl bg-white p-6 shadow-sm">
             <h3 className="mb-4 font-bold">Social Media</h3>
             <div className="grid grid-cols-2 gap-5">
-              <Field label="Instagram" value={data.profile.instagram} />
-              <Field label="TikTok" value={data.profile.tiktok} />
-              <Field label="YouTube" value={data.profile.youtube} />
-              <Field label="Facebook" value={data.profile.facebook} />
-              <Field label="Threads" value={data.profile.threads} />
-              <Field label="Website" value={data.profile.website} />
+              <Field label="Instagram" value={canonical.social.instagram} />
+              <Field label="TikTok" value={canonical.social.tiktok} />
+              <Field label="YouTube" value={canonical.social.youtube} />
+              <Field label="Facebook" value={canonical.social.facebook} />
+              <Field label="Threads" value={canonical.social.threads} />
+              <Field label="Website" value={canonical.social.website} />
             </div>
           </div>
 
           <div className="rounded-3xl bg-white p-6 shadow-sm">
             <h3 className="mb-4 font-bold">Referral</h3>
             <div className="grid grid-cols-2 gap-5">
-              <Field label="Referral Code" value={data.profile.referral_code} icon={<Hash size={12} />} />
-              <Field label="Referred By" value={data.profile.referred_by ?? "-"} icon={<Link size={12} />} />
+              <Field label="Referral Code" value={canonical.referral_code} icon={<Hash size={12} />} />
+              <Field label="Referred By" value={canonical.referred_by ?? "-"} icon={<Link size={12} />} />
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div className="rounded-2xl bg-[#F8F8F8] p-5">
               <p className="text-xs text-gray-500">Missions</p>
-              <h3 className="mt-2 text-2xl font-black">{data.stats.missionCount.toLocaleString()}</h3>
+              <h3 className="mt-2 text-2xl font-black">{data?.stats.missionCount.toLocaleString()}</h3>
             </div>
             <div className="rounded-2xl bg-[#F8F8F8] p-5">
               <p className="text-xs text-gray-500">Transactions</p>
-              <h3 className="mt-2 text-2xl font-black">{data.stats.transactionCount.toLocaleString()}</h3>
+              <h3 className="mt-2 text-2xl font-black">{data?.stats.transactionCount.toLocaleString()}</h3>
             </div>
             <div className="rounded-2xl bg-[#F8F8F8] p-5">
               <p className="text-xs text-gray-500">Redemptions</p>
-              <h3 className="mt-2 text-2xl font-black">{data.stats.redemptionCount.toLocaleString()}</h3>
+              <h3 className="mt-2 text-2xl font-black">{data?.stats.redemptionCount.toLocaleString()}</h3>
             </div>
           </div>
 
-          {data.recentTransactions.length > 0 && (
+          {data?.recentTransactions && data.recentTransactions.length > 0 && (
             <div className="rounded-3xl bg-white p-6 shadow-sm">
               <h3 className="mb-4 font-bold">Recent XP Transactions</h3>
               <div className="space-y-2">
@@ -160,16 +163,20 @@ export function UserDetailPage() {
           <div className="rounded-3xl bg-white p-6 shadow-sm">
             <h3 className="mb-4 font-bold">Admin Actions</h3>
             <div className="flex flex-wrap gap-3">
-              {data.profile.role !== "banned" ? (
+              {canonical.role !== "banned" ? (
                 <button
-                  onClick={async () => {
+                  onClick={() => {
                     if (!window.confirm("Ban this user?")) return;
-                    const { error } = await supabase.functions.invoke("admin-user-actions", {
-                      body: { action: "ban", userId: data.profile.id, actorId: adminProfile?.id },
+                    banMutation.mutate(canonical.id, {
+                      onSuccess: () => {
+                        showToast({ type: "success", title: "User banned" });
+                        refetch();
+                        refetchCanonical();
+                      },
+                      onError: (err) => {
+                        showToast({ type: "error", title: "Ban failed", message: err instanceof Error ? err.message : "Unknown error" });
+                      },
                     });
-                    if (error) { showToast({ type: "error", title: "Ban failed", message: error.message }); return; }
-                    showToast({ type: "success", title: "User banned" });
-                    refetch();
                   }}
                   className="flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-100 transition"
                 >
@@ -177,13 +184,17 @@ export function UserDetailPage() {
                 </button>
               ) : (
                 <button
-                  onClick={async () => {
-                    const { error } = await supabase.functions.invoke("admin-user-actions", {
-                      body: { action: "unban", userId: data.profile.id, actorId: adminProfile?.id },
+                  onClick={() => {
+                    unbanMutation.mutate(canonical.id, {
+                      onSuccess: () => {
+                        showToast({ type: "success", title: "User unbanned" });
+                        refetch();
+                        refetchCanonical();
+                      },
+                      onError: (err) => {
+                        showToast({ type: "error", title: "Unban failed", message: err instanceof Error ? err.message : "Unknown error" });
+                      },
                     });
-                    if (error) { showToast({ type: "error", title: "Unban failed", message: error.message }); return; }
-                    showToast({ type: "success", title: "User unbanned" });
-                    refetch();
                   }}
                   className="flex items-center gap-2 rounded-xl bg-green-50 px-4 py-2 text-sm font-bold text-green-600 hover:bg-green-100 transition"
                 >
@@ -192,14 +203,17 @@ export function UserDetailPage() {
               )}
 
               <button
-                onClick={async () => {
+                onClick={() => {
                   if (!window.confirm("Delete this user? This will anonymize their profile.")) return;
-                  const { error } = await supabase.functions.invoke("admin-user-actions", {
-                    body: { action: "delete", userId: data.profile.id, actorId: adminProfile?.id },
+                  deleteMutation.mutate(canonical.id, {
+                    onSuccess: () => {
+                      showToast({ type: "success", title: "User deleted" });
+                      navigate("/admin/users");
+                    },
+                    onError: (err) => {
+                      showToast({ type: "error", title: "Delete failed", message: err instanceof Error ? err.message : "Unknown error" });
+                    },
                   });
-                  if (error) { showToast({ type: "error", title: "Delete failed", message: error.message }); return; }
-                  showToast({ type: "success", title: "User deleted" });
-                  navigate("/admin/users");
                 }}
                 className="flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-100 transition"
               >
@@ -230,17 +244,21 @@ export function UserDetailPage() {
                   />
                 </div>
                 <button
-                  onClick={async () => {
+                  onClick={() => {
                     const amount = parseInt(adjustAmount);
                     if (isNaN(amount) || amount === 0) { showToast({ type: "error", title: "Invalid amount" }); return; }
-                    const { error } = await supabase.functions.invoke("admin-user-actions", {
-                      body: { action: "adjust_vxp", userId: data.profile.id, amount, reason: adjustReason || "Admin adjustment", actorId: adminProfile?.id },
+                    adjustMutation.mutate({ userId: canonical.id, amount, reason: adjustReason || "Admin adjustment" }, {
+                      onSuccess: () => {
+                        showToast({ type: "success", title: `VXP adjusted by ${amount}` });
+                        setAdjustAmount("");
+                        setAdjustReason("");
+                        refetch();
+                        refetchCanonical();
+                      },
+                      onError: (err) => {
+                        showToast({ type: "error", title: "Adjustment failed", message: err instanceof Error ? err.message : "Unknown error" });
+                      },
                     });
-                    if (error) { showToast({ type: "error", title: "Adjustment failed", message: error.message }); return; }
-                    showToast({ type: "success", title: `VXP adjusted by ${amount}` });
-                    setAdjustAmount("");
-                    setAdjustReason("");
-                    refetch();
                   }}
                   className="flex items-center gap-2 rounded-xl bg-[#bda752] px-4 py-2 text-sm font-bold text-white hover:bg-[#a69243] transition"
                 >
@@ -252,7 +270,7 @@ export function UserDetailPage() {
         </div>
       )}
 
-      {!isLoading && !data && (
+      {!isLoading && !canonical && (
         <div className="py-20 text-center">
           <p className="text-gray-500">User not found.</p>
           {error && (

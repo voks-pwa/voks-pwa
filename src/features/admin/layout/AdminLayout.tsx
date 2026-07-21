@@ -11,6 +11,20 @@ import {
   Megaphone,
   Settings,
   Flag,
+  Coins,
+  Store,
+  CreditCard,
+  Package,
+  Crown,
+  CalendarClock,
+  Bell,
+  Wallet,
+  FileSpreadsheet,
+  Bot,
+  BookOpen,
+  Activity,
+  ToggleLeft,
+  Shield,
 } from "lucide-react";
 
 const menus = [
@@ -60,9 +74,79 @@ const menus = [
     to: "/admin/reward-analytics",
   },
   {
+    title: "Wallet Analytics",
+    icon: Wallet,
+    to: "/admin/wallet-analytics",
+  },
+  {
+    title: "Reporting",
+    icon: FileSpreadsheet,
+    to: "/admin/reporting",
+  },
+  {
+    title: "AI & Recommendation",
+    icon: Bot,
+    to: "/admin/recommendation",
+  },
+  {
+    title: "Knowledge Base",
+    icon: BookOpen,
+    to: "/admin/knowledge",
+  },
+  {
+    title: "Economy",
+    icon: Coins,
+    to: "/admin/economy",
+  },
+  {
+    title: "Marketplace",
+    icon: Store,
+    to: "/admin/marketplace",
+  },
+  {
+    title: "Payments",
+    icon: CreditCard,
+    to: "/admin/payments",
+  },
+  {
+    title: "Commerce",
+    icon: Package,
+    to: "/admin/commerce",
+  },
+  {
+    title: "Subscription",
+    icon: Crown,
+    to: "/admin/subscription",
+  },
+  {
+    title: "Automation",
+    icon: CalendarClock,
+    to: "/admin/automation",
+  },
+  {
+    title: "Notification",
+    icon: Bell,
+    to: "/admin/notification",
+  },
+  {
     title: "Broadcast",
     icon: Megaphone,
     to: "/admin/broadcast",
+  },
+  {
+    title: "Operations",
+    icon: Activity,
+    to: "/admin/operations",
+  },
+  {
+    title: "Feature Flags",
+    icon: ToggleLeft,
+    to: "/admin/feature-flags",
+  },
+  {
+    title: "Audit Log",
+    icon: Shield,
+    to: "/admin/audit",
   },
   {
     title: "Settings",

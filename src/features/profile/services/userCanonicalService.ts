@@ -1,9 +1,47 @@
+import { supabase } from "@/lib/supabase";
 import { findProfile, findProfileByReferralCode } from "./profileRepository";
+import type { UserBadge, UserStreak } from "@/features/retention/types";
 import { getAdminPermissions } from "@/features/admin/shared/permissions";
 import type { CanonicalUser } from "../types/canonical";
 
+async function loadBadges(userId: string): Promise<UserBadge[]> {
+  const { data, error } = await supabase
+    .from("user_badges")
+    .select("*")
+    .eq("user_id", userId)
+    .order("earned_at", { ascending: true });
+
+  if (error) {
+    console.error("[CANONICAL USER] badges error", error.message);
+    return [];
+  }
+
+  return (data as UserBadge[]) ?? [];
+}
+
+async function loadStreaks(userId: string): Promise<UserStreak[]> {
+  const { data, error } = await supabase
+    .from("user_streaks")
+    .select("*")
+    .eq("user_id", userId);
+
+  if (error) {
+    console.error("[CANONICAL USER] streaks error", error.message);
+    return [];
+  }
+
+  return (data as UserStreak[]) ?? [];
+}
+
 export async function getCanonicalUser(userId: string): Promise<CanonicalUser> {
-  const profile = await findProfile(userId);
+  console.log("[CANONICAL USER] loaded", userId);
+
+  const [profile, badges, streaks] = await Promise.all([
+    findProfile(userId),
+    loadBadges(userId),
+    loadStreaks(userId),
+  ]);
+
   if (!profile) {
     throw new Error(`Profile not found for user ${userId}`);
   }
@@ -36,6 +74,18 @@ export async function getCanonicalUser(userId: string): Promise<CanonicalUser> {
       website: profile.website,
     },
     permissions: getAdminPermissions(profile.role),
+    wallet: {
+      balance: profile.current_vxp,
+      lifetime_vxp: profile.lifetime_vxp,
+    },
+    badges,
+    streaks,
+    created_at: profile.created_at,
+    birthday: profile.birthday,
+    gender: profile.gender,
+    favorite_program: profile.favorite_program,
+    favorite_music: profile.favorite_music,
+    referred_by: profile.referred_by,
   };
 }
 
@@ -43,4 +93,10 @@ export async function getCanonicalUserByReferralCode(code: string): Promise<Cano
   const profile = await findProfileByReferralCode(code);
   if (!profile) return null;
   return getCanonicalUser(profile.id);
+}
+
+export function refreshCanonicalUser(queryClient: { invalidateQueries: (opts: { queryKey: unknown[] }) => void }, userId: string | undefined) {
+  if (!userId) return;
+  console.log("[CANONICAL USER] refreshed", userId);
+  queryClient.invalidateQueries({ queryKey: ["canonical-user", userId] });
 }

@@ -8,8 +8,6 @@ import {
   Share2,
   Star,
   Bell,
-  Heart,
-  Bookmark,
   ChevronRight,
   Trophy,
   Layers,
@@ -27,11 +25,13 @@ import { Link } from 'react-router-dom'
 import { useProfile } from '@/features/profile/hooks/useProfile'
 import { useAuth } from '@/features/auth/useAuth'
 import { ProfileCard } from '@/components/ui/ProfileCard'
-import { isFeatureEnabled } from '@/features/flags'
+import { useIsFeatureEnabled } from '@/features/flags'
 
 export function MorePage() {
   const { user } = useAuth()
   const { data: profile } = useProfile()
+  const missionEnabled = useIsFeatureEnabled("mission")
+  const rewardEnabled = useIsFeatureEnabled("reward")
 
   const handleShare = async () => {
     try {
@@ -129,7 +129,7 @@ export function MorePage() {
             Membership
           </p>
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            {isFeatureEnabled("mission") ? (
+            {missionEnabled ? (
               <Link to="/missions" className={listRowItem}>
                 <div className="flex items-center gap-4">
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-500 shrink-0">
@@ -156,7 +156,7 @@ export function MorePage() {
               </div>
             )}
 
-            {isFeatureEnabled("reward") ? (
+            {rewardEnabled ? (
               <Link to="/reward-store" className={listRowItem}>
                 <div className="flex items-center gap-4">
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-xl shrink-0">
@@ -185,30 +185,7 @@ export function MorePage() {
           </div>
         </div>
 
-        {/* 4. SECTION: YOUR EXPERIENCE (GRID LAYOUT) */}
-        <div className="mb-6">
-          <p className="mb-2 px-1 text-xs font-bold uppercase tracking-wider text-gray-400">
-            Your Experience
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { icon: <Heart size={20} fill="currentColor" />, label: 'Favorite Programs', desc: 'Coming Soon', bg: 'bg-red-50', iconColor: 'text-red-500' },
-              { icon: <Mic2 size={20} />, label: 'Favorite Hosts', desc: 'Coming Soon', bg: 'bg-purple-50', iconColor: 'text-purple-500' },
-              { icon: <Bell size={20} fill="currentColor" />, label: 'My Reminders', desc: 'Coming Soon', bg: 'bg-blue-50', iconColor: 'text-blue-500' },
-              { icon: <Bookmark size={20} fill="currentColor" />, label: 'Subscriptions', desc: 'Coming Soon', bg: 'bg-emerald-50', iconColor: 'text-emerald-500' },
-            ].map((item, idx) => (
-              <div key={idx} className="rounded-2xl bg-white p-4 shadow-sm border border-gray-100 flex flex-col justify-between">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${item.bg} ${item.iconColor}`}>
-                  {item.icon}
-                </div>
-                <div className="mt-4">
-                  <p className="text-sm font-bold text-gray-800">{item.label}</p>
-                  <p className="mt-0.5 text-xs text-gray-400">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+
 
         {/* 5. SECTION: EXPLORE (GROUPED CONTAINER) */}
         <div className="mb-6">
