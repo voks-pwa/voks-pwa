@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
 import type { LivePoll } from "../types";
 import * as repo from "../repositories/liveRepository";
+import * as channelRepo from "../repositories/liveChannelRepository";
 
 export function useLivePoll(userId: string | undefined) {
   const [poll, setPoll] = useState<LivePoll | null>(null);
@@ -10,26 +10,17 @@ export function useLivePoll(userId: string | undefined) {
   useEffect(() => {
     repo.getActivePoll().then(setPoll).catch(console.error);
 
-    const channel = supabase
-      .channel("live-poll")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "live_polls" },
-        () => {
-          repo.getActivePoll().then(setPoll).catch(console.error);
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "live_poll_votes" },
-        () => {
-          repo.getActivePoll().then(setPoll).catch(console.error);
-        }
-      )
-      .subscribe();
+    const channel = channelRepo.createPollChannel(
+      () => {
+        repo.getActivePoll().then(setPoll).catch(console.error);
+      },
+      () => {
+        repo.getActivePoll().then(setPoll).catch(console.error);
+      },
+    );
 
     return () => {
-      supabase.removeChannel(channel);
+      channelRepo.removeChannel(channel);
     };
   }, []);
 

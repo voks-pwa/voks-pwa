@@ -102,6 +102,7 @@ export function VoksPlusPage() {
                       src={image}
                       alt={decodedTitle}
                       className="aspect-video w-full object-cover bg-gray-100"
+                      loading="lazy"
                     />
                   )}
 

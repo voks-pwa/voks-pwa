@@ -3,6 +3,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { imagetools } from 'vite-imagetools'
 
 export default defineConfig({
   optimizeDeps: {
@@ -11,6 +12,7 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    imagetools(),
     VitePWA({
       registerType: 'autoUpdate',
 
@@ -96,6 +98,34 @@ export default defineConfig({
               },
             },
           },
+          {
+            urlPattern: /^https:\/\/voksradio\.com\/wp-json\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'wordpress-api-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'supabase-rest-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
         ],
       },
 
@@ -105,6 +135,39 @@ export default defineConfig({
       },
     }),
   ],
+
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
+            return 'vendor-react';
+          }
+          if (id.includes('node_modules/react-router-dom')) {
+            return 'vendor-router';
+          }
+          if (id.includes('node_modules/@tanstack/react-query')) {
+            return 'vendor-query';
+          }
+          if (id.includes('node_modules/@supabase/supabase-js')) {
+            return 'vendor-supabase';
+          }
+          if (id.includes('node_modules/recharts')) {
+            return 'vendor-charts';
+          }
+          if (id.includes('node_modules/pdfjs-dist') || id.includes('node_modules/pdf-parse')) {
+            return 'vendor-pdf';
+          }
+          if (id.includes('node_modules/swiper')) {
+            return 'vendor-swiper';
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-icons';
+          }
+        },
+      },
+    },
+  },
 
   resolve: {
     alias: {

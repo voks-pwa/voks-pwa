@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react'
-
-import { getMedia } from '@/services/wordpress-api'
+import { useMedia } from '@/hooks/useMedia'
+import { OptimizedImage } from '@/components/ui/OptimizedImage'
 
 interface Props {
   imageId?: number
@@ -15,21 +14,11 @@ export function NotificationStory({
   title,
   onClick,
 }: Props) {
-  const [image, setImage] =
-    useState('')
+  const { data: media } =
+    useMedia(imageId)
 
-  useEffect(() => {
-    async function load() {
-      if (!imageId) return
-
-      const media =
-        await getMedia(imageId)
-
-      setImage(media.source_url)
-    }
-
-    load()
-  }, [imageId])
+  const image =
+    media?.source_url ?? ''
 
   return (
     <button
@@ -48,14 +37,10 @@ export function NotificationStory({
         "
       >
         {image && (
-          <img
+          <OptimizedImage
             src={image}
             alt={title}
-            className="
-              h-full
-              w-full
-              object-cover
-            "
+            className="h-full w-full object-cover"
           />
         )}
       </div>

@@ -1,3 +1,5 @@
+import { fetchCampaignAnalytics } from "../repositories/campaignAnalyticsRepository";
+
 export interface CampaignAnalytics {
   slug: string;
   missionCount: number;
@@ -23,8 +25,6 @@ export interface CampaignAnalytics {
   dailyParticipation: Array<{ date: string; count: number }>;
 }
 
-import { supabase } from "@/lib/supabase";
-
 /**
  * Read-only analytics fetch. Aggregation happens in the `campaign-analytics`
  * Edge Function (service_role). The client only reads the result — it never
@@ -33,9 +33,7 @@ import { supabase } from "@/lib/supabase";
 export async function getCampaignAnalytics(
   slug: string,
 ): Promise<CampaignAnalytics> {
-  const { data, error } = await supabase.functions.invoke("campaign-analytics", {
-    body: { slug },
-  });
+  const { data, error } = await fetchCampaignAnalytics(slug);
 
   if (error) throw error;
   if (!data?.success) {

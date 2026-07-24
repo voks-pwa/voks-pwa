@@ -1,10 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import {
-  FaInstagram,
-  FaTiktok,
-} from 'react-icons/fa'
-
-import {
+  Globe,
+  Music2,
   Mic2,
   Radio,
   ArrowRight,
@@ -172,7 +169,7 @@ export function AnnouncerDetailPage() {
                 text-white
               "
             >
-              <FaInstagram />
+              <Globe />
 
               Follow Instagram
             </a>
@@ -197,7 +194,7 @@ export function AnnouncerDetailPage() {
                 text-white
               "
             >
-              <FaTiktok />
+              <Music2 />
             </a>
           )}
 

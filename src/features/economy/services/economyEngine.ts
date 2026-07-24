@@ -3,6 +3,8 @@ import {
   checkSpendingLimit,
   logSpending,
   getXpRule,
+  getDailyEarnings,
+  getUserBalance,
 } from "../repositories/economyRepository";
 import { getCanonicalUser } from "@/features/profile/services/userCanonicalService";
 import { getFallbackXP } from "../sources";
@@ -58,6 +60,19 @@ export async function validateTransaction(
         error: `Spending limit exceeded: ${limit.wouldExceed}`,
         hasSufficientBalance: true,
         spendingLimit: limit,
+        config,
+      };
+    }
+
+    // Balance check before debit
+    const balance = await getUserBalance(userId);
+    const absAmount = Math.abs(amount);
+    if (balance < absAmount) {
+      return {
+        allowed: false,
+        error: `Insufficient balance: ${balance} < ${absAmount}`,
+        hasSufficientBalance: false,
+        spendingLimit: limit ?? undefined,
         config,
       };
     }
@@ -118,7 +133,18 @@ export async function calculateXP(input: CalculateXPInput): Promise<XpCalculatio
     userLevel,
   });
 
-  const finalXP = Math.round(baseXP * multiplierResult.finalMultiplier);
+  let finalXP = Math.round(baseXP * multiplierResult.finalMultiplier);
+
+  // Enforce daily earning cap
+  const config = await getEconomyConfig();
+  if (config) {
+    const cap = config.VXP_EARNING_DAILY_CAP;
+    const earned = await getDailyEarnings(userId);
+    const available = Math.max(0, cap - earned);
+    if (finalXP > available) {
+      finalXP = available;
+    }
+  }
 
   return {
     source,

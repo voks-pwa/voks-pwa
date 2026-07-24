@@ -58,7 +58,7 @@ export async function missionEngine({
     const autoResult = await autoClaimIfEligible(userId, mission);
 
     if (autoResult) {
-      claimResult = { ...autoResult, reward: autoResult.reward ?? mission.reward };
+      claimResult = { ...autoResult, reward: autoResult.reward ?? 0 };
       await repeatMissionIfNeeded(userId, mission);
     }
   }

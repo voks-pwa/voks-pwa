@@ -67,7 +67,7 @@ if (!self.define) {
     });
   };
 }
-define(['./workbox-970124e6'], (function (workbox) { 'use strict';
+define(['./workbox-bbbdf4d3'], (function (workbox) { 'use strict';
 
   self.skipWaiting();
   workbox.clientsClaim();
@@ -81,7 +81,7 @@ define(['./workbox-970124e6'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.u8cip1vbv64"
+    "revision": "0.16g84ia5m2o"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
@@ -94,6 +94,24 @@ define(['./workbox-970124e6'], (function (workbox) { 'use strict';
     plugins: [new workbox.ExpirationPlugin({
       maxEntries: 10,
       maxAgeSeconds: 300
+    }), new workbox.CacheableResponsePlugin({
+      statuses: [0, 200]
+    })]
+  }), 'GET');
+  workbox.registerRoute(/^https:\/\/voksradio\.com\/wp-json\/.*/i, new workbox.CacheFirst({
+    "cacheName": "wordpress-api-cache",
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 100,
+      maxAgeSeconds: 86400
+    }), new workbox.CacheableResponsePlugin({
+      statuses: [0, 200]
+    })]
+  }), 'GET');
+  workbox.registerRoute(/^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i, new workbox.StaleWhileRevalidate({
+    "cacheName": "supabase-rest-cache",
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 100,
+      maxAgeSeconds: 3600
     }), new workbox.CacheableResponsePlugin({
       statuses: [0, 200]
     })]

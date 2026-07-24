@@ -281,6 +281,7 @@ export function SearchPage() {
                               rounded-2xl
                               object-cover
                             "
+                            loading="lazy"
                           />
                         )}
 
@@ -372,6 +373,7 @@ export function SearchPage() {
                               rounded-full
                               object-cover
                             "
+                            loading="lazy"
                           />
                         )}
 
@@ -463,6 +465,7 @@ export function SearchPage() {
                               rounded-2xl
                               object-cover
                             "
+                            loading="lazy"
                           />
                         )}
 

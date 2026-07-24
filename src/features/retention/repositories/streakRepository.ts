@@ -20,6 +20,20 @@ export async function getStreak(
   return (data as UserStreak | null) ?? null;
 }
 
+export async function getStreaks(userId: string): Promise<UserStreak[]> {
+  const { data, error } = await supabase
+    .from("user_streaks")
+    .select("*")
+    .eq("user_id", userId);
+
+  if (error) {
+    console.error("[STREAK] read all error", error);
+    return [];
+  }
+
+  return (data as UserStreak[]) ?? [];
+}
+
 export async function upsertStreak(
   userId: string,
   streakType: UserStreak["streak_type"],

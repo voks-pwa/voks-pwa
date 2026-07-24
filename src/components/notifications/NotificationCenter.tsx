@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { useNotifications } from '@/hooks/useNotifications'
@@ -6,7 +7,7 @@ import {
   NotificationStory,
 } from './NotificationStories'
 
-export function NotificationCenter() {
+export const NotificationCenter = memo(function NotificationCenter() {
   const navigate = useNavigate()
 
   const { data } = useNotifications()
@@ -33,4 +34,4 @@ export function NotificationCenter() {
       </div>
     </section>
   )
-}
+})

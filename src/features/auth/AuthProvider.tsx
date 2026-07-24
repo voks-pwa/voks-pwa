@@ -9,48 +9,10 @@ import type {
 
 import { supabase } from "@/lib/supabase";
 
-import { getProfile } from "@/features/profile";
-import { updateProfileRow } from "@/features/profile/services/profileRepository";
-
 import { AuthContext } from "./AuthContext";
-import { processReferralAfterLogin } from "./authService";
-
-import {
-  subscribeAction,
-  missionConsumer,
-  retentionConsumer,
-  track,
-} from "@/core/action-engine";
-
-import { notificationConsumer } from "@/features/notifications/services/notificationSubscriber";
-
-import {
-  startMissionScheduler,
-  stopMissionScheduler,
-} from "@/features/missions/services/missionScheduler";
-
-import { bootstrapRetention } from "@/features/retention";
-
-async function syncAuthProfile(authUser: User) {
-  try {
-    const avatarUrl =
-      (authUser.user_metadata?.avatar_url as string) ??
-      (authUser.user_metadata?.picture as string) ??
-      null;
-
-    const updates: Record<string, string | null> = {
-      email: authUser.email ?? "",
-    };
-
-    if (avatarUrl) {
-      updates.avatar_url = avatarUrl;
-    }
-
-    await updateProfileRow(authUser.id, updates);
-  } catch (err) {
-    console.error("[AUTH] profile sync failed:", err);
-  }
-}
+import { handlePostLogin } from "./authService";
+import { useActionEngineSubscriptions } from "./hooks/useActionEngineSubscriptions";
+import { useUserSideEffects } from "./hooks/useUserSideEffects";
 
 export function AuthProvider({
   children,
@@ -64,40 +26,8 @@ export function AuthProvider({
   const [loading, setLoading] =
     useState(true);
 
-  useEffect(() => {
-    const unsubMission = subscribeAction(missionConsumer);
-    const unsubRetention = subscribeAction(retentionConsumer);
-    const unsubNotification = subscribeAction(notificationConsumer);
-    return () => {
-      unsubMission();
-      unsubRetention();
-      unsubNotification();
-    };
-  }, []);
-
-  useEffect(() => {
-
-    if (!user) {
-
-      stopMissionScheduler();
-
-      return;
-
-    }
-
-    startMissionScheduler(user.id);
-
-    void bootstrapRetention().catch((e) =>
-      console.error("[RETENTION] bootstrap failed", e),
-    );
-
-    return () => {
-
-      stopMissionScheduler();
-
-    };
-
-  }, [user]);
+  useActionEngineSubscriptions();
+  useUserSideEffects(user?.id ?? null);
 
   useEffect(() => {
 
@@ -123,15 +53,6 @@ export function AuthProvider({
           setLoading(false);
 
           return;
-
-        }
-
-        const profile =
-          await getProfile(session.user.id);
-
-        if (!profile) {
-
-          await getProfile(session.user.id);
 
         }
 
@@ -162,21 +83,8 @@ export function AuthProvider({
     return newUser;
   });
 
- if (session?.user) {
-
-   sessionStorage.removeItem(
-     "redirectAfterLogin"
-   );
-
-    if (event === "SIGNED_IN") {
-      track("USER_LOGIN", session.user.id, {
-        at: new Date().toISOString(),
-      });
-
-      void processReferralAfterLogin(session.user.id);
-      void syncAuthProfile(session.user);
-    }
-
+  if (session?.user && event === "SIGNED_IN") {
+    void handlePostLogin(session.user);
   }
 
         }

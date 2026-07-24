@@ -1,12 +1,11 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { z } from "npm:zod";
+import { requireAdmin } from "../_shared/adminAuth.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization,x-client-info,apikey,content-type",
-  "Access-Control-Allow-Methods":
-    "GET,POST,OPTIONS",
-};
+const inputSchema = z.object({
+  days: z.number().int().min(1).max(365).optional().default(30),
+});
 
 interface AzuraCastListener {
   ip: string;
@@ -32,35 +31,30 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Missing authorization" }),
-        { status: 401, headers: corsHeaders }
-      );
-    }
+    const adminCheck = await requireAdmin(authHeader);
+    if ("error" in adminCheck) return adminCheck.error;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const authUser = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-
-    if (authUser.error || !authUser.data.user) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized" }),
-        { status: 401, headers: corsHeaders }
-      );
-    }
-
     const body =
       req.method === "POST"
         ? await req.json().catch(() => ({}))
         : {};
 
-    const days = body.days ?? 30;
+    const parsed = inputSchema.safeParse(body);
+    if (!parsed.success) {
+      console.warn("[admin-analytics] validation failed:", parsed.error.issues.map(i => i.message).join("; "));
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid input" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    console.log("[admin-analytics] validation passed");
+
+    const { days } = parsed.data;
 
     const since = new Date();
     since.setDate(since.getDate() - days);
@@ -251,7 +245,7 @@ Deno.serve(async (req) => {
         console.log("[admin-analytics] Auth header: Bearer [redacted, length=" + azuraKey.length + "]");
         console.log("[admin-analytics] Accept: application/json");
 
-        const response = await fetch(fetchUrl, {
+        const response = await fetchWithRetry(fetchUrl, {
           headers: { Authorization: `Bearer ${azuraKey}`, Accept: "application/json" },
           signal: AbortSignal.timeout(8000),
         });
@@ -316,11 +310,11 @@ Deno.serve(async (req) => {
     let promoCount = 0;
     try {
       const [podcastResp, promoResp] = await Promise.all([
-        fetch("https://voksradio.com/wp-json/wp/v2/voks-plus?_embed&per_page=1", {
+        fetchWithRetry("https://voksradio.com/wp-json/wp/v2/voks-plus?_embed&per_page=1", {
           headers: { Accept: "application/json" },
           signal: AbortSignal.timeout(5000),
         }),
-        fetch("https://voksradio.com/wp-json/wp/v2/promo?_embed&per_page=1", {
+        fetchWithRetry("https://voksradio.com/wp-json/wp/v2/promo?_embed&per_page=1", {
           headers: { Accept: "application/json" },
           signal: AbortSignal.timeout(5000),
         }),
@@ -423,7 +417,7 @@ Deno.serve(async (req) => {
       }
 
       if (nowplayingUrl && azuraKey) {
-        const npResp = await fetch(nowplayingUrl, {
+        const npResp = await fetchWithRetry(nowplayingUrl, {
           headers: { Authorization: `Bearer ${azuraKey}`, Accept: "application/json" },
           signal: AbortSignal.timeout(5000),
         });

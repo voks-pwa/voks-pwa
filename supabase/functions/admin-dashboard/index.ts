@@ -1,14 +1,13 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization,x-client-info,apikey,content-type",
-  "Access-Control-Allow-Methods":
-    "GET,POST,OPTIONS",
-};
+import { z } from "npm:zod";
+import { requireAdmin } from "../_shared/adminAuth.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const WP_BASE = "https://voksradio.com/wp-json/wp/v2";
+
+const actionSchema = z.object({
+  action: z.enum(["dashboard", "users", "transactions", "missions", "rewards"]).optional().default("dashboard"),
+});
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -16,28 +15,13 @@ Deno.serve(async (req) => {
   }
 
   const authHeader = req.headers.get("authorization");
-  if (!authHeader) {
-    return new Response(
-      JSON.stringify({ success: false, error: "Missing authorization" }),
-      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
+  const adminCheck = await requireAdmin(authHeader);
+  if ("error" in adminCheck) return adminCheck.error;
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
-
-  const authUser = await supabase.auth.getUser(
-    authHeader.replace("Bearer ", "")
-  );
-
-  if (authUser.error || !authUser.data.user) {
-    return new Response(
-      JSON.stringify({ success: false, error: "Unauthorized" }),
-      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
 
   try {
     const body =
@@ -45,7 +29,17 @@ Deno.serve(async (req) => {
         ? await req.json().catch(() => ({}))
         : {};
 
-    const action = body.action ?? "dashboard";
+    const parsed = actionSchema.safeParse(body);
+    if (!parsed.success) {
+      console.warn("[admin-dashboard] validation failed:", parsed.error.issues.map(i => i.message).join("; "));
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid action" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    console.log("[admin-dashboard] validation passed, action:", parsed.data.action);
+
+    const { action } = parsed.data;
 
     switch (action) {
       case "dashboard": {
@@ -136,7 +130,7 @@ Deno.serve(async (req) => {
         if (azFetchUrl && azuraKey) {
           try {
             console.log("[admin-dashboard] Fetching AzuraCast listeners");
-            const azResp = await fetch(azFetchUrl, {
+            const azResp = await fetchWithRetry(azFetchUrl, {
               headers: { Authorization: `Bearer ${azuraKey}`, Accept: "application/json" },
               signal: AbortSignal.timeout(8000),
             });
@@ -160,11 +154,11 @@ Deno.serve(async (req) => {
         let promoCount = 0;
         try {
           const [podcastResp, promoResp] = await Promise.all([
-            fetch(`${WP_BASE}/voks-plus?_embed&per_page=1`, {
+            fetchWithRetry(`${WP_BASE}/voks-plus?_embed&per_page=1`, {
               headers: { Accept: "application/json" },
               signal: AbortSignal.timeout(5000),
             }),
-            fetch(`${WP_BASE}/promo?_embed&per_page=1`, {
+            fetchWithRetry(`${WP_BASE}/promo?_embed&per_page=1`, {
               headers: { Accept: "application/json" },
               signal: AbortSignal.timeout(5000),
             }),

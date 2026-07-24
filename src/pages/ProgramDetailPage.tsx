@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
-import { FaShareAlt } from 'react-icons/fa'
 import {
+  Share2,
   Bell,
   Clock3,
   Calendar,
@@ -230,7 +230,7 @@ export function ProgramDetailPage() {
               shadow
             "
           >
-            <FaShareAlt />
+            <Share2 size={20} />
 
             <span className="mt-2 text-xs">
               Share

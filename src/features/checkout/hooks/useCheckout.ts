@@ -10,6 +10,7 @@ export function useCheckout(userId: string | null) {
       if (data.success) {
         queryClient.invalidateQueries({ queryKey: ["cart", userId] });
         queryClient.invalidateQueries({ queryKey: ["wallet-balance", userId] });
+        queryClient.invalidateQueries({ queryKey: ["marketplace", "inventory"] });
         queryClient.invalidateQueries({ queryKey: ["admin-marketplace-orders"] });
       }
     },

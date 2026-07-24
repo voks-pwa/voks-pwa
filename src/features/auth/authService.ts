@@ -1,8 +1,40 @@
+import type { User } from "@supabase/supabase-js";
+
 import { supabase } from "@/lib/supabase";
 import { isPilotAtCap } from "./pilotConfig";
 import { track } from "@/core/action-engine";
 import { getReferralCode, clearReferralCode } from "@/lib/referralStorage";
 import { findProfileByReferralCode, updateProfileRow } from "@/features/profile/services/profileRepository";
+
+export async function syncAuthProfile(authUser: User) {
+  try {
+    const avatarUrl =
+      (authUser.user_metadata?.avatar_url as string) ??
+      (authUser.user_metadata?.picture as string) ??
+      null;
+
+    const updates: Record<string, string | null> = {
+      email: authUser.email ?? "",
+    };
+
+    if (avatarUrl) {
+      updates.avatar_url = avatarUrl;
+    }
+
+    await updateProfileRow(authUser.id, updates);
+  } catch (err) {
+    console.error("[AUTH] profile sync failed:", err);
+  }
+}
+
+export async function handlePostLogin(user: User) {
+  sessionStorage.removeItem("redirectAfterLogin");
+  track("USER_LOGIN", user.id, {
+    at: new Date().toISOString(),
+  });
+  await processReferralAfterLogin(user.id);
+  await syncAuthProfile(user);
+}
 
 export async function processReferralAfterLogin(userId: string) {
   const refCode = getReferralCode();
@@ -51,10 +83,10 @@ export async function loginGoogle() {
    * halaman yang diminta sebelum login
    */
 
-  const redirectPath =
-    sessionStorage.getItem(
-      "redirectAfterLogin"
-    ) ?? "/";
+  const ALLOWED_REDIRECT_PATHS = ["/", "/profile", "/missions", "/rewards", "/leaderboard", "/more", "/programs", "/live", "/campaigns", "/notifications"];
+
+  const rawPath = sessionStorage.getItem("redirectAfterLogin") ?? "/";
+  const redirectPath = ALLOWED_REDIRECT_PATHS.includes(rawPath) ? rawPath : "/";
 
   /*
    * redirect OAuth

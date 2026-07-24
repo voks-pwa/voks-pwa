@@ -192,6 +192,32 @@ export async function updateMultiplier(
   return true;
 }
 
+export async function getDailyEarnings(userId: string): Promise<number> {
+  const today = new Date().toISOString().split("T")[0];
+  const { data, error } = await supabase
+    .rpc("get_daily_earnings", { p_user_id: userId, p_date: today });
+
+  if (error) {
+    console.error("[ECONOMY REPO] get_daily_earnings error", error.message);
+    return 0;
+  }
+  return (data as { total: number } | null)?.total ?? 0;
+}
+
+export async function getUserBalance(userId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("current_vxp")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[ECONOMY REPO] getUserBalance error", error.message);
+    return 0;
+  }
+  return (data as { current_vxp: number } | null)?.current_vxp ?? 0;
+}
+
 export async function getEconomySetting(key: string): Promise<string | null> {
   const { data, error } = await supabase
     .from("economy_settings")

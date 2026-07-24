@@ -184,6 +184,7 @@ export function RewardStorePage() {
                     src={featured.image_url}
                     alt={featured.name}
                     className="h-full w-full object-cover"
+                    loading="lazy"
                     onError={(e) => {
                       (e.target as HTMLElement).style.display = "none";
                     }}

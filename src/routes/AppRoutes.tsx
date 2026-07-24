@@ -10,6 +10,7 @@ import { MorePage } from "@/pages/MorePage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { LoginPage } from "@/pages/LoginPage";
 import { FeatureGuard } from "@/components/ui/FeatureGuard";
+import { ProtectedRoute } from "@/components/ui/ProtectedRoute";
 
 const ProgramsPage = lazy(() =>
   import("@/pages/ProgramsPage").then((m) => ({ default: m.ProgramsPage })),
@@ -214,7 +215,7 @@ export function AppRoutes() {
 
         <Route path="/more" element={<MorePage />} />
 
-        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
         <Route
           path="/missions"
@@ -324,14 +325,16 @@ export function AppRoutes() {
       {/* EMPTY */}
 
       <Route element={<EmptyLayout />}>
-        <Route
-          path="/dev/missions"
-          element={
-            <Lazy>
-              <DeveloperMissionSandbox />
-            </Lazy>
-          }
-        />
+        {import.meta.env.DEV && (
+          <Route
+            path="/dev/missions"
+            element={
+              <Lazy>
+                <DeveloperMissionSandbox />
+              </Lazy>
+            }
+          />
+        )}
       </Route>
 
       {/* ADMIN */}

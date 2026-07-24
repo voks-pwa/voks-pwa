@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import {
   AlertCircle,
   RefreshCw,
@@ -26,17 +26,22 @@ import { exportToExcel } from "../../shared/AdminExportExcel";
 import {
   PeriodFilter,
   StatCard,
-  AnalyticsBarChart,
   AnalyticsSkeleton,
   AnalyticsEmptyState,
   AnalyticsErrorState,
-  AnalyticsPieChart,
   AnalyticsListenerCard,
-  AnalyticsLineChart,
   AnalyticsLiveBroadcast,
   AnalyticsListenerTable,
   AnalyticsInsightsCard,
 } from "../components";
+
+const AnalyticsBarChart = lazy(() => import("../components/AnalyticsBarChart").then(m => ({ default: m.AnalyticsBarChart })));
+const AnalyticsPieChart = lazy(() => import("../components/AnalyticsPieChart").then(m => ({ default: m.AnalyticsPieChart })));
+const AnalyticsLineChart = lazy(() => import("../components/AnalyticsLineChart").then(m => ({ default: m.AnalyticsLineChart })));
+
+function ChartFallback({ height = 320 }: { height?: number }) {
+  return <div className="animate-pulse rounded-3xl bg-gray-100" style={{ height }} />;
+}
 
 const PERIODS = [
   { label: "7 days", value: 7 },
@@ -301,13 +306,15 @@ export function AnalyticsPage() {
           />
           {/* Section 2: Listening Trend (line chart) */}
           {listenerChartData.length > 0 && (
-            <AnalyticsLineChart
-              title="Listening Trend"
-              data={listenerChartData as unknown as Record<string, unknown>[]}
-              lines={[
-                { dataKey: "listeners", color: "#8b5cf6", name: "Listeners" },
-              ]}
-            />
+            <Suspense fallback={<ChartFallback />}>
+              <AnalyticsLineChart
+                title="Listening Trend"
+                data={listenerChartData as unknown as Record<string, unknown>[]}
+                lines={[
+                  { dataKey: "listeners", color: "#8b5cf6", name: "Listeners" },
+                ]}
+              />
+            </Suspense>
           )}
         </div>
       </div>
@@ -341,36 +348,42 @@ export function AnalyticsPage() {
       {/* Trend charts */}
       {chartData.length > 0 && (
         <div className="grid gap-6 xl:grid-cols-2">
-          <AnalyticsBarChart
-            title="Users & Missions"
-            data={chartData as unknown as Record<string, unknown>[]}
-            bars={[
-              { dataKey: "users", fill: "#3b82f6", name: "New Users" },
-              { dataKey: "missions", fill: "#22c55e", name: "Completions" },
-            ]}
-          />
-          <AnalyticsBarChart
-            title="XP & Redemptions"
-            data={chartData as unknown as Record<string, unknown>[]}
-            bars={[
-              { dataKey: "xp", fill: "#f59e0b", name: "XP Earned" },
-              { dataKey: "redemptions", fill: "#ec4899", name: "Redemptions" },
-            ]}
-          />
+          <Suspense fallback={<ChartFallback />}>
+            <AnalyticsBarChart
+              title="Users & Missions"
+              data={chartData as unknown as Record<string, unknown>[]}
+              bars={[
+                { dataKey: "users", fill: "#3b82f6", name: "New Users" },
+                { dataKey: "missions", fill: "#22c55e", name: "Completions" },
+              ]}
+            />
+          </Suspense>
+          <Suspense fallback={<ChartFallback />}>
+            <AnalyticsBarChart
+              title="XP & Redemptions"
+              data={chartData as unknown as Record<string, unknown>[]}
+              bars={[
+                { dataKey: "xp", fill: "#f59e0b", name: "XP Earned" },
+                { dataKey: "redemptions", fill: "#ec4899", name: "Redemptions" },
+              ]}
+            />
+          </Suspense>
         </div>
       )}
 
       {/* Broadcast trend */}
       {broadcastChartData.length > 0 && (
         <div>
-          <AnalyticsBarChart
-            title="Broadcast Trend"
-            data={broadcastChartData as unknown as Record<string, unknown>[]}
-            bars={[
-              { dataKey: "sent", fill: "#22c55e", name: "Sent" },
-              { dataKey: "pending", fill: "#f59e0b", name: "Pending" },
-            ]}
-          />
+          <Suspense fallback={<ChartFallback />}>
+            <AnalyticsBarChart
+              title="Broadcast Trend"
+              data={broadcastChartData as unknown as Record<string, unknown>[]}
+              bars={[
+                { dataKey: "sent", fill: "#22c55e", name: "Sent" },
+                { dataKey: "pending", fill: "#f59e0b", name: "Pending" },
+              ]}
+            />
+          </Suspense>
         </div>
       )}
 
@@ -379,43 +392,63 @@ export function AnalyticsPage() {
         <>
           <div className="grid gap-6 xl:grid-cols-2 2xl:grid-cols-4">
             {data.listenerSources && Object.keys(data.listenerSources).length > 0 && (
-              <AnalyticsPieChart title="Listener Sources" data={data.listenerSources} />
+              <Suspense fallback={<ChartFallback height={280} />}>
+                <AnalyticsPieChart title="Listener Sources" data={data.listenerSources} />
+              </Suspense>
             )}
             {data.devices && Object.keys(data.devices).length > 0 && (
-              <AnalyticsPieChart title="Devices" data={data.devices} />
+              <Suspense fallback={<ChartFallback height={280} />}>
+                <AnalyticsPieChart title="Devices" data={data.devices} />
+              </Suspense>
             )}
             {data.browsers && Object.keys(data.browsers).length > 0 && (
-              <AnalyticsPieChart title="Browsers" data={data.browsers} />
+              <Suspense fallback={<ChartFallback height={280} />}>
+                <AnalyticsPieChart title="Browsers" data={data.browsers} />
+              </Suspense>
             )}
             {data.platforms && Object.keys(data.platforms).length > 0 && (
-              <AnalyticsPieChart title="Platforms" data={data.platforms} />
+              <Suspense fallback={<ChartFallback height={280} />}>
+                <AnalyticsPieChart title="Platforms" data={data.platforms} />
+              </Suspense>
             )}
           </div>
 
           <div className="grid gap-6 xl:grid-cols-2">
             {data.countries && Object.keys(data.countries).length > 0 && (
-              <AnalyticsPieChart title="Country Distribution" data={data.countries} />
+              <Suspense fallback={<ChartFallback height={280} />}>
+                <AnalyticsPieChart title="Country Distribution" data={data.countries} />
+              </Suspense>
             )}
             {data.demographics?.genders && Object.keys(data.demographics.genders).length > 0 && (
-              <AnalyticsPieChart title="Gender" data={data.demographics.genders} />
+              <Suspense fallback={<ChartFallback height={280} />}>
+                <AnalyticsPieChart title="Gender" data={data.demographics.genders} />
+              </Suspense>
             )}
           </div>
 
           <div className="grid gap-6 xl:grid-cols-2">
             {data.demographics?.cities && Object.keys(data.demographics.cities).length > 0 && (
-              <AnalyticsPieChart title="Top Cities" data={data.demographics.cities} />
+              <Suspense fallback={<ChartFallback height={280} />}>
+                <AnalyticsPieChart title="Top Cities" data={data.demographics.cities} />
+              </Suspense>
             )}
             {data.demographics?.provinces && Object.keys(data.demographics.provinces).length > 0 && (
-              <AnalyticsPieChart title="Top Provinces" data={data.demographics.provinces} />
+              <Suspense fallback={<ChartFallback height={280} />}>
+                <AnalyticsPieChart title="Top Provinces" data={data.demographics.provinces} />
+              </Suspense>
             )}
           </div>
 
           <div className="grid gap-6 xl:grid-cols-2">
             {data.rewardBreakdown && Object.keys(data.rewardBreakdown).length > 0 && (
-              <AnalyticsPieChart title="Reward Status Breakdown" data={data.rewardBreakdown} />
+              <Suspense fallback={<ChartFallback height={280} />}>
+                <AnalyticsPieChart title="Reward Status Breakdown" data={data.rewardBreakdown} />
+              </Suspense>
             )}
             {data.missionBreakdown && Object.keys(data.missionBreakdown).length > 0 && (
-              <AnalyticsPieChart title="Mission Breakdown by Type" data={data.missionBreakdown} />
+              <Suspense fallback={<ChartFallback height={280} />}>
+                <AnalyticsPieChart title="Mission Breakdown by Type" data={data.missionBreakdown} />
+              </Suspense>
             )}
           </div>
 

@@ -183,29 +183,50 @@ Repositories never update UI.
 
 # Engine Layer
 
-Location
+Engines are split into two tiers:
+
+## Cross-cutting Engines (`src/core/`)
+
+Reusable engines that multiple features depend on:
 
 ```
-engine/
+src/core/
+  action-engine/   — event tracking, rate limiter, consumers
+  reward-engine/   — reward guard, grant logic
 ```
 
-Responsibilities
+## Feature Engines (`features/X/engine/`)
 
-Complex workflows.
+Complex workflows scoped to a single feature. Live in `engine/` subfolder (not `services/`):
 
-Current engines
+```
+features/
+  missions/engine/          — missionEngine, missionValidator
+  redeem/engine/            — redeemEngine (processRedeem)
+  voucher/engine/           — voucherPoolEngine (pool management)
+  retention/engine/         — badgeEngine, streakEngine, milestoneEngine, loginRewardEngine
+  wallet/engine/            — walletEngine (debit/credit V2)
+  checkout/engine/          — checkoutEngine
+  inventory/engine/         — inventoryEngine
+  economy/engine/           — economyEngine, pricingEngine, multiplierEngine
+  subscription/engine/      — subscriptionEngine
+  commerce/engine/          — commerceEngine
+  shipping/engine/          — fulfillmentEngine
+  rewards/engine/           — RewardEngine, rewardSyncEngine
+  automation/engine/        — automationEngine
+```
 
-Mission Engine
+Current cross-cutting engines
+
+Action Engine
 
 Reward Engine
 
+Completed
+
 Notification Engine
 
-Future
-
 Achievement Engine
-
-Level Engine
 
 ---
 
@@ -261,11 +282,33 @@ admin-mission-update
 
 xp-transaction
 
-Future
-
 admin-settings
 
 admin-analytics
+
+admin-broadcast
+
+admin-broadcast-wp
+
+admin-campaign-update
+
+admin-feature-flags
+
+admin-wp-stats
+
+campaign-analytics
+
+leaderboard
+
+payment-webhook
+
+recommendation-engine
+
+reward-analytics
+
+scheduler
+
+system-health
 
 ---
 
@@ -581,23 +624,13 @@ Planned
 
 # Future Expansion
 
-Planned modules
-
-Achievement Engine
+In development / planned
 
 Season Pass
 
-Leaderboard
-
 Tournament
 
-Referral System
-
-Marketplace
-
 Radio Schedule
-
-Podcast
 
 Advertising
 

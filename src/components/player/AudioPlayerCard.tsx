@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { memo, useEffect, useState } from "react";
 
 import { ListenerCount } from "@/components/player/ListenerCount";
 import { LiveStatusBadge } from "@/components/player/LiveStatusBadge";
@@ -21,7 +21,21 @@ import {
   useListenMission,
 } from "@/features/missions/hooks/useListenMission";
 
-export function AudioPlayerCard() {
+export const AudioPlayerCard = memo(function AudioPlayerCard({
+  compact,
+  highlight,
+}: {
+  compact?: boolean
+  highlight?: boolean
+} = {}) {
+
+  const [showHighlight, setShowHighlight] = useState(highlight)
+
+  useEffect(() => {
+    if (!highlight) return
+    const timer = setTimeout(() => setShowHighlight(false), 3000)
+    return () => clearTimeout(timer)
+  }, [highlight])
 
   const {
     data,
@@ -110,6 +124,68 @@ export function AudioPlayerCard() {
     usePlayerStore(
       state => state.toggleMute
     );
+
+  if (compact) {
+    return (
+      <section
+        aria-label="Audio Player"
+        className={`flex w-full items-center gap-4 rounded-3xl border bg-white p-4 shadow-sm transition-all duration-1000 ${
+          showHighlight
+            ? "border-[#bda752] shadow-[0_0_24px_rgba(189,167,82,0.4)]"
+            : "border-black/5"
+        }`}
+      >
+        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl shadow-md">
+          <img
+            src={programArtwork}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+          {isPlaying && (
+            <div className="absolute inset-0 rounded-2xl ring-2 ring-[#bda752]" />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <LiveStatusBadge
+              isOnline={isOnline}
+              isLive={displayTrack.isLive}
+            />
+            <span className="text-xs text-gray-400">
+              {listenerCount.toLocaleString()} listeners
+            </span>
+          </div>
+          <h2 className="mt-1 truncate text-base font-bold text-gray-900">
+            {isError ? "Unable to load station" : displayTrack.title}
+          </h2>
+          <p className="truncate text-sm text-gray-500">
+            {isError ? "Check your connection" : displayTrack.artist}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={toggle}
+          disabled={!streamUrl || !isOnline || isError || status === "loading" || isLoading}
+          aria-label={isPlaying ? "Pause stream" : "Play stream"}
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#bda752] text-white shadow-lg transition hover:scale-105 active:scale-95 disabled:opacity-50"
+        >
+          {status === "loading" || isLoading ? (
+            <span className="h-5 w-5 animate-spin rounded-full border-3 border-white/30 border-t-white" />
+          ) : isPlaying ? (
+            <svg viewBox="0 0 24 24" className="h-6 w-6 fill-white">
+              <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" className="ml-0.5 h-6 w-6 fill-white">
+              <path d="M8 5v14l11-7L8 5z" />
+            </svg>
+          )}
+        </button>
+      </section>
+    );
+  }
 
   return (
 
@@ -202,4 +278,4 @@ export function AudioPlayerCard() {
 
   );
 
-}
+})

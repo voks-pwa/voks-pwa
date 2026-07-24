@@ -59,6 +59,7 @@ export function UsersPage() {
             <img
               src={u.avatar_url ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(u.display_name ?? "User")}&background=bda752&color=fff`}
               className="h-9 w-9 rounded-full object-cover"
+              loading="lazy"
             />
             <div>
               <div className="font-semibold">{u.display_name ?? "Unknown"}</div>

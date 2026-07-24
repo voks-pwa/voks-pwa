@@ -45,6 +45,7 @@ export function ProgramsPage() {
                   src={image}
                   alt={program.title.rendered}
                   className="aspect-square w-full object-cover"
+                  loading="lazy"
                 />
               )}
 

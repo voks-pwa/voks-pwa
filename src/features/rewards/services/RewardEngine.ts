@@ -1,5 +1,5 @@
 import type { RewardItem } from "../rewardTypes";
-import { processRedeem } from "@/features/redeem/services/redeemEngine";
+import { processRedeem } from "@/features/redeem/engine/redeemEngine";
 import { getUserRedemptions } from "../repositories/rewardRedemptionRepository";
 
 export interface RewardResult {

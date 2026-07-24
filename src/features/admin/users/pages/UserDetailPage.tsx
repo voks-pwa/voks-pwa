@@ -52,6 +52,7 @@ export function UserDetailPage() {
                 `https://ui-avatars.com/api/?name=${encodeURIComponent(canonical.display_name ?? "User")}&background=bda752&color=fff&size=80`
               }
               className="h-20 w-20 rounded-full border-2 border-[#bda752] object-cover"
+              loading="lazy"
             />
             <div>
               <h2 className="text-2xl font-black">

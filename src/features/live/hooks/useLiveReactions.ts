@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { supabase } from "@/lib/supabase";
 import type { LiveReaction, LiveReactionType } from "../types";
 import * as repo from "../repositories/liveRepository";
+import * as channelRepo from "../repositories/liveChannelRepository";
 
 const RATE_LIMIT_MS = 2_000;
 
@@ -10,23 +10,16 @@ export function useLiveReactions(userId: string | undefined) {
   const lastSent = useRef(0);
 
   useEffect(() => {
-    const channel = supabase
-      .channel("live-reactions")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "live_reactions" },
-        (payload) => {
-          const r = payload.new as LiveReaction;
-          setReactions((prev) => [...prev.slice(-49), r]);
-          setTimeout(() => {
-            setReactions((prev) => prev.filter((x) => x.id !== r.id));
-          }, 4_000);
-        }
-      )
-      .subscribe();
+    const channel = channelRepo.createReactionsChannel((payload) => {
+      const r = payload as LiveReaction;
+      setReactions((prev) => [...prev.slice(-49), r]);
+      setTimeout(() => {
+        setReactions((prev) => prev.filter((x) => x.id !== r.id));
+      }, 4_000);
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      channelRepo.removeChannel(channel);
     };
   }, []);
 

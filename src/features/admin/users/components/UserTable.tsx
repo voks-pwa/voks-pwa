@@ -1,4 +1,5 @@
 import type { AdminUser } from "../types";
+import { OptimizedImage } from "@/components/ui/OptimizedImage";
 
 interface Props {
   users: AdminUser[];
@@ -25,9 +26,10 @@ export function UserTable({ users }: Props) {
             <tr key={user.id} className="border-t">
               <td className="p-4">
                 <div className="flex items-center gap-3">
-                  <img
+                  <OptimizedImage
                     src={user.avatar_url ?? "https://placehold.co/80"}
                     className="h-10 w-10 rounded-full"
+                    alt=""
                   />
 
                   <div>

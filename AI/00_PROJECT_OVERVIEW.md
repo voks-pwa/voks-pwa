@@ -1,8 +1,8 @@
 # VOKS RADIO PWA — PROJECT OVERVIEW
 
-Version: 1.0
+Version: 2.0
 
-Last Updated: 2026-07-13
+Last Updated: 2026-07-23
 
 ---
 
@@ -116,6 +116,12 @@ Reward Engine
 
 Notification Engine
 
+Commerce Engine
+
+Subscription Engine
+
+Automation Engine
+
 ↓
 
 Supabase
@@ -202,6 +208,12 @@ Profile
 
 Admin
 
+Commerce
+
+Subscription
+
+Automation
+
 Backend
 
 supabase/functions/
@@ -210,9 +222,15 @@ admin-dashboard
 
 admin-users
 
+admin-user-detail
+
+admin-user-actions
+
 admin-transactions
 
 admin-rewards
+
+admin-reward-update
 
 admin-update-redemption
 
@@ -220,7 +238,35 @@ admin-missions
 
 admin-mission-update
 
+admin-campaign-update
+
+admin-broadcast
+
+admin-broadcast-wp
+
+admin-feature-flags
+
+admin-settings
+
+admin-analytics
+
+admin-wp-stats
+
 xp-transaction
+
+campaign-analytics
+
+leaderboard
+
+payment-webhook
+
+recommendation-engine
+
+reward-analytics
+
+scheduler
+
+system-health
 
 ---
 
@@ -254,19 +300,37 @@ Mission
 
 Status
 
-In Progress
+Completed
 
 Settings
 
 Status
 
-Not Started
+Completed
 
 Analytics
 
 Status
 
-Not Started
+Completed
+
+Commerce
+
+Status
+
+Completed
+
+Subscription
+
+Status
+
+Completed
+
+Automation
+
+Status
+
+Completed
 
 ---
 
@@ -338,6 +402,56 @@ Calculated
 
 ---
 
+# Commerce System
+
+Payment Processing
+
+payment-webhook
+
+Subscription Management
+
+Supabase
+
+Transaction History
+
+Supabase
+
+---
+
+# Subscription System
+
+Tier Management
+
+Supabase
+
+User Subscriptions
+
+Supabase
+
+Auto-Renewal
+
+scheduler
+
+---
+
+# Automation System
+
+Campaign Automation
+
+admin-campaign-update
+
+Broadcast Automation
+
+admin-broadcast
+
+admin-broadcast-wp
+
+Scheduled Tasks
+
+scheduler
+
+---
+
 # AI Development Philosophy
 
 This project is developed together with AI.
@@ -377,6 +491,12 @@ player/
 profile/
 
 notifications/
+
+commerce/
+
+subscription/
+
+automation/
 
 supabase/
 

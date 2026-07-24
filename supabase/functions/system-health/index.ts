@@ -1,22 +1,19 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Content-Type": "application/json",
-};
+import { corsHeaders } from "../_shared/cors.ts";
 
 const WP_API_URL =
   Deno.env.get("WP_API_URL") ?? "https://voksradio.com/wp-json/wp/v2";
 
 Deno.serve(async (req) => {
+  console.log("[system-health] ▶ request", req.method, req.url);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   const authHeader = req.headers.get("authorization");
   if (!authHeader) {
+    console.warn("[system-health] missing authorization");
     return new Response(
       JSON.stringify({ success: false, error: "Missing authorization" }),
       { status: 401, headers: corsHeaders },
@@ -30,7 +27,7 @@ Deno.serve(async (req) => {
       { global: { headers: { authorization: authHeader } } },
     );
 
-    // Database health
+    console.log("[system-health] checking database health");
     const dbStart = performance.now();
     const { data: healthData, error: dbError } = await supabase
       .rpc("get_system_health");
@@ -43,7 +40,7 @@ Deno.serve(async (req) => {
       database: Record<string, unknown>;
     };
 
-    // WordPress API health
+    console.log("[system-health] checking WordPress health");
     const wpStart = performance.now();
     let wpOk = false;
     let wpError: string | null = null;
@@ -56,7 +53,6 @@ Deno.serve(async (req) => {
     }
     const wpMs = Math.round(performance.now() - wpStart);
 
-    // Maintenance mode
     const { data: mmData } = await supabase
       .from("system_config")
       .select("value")
@@ -65,7 +61,6 @@ Deno.serve(async (req) => {
 
     const maintenance = mmData?.value as { enabled: boolean; message: string } | undefined;
 
-    // Version info
     const { data: verData } = await supabase
       .from("system_config")
       .select("value")
@@ -76,6 +71,7 @@ Deno.serve(async (req) => {
 
     const allOk = dbHealth?.status === "healthy" && wpOk;
 
+    console.log("[system-health] ✔ status:", allOk ? "healthy" : "degraded");
     return new Response(
       JSON.stringify({
         success: true,
@@ -108,6 +104,7 @@ Deno.serve(async (req) => {
       { headers: corsHeaders },
     );
   } catch (err) {
+    console.error("[system-health] ✖ EXCEPTION:", err instanceof Error ? err.message : "Unknown error");
     return new Response(
       JSON.stringify({
         success: false,

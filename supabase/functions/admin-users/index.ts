@@ -1,53 +1,43 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { z } from "npm:zod";
+import { requireAdmin } from "../_shared/adminAuth.ts";
+import { corsHeaders } from "../_shared/cors.ts";
+import { parseBody, validationError } from "../_shared/validation.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+const inputSchema = z.object({
+  search: z.string().optional().default(""),
+  role: z.string().optional().default(""),
+  page: z.number().int().min(1).optional().default(1),
+  pageSize: z.number().int().min(1).max(100).optional().default(10),
+});
 
 Deno.serve(async (req) => {
+  console.log("[admin-users] ▶ request", req.method, req.url);
+
   if (req.method === "OPTIONS") {
-    return new Response("ok", {
-      headers: corsHeaders,
-    });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
     const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Missing authorization" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const adminCheck = await requireAdmin(authHeader);
+    if ("error" in adminCheck) return adminCheck.error;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const authUser = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-
-    if (authUser.error || !authUser.data.user) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const rawBody = req.method === "POST" ? await req.text().catch(() => null) : null;
+    const parsed = parseBody(rawBody, inputSchema);
+    if (!parsed.success) {
+      console.warn("[admin-users] validation failed:", parsed.error);
+      return validationError(parsed.error, corsHeaders);
     }
 
-    const body =
-      req.method === "POST"
-        ? await req.json().catch(() => ({}))
-        : {};
-
-    const search = body.search ?? "";
-    const roleFilter = body.role ?? "";
-    const page = Math.max(1, body.page ?? 1);
-    const pageSize = Math.min(100, Math.max(1, body.pageSize ?? 10));
+    const { search, role, page, pageSize } = parsed.data;
     const offset = (page - 1) * pageSize;
+    console.log("[admin-users] query params:", JSON.stringify({ search, role, page, pageSize }));
 
     let query = supabase
       .from("profiles")
@@ -59,8 +49,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (roleFilter) {
-      query = query.eq("role", roleFilter);
+    if (role) {
+      query = query.eq("role", role);
     }
 
     const { data, error, count } = await query
@@ -69,6 +59,7 @@ Deno.serve(async (req) => {
 
     if (error) throw error;
 
+    console.log("[admin-users] ✔ response, users:", data?.length ?? 0, "total:", count ?? 0);
     return new Response(
       JSON.stringify({
         success: true,
@@ -77,26 +68,13 @@ Deno.serve(async (req) => {
         page,
         pageSize,
       }),
-      {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error("[admin-users] ✖ EXCEPTION:", String(err));
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: String(err),
-      }),
-      {
-        status: 500,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      }
+      JSON.stringify({ success: false, error: String(err) }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

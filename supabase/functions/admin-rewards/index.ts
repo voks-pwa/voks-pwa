@@ -1,50 +1,29 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { requireAdmin } from "../_shared/adminAuth.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
+  console.log("[admin-rewards] ▶ request", req.method, req.url);
+
   if (req.method === "OPTIONS") {
-    return new Response("ok", {
-      headers: corsHeaders,
-    });
+    return new Response("ok", { headers: corsHeaders });
   }
 
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Missing authorization" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+  const authHeader = req.headers.get("authorization");
+  const adminCheck = await requireAdmin(authHeader);
+  if ("error" in adminCheck) return adminCheck.error;
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    const authUser = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-
-    if (authUser.error || !authUser.data.user) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
 
   try {
-
+    console.log("[admin-rewards] fetching all redemptions");
     const { data: redemptions, error } = await supabase
       .from("reward_redemptions")
       .select("*")
-      .order("redeemed_at", {
-        ascending: false,
-      });
+      .order("redeemed_at", { ascending: false });
 
     if (error) throw error;
 
@@ -59,6 +38,7 @@ Deno.serve(async (req) => {
     let profileMap: Record<string, unknown> = {};
 
     if (userIds.length > 0) {
+      console.log("[admin-rewards] fetching", userIds.length, "profiles");
       const { data: profiles } = await supabase
         .from("profiles")
         .select(`
@@ -79,38 +59,22 @@ Deno.serve(async (req) => {
 
     const result = (redemptions ?? []).map((item) => ({
       ...item,
-      profile:
-        profileMap[item.user_id as string] ?? null,
+      profile: profileMap[item.user_id as string] ?? null,
     }));
 
+    console.log("[admin-rewards] ✔ response, redemptions:", result.length);
     return new Response(
-      JSON.stringify({
-        success: true,
-        redemptions: result,
-      }),
-      {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      }
+      JSON.stringify({ success: true, redemptions: result }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error("[admin-rewards] ✖ EXCEPTION:", err instanceof Error ? err.message : String(err));
     return new Response(
       JSON.stringify({
         success: false,
-        error:
-          err instanceof Error
-            ? err.message
-            : String(err),
+        error: err instanceof Error ? err.message : String(err),
       }),
-      {
-        status: 500,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

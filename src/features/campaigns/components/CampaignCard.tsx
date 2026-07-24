@@ -1,4 +1,5 @@
 import { ArrowRight, Calendar, Megaphone } from "lucide-react";
+import { OptimizedImage } from "@/components/ui/OptimizedImage";
 import { useNavigate } from "react-router-dom";
 import type { CampaignView } from "../services/campaignService";
 import { StatusBadge } from "./StatusBadge";
@@ -34,7 +35,7 @@ export function CampaignCard({ campaign }: { campaign: CampaignView }) {
     >
       <div className="relative aspect-[16/9] w-full overflow-hidden bg-gray-100">
         {campaign.banner_url ? (
-          <img
+          <OptimizedImage
             src={campaign.banner_url}
             alt=""
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"

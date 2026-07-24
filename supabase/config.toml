@@ -417,83 +417,104 @@ enabled = true
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/xp-transaction/index.ts"
+timeout_seconds = 10
 
 [functions.admin-dashboard]
 enabled = true
 verify_jwt = false
+timeout_seconds = 30
 
 [functions.admin-feature-flags]
 enabled = true
 verify_jwt = false
+timeout_seconds = 10
 
 [functions.admin-users]
 enabled = true
 verify_jwt = false
+timeout_seconds = 10
 
 [functions.admin-user-detail]
 enabled = true
 verify_jwt = false
+timeout_seconds = 10
 
 [functions.admin-user-actions]
 enabled = true
 verify_jwt = false
+timeout_seconds = 10
 
 [functions.admin-rewards]
 enabled = true
 verify_jwt = false
+timeout_seconds = 10
 
 [functions.admin-reward-update]
 enabled = true
 verify_jwt = false
+timeout_seconds = 30
 
 [functions.admin-update-redemption]
 enabled = true
 verify_jwt = false
+timeout_seconds = 10
 
 [functions.admin-missions]
 enabled = true
 verify_jwt = false
+timeout_seconds = 10
 
 [functions.admin-mission-update]
 enabled = true
 verify_jwt = false
+timeout_seconds = 30
 
 [functions.admin-campaign-update]
 enabled = true
 verify_jwt = false
+timeout_seconds = 30
 
 [functions.admin-settings]
 enabled = true
 verify_jwt = false
+timeout_seconds = 10
 
 [functions.admin-broadcast]
 enabled = true
 verify_jwt = false
+timeout_seconds = 10
 
 [functions.admin-broadcast-wp]
 enabled = true
 verify_jwt = false
+timeout_seconds = 30
 
 [functions.admin-analytics]
 enabled = true
 verify_jwt = false
+timeout_seconds = 30
 
 [functions.system-health]
 enabled = true
 verify_jwt = false
+timeout_seconds = 30
 
 [functions.reward-analytics]
 enabled = true
 verify_jwt = false
+timeout_seconds = 30
 
 [functions.leaderboard]
 enabled = true
 verify_jwt = false
+timeout_seconds = 10
 
 [functions.campaign-analytics]
 enabled = true
 verify_jwt = false
+timeout_seconds = 30
 
 [functions.recommendation-engine]
 enabled = true
 verify_jwt = false
+timeout_seconds = 30

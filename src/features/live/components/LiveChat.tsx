@@ -118,6 +118,7 @@ function LiveChatMessage({ message, isModerator, onDelete, onPin }: MessageProps
             src={avatarUrl}
             alt=""
             className="h-full w-full rounded-full object-cover"
+            loading="lazy"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-xs font-bold text-white">

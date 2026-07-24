@@ -54,6 +54,7 @@ export function CampaignDetail({ campaign, renderMissionCard }: { campaign: Camp
             src={campaign.banner_url}
             alt=""
             className="h-56 w-full object-cover sm:h-72"
+            loading="lazy"
           />
         ) : (
           <div className="flex h-56 w-full items-center justify-center bg-gradient-to-br from-[#bda752] to-[#8c7530] sm:h-72">

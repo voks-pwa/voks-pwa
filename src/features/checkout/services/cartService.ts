@@ -1,10 +1,10 @@
-import { supabase } from "@/lib/supabase";
-import { getInventoryByProductId } from "@/features/marketplace/repositories/inventoryRepository";
+import { getInventoryByProductId } from "@/features/marketplace";
 import {
   getCart,
   addToCart as addToCartRepo,
   removeFromCart as removeFromCartRepo,
   clearCart as clearCartRepo,
+  getProductById,
 } from "../repositories/cartRepository";
 import type { Cart } from "../types";
 
@@ -16,11 +16,7 @@ export async function addItemToCart(
   if (!userId) return { success: false, error: "User ID required" };
   if (quantity <= 0) return { success: false, error: "Quantity must be positive" };
 
-  const { data: product } = await supabase
-    .from("marketplace_products")
-    .select("id, name, product_type, price, is_active")
-    .eq("id", productId)
-    .maybeSingle();
+  const product = await getProductById(productId);
 
   if (!product) return { success: false, error: "Product not found" };
   if (!product.is_active) return { success: false, error: "Product is not available" };

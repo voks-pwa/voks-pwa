@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { countProfiles } from "@/features/profile/services/profileRepository";
 
 export const MAX_PILOT_USERS = Number(
   import.meta.env.VITE_PILOT_MAX_USERS ?? 100,
@@ -9,16 +9,7 @@ export const PILOT_MODE = Boolean(
 );
 
 export async function getPilotUserCount(): Promise<number> {
-  const { count, error } = await supabase
-    .from("profiles")
-    .select("*", { count: "exact", head: true });
-
-  if (error) {
-    console.error("[PILOT] user count error:", error.message);
-    return 0;
-  }
-
-  return count ?? 0;
+  return countProfiles();
 }
 
 export async function isPilotAtCap(): Promise<boolean> {

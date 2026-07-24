@@ -1,4 +1,5 @@
 import type { TopUser } from "../types/dashboard";
+import { OptimizedImage } from "@/components/ui/OptimizedImage";
 
 interface Props {
   users: TopUser[];
@@ -61,12 +62,10 @@ export default function TopUsersTable({
 
                 <div className="flex items-center gap-3">
 
-                  <img
-                    src={
-                      user.avatar_url ??
-                      "https://placehold.co/80"
-                    }
+                  <OptimizedImage
+                    src={user.avatar_url ?? "https://placehold.co/80"}
                     className="h-12 w-12 rounded-full object-cover"
+                    alt=""
                   />
 
                   <div>

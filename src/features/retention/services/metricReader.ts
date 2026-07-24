@@ -1,6 +1,6 @@
 import { getCanonicalUser } from "@/features/profile/services/userCanonicalService";
 import { getStreak } from "../repositories/streakRepository";
-import { supabase } from "@/lib/supabase";
+import { getShareCount, getReferralCount, getProgressForMission, getClaimedMissionCount } from "../repositories/metricsRepository";
 import type { AchievementMetric } from "../types";
 
 /**
@@ -19,32 +19,16 @@ export async function readMetric(
     }
 
     case "share_count": {
-      const { count } = await supabase
-        .from("activity_logs")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("activity_type", "share");
-      return count ?? 0;
+      return getShareCount(userId);
     }
 
     case "referral_count": {
-      const { count } = await supabase
-        .from("referrals")
-        .select("*", { count: "exact", head: true })
-        .eq("referrer_id", userId)
-        .eq("reward_granted", true);
-      return count ?? 0;
+      return getReferralCount(userId);
     }
 
     case "listen_minutes": {
-      const { data } = await supabase
-        .from("missions_progress")
-        .select("progress")
-        .eq("user_id", userId)
-        .eq("mission_id", listenMissionId())
-        .maybeSingle();
-      // progress is stored in seconds for listen missions
-      return Math.floor((data?.progress ?? 0) / 60);
+      const seconds = await getProgressForMission(userId, listenMissionId());
+      return Math.floor(seconds / 60);
     }
 
     case "current_streak": {
@@ -53,12 +37,7 @@ export async function readMetric(
     }
 
     case "claimed_mission_count": {
-      const { count } = await supabase
-        .from("missions_progress")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("claimed", true);
-      return count ?? 0;
+      return getClaimedMissionCount(userId);
     }
 
     default:

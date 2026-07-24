@@ -1,4 +1,4 @@
-import { xpTransaction } from "./xpTransaction";
+import { credit } from "@/features/wallet/services/walletEngine";
 
 export interface AwardVXPInput {
   userId: string;
@@ -13,11 +13,13 @@ export async function awardVXP({
   reason,
   reference_id,
 }: AwardVXPInput) {
-  return xpTransaction({
+  return credit({
     userId,
     amount,
-    transaction_type: "mission",
-    reason,
-    reference_id,
+    transactionType: "MISSION_REWARD",
+    transactionKey: reference_id ? `MISSION_REWARD_${userId}_${reference_id}` : undefined,
+    referenceType: "mission",
+    referenceId: reference_id,
+    description: reason,
   });
 }

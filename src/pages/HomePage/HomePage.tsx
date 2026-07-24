@@ -1,7 +1,9 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Autoplay } from 'swiper/modules'
-import { FaPlay } from 'react-icons/fa'
+import { Play } from 'lucide-react'
+import type { WordPressVoksPlus } from "@/types/voks-plus";
 
 import { Header } from '@/components/layout/Header'
 import { BrandHeader } from '@/components/home/BrandHeader'
@@ -13,18 +15,71 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { NotificationCenter } from '@/components/notifications/NotificationCenter'
-import { MissionWidget } from '@/features/missions/components/MissionWidget'
-import { useIsFeatureEnabled } from '@/features/flags'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { useVoksPlus } from '@/hooks/useVoksPlus'
 import { usePrograms } from '@/hooks/usePrograms'
 
-import 'swiper/css'
+function VoksPlusSlider({ items }: { items: WordPressVoksPlus[] }) {
+  useEffect(() => {
+    import("swiper/css");
+  }, []);
+
+  return (
+    <Swiper modules={[Autoplay]} spaceBetween={16} slidesPerView={1.15}>
+      {items.map((item) => {
+        const embedded = item._embedded as Record<string, unknown> | undefined;
+        const media = (embedded?.["wp:featuredmedia"] as Record<string, unknown>[] | undefined)?.[0];
+        const mediaDetails = media?.media_details as Record<string, unknown> | undefined;
+        const sizes = mediaDetails?.sizes as Record<string, unknown> | undefined;
+        const mediumLarge = sizes?.medium_large as Record<string, unknown> | undefined;
+        const image = (mediumLarge?.source_url as string) || (media?.source_url as string) || "";
+
+        const title = item.title as Record<string, unknown> | undefined;
+        const acf = item.acf as Record<string, unknown> | undefined;
+
+        return (
+          <SwiperSlide key={String(item.id)}>
+            <Link to={`/plus/${item.slug}`} className="block">
+              <div className="overflow-hidden rounded-3xl bg-gray-50">
+                <div className="relative">
+                  {image && (
+                    <img
+                      src={image}
+                      alt={(title?.rendered as string) || ""}
+                      className="aspect-video w-full object-cover"
+                      loading="lazy"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-black/20" />
+                  <div className="absolute left-4 top-4">
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold">
+                      {acf?.content_type as string}
+                    </span>
+                  </div>
+                  <div className="absolute bottom-4 right-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-600 text-white shadow-lg">
+                    <Play />
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="line-clamp-2 text-lg font-bold">{(title?.rendered as string) || ""}</h3>
+                  <p className="mt-2 text-sm text-gray-600">{acf?.guest_name as string}</p>
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="text-xs font-medium text-gray-500">{acf?.duration as string}</span>
+                    <span className="text-xs font-semibold text-primary">Watch Now</span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </SwiperSlide>
+        )
+      })}
+    </Swiper>
+  );
+}
 
 export function HomePage() {
   const { data: voksPlus, isLoading: vpLoading, isError: vpError, refetch: vpRefetch } = useVoksPlus()
   const { data: programs, isLoading: prLoading, isError: prError, refetch: prRefetch } = usePrograms()
-  const missionEnabled = useIsFeatureEnabled("mission")
 
   return (
     <>
@@ -33,17 +88,15 @@ export function HomePage() {
       <div className="flex w-full flex-col gap-6">
         <BrandHeader />
 
+        <AudioPlayerCard compact highlight />
+
         <PromoBanner />
 
         <NotificationCenter />
 
-        {missionEnabled && <MissionWidget />}
-
         <QuickAccess />
 
-        <AudioPlayerCard />
-
-        <section className="rounded-3xl bg-white p-6 shadow-sm">
+        <section className="rounded-3xl bg-white p-6 shadow-sm scroll-mt-24">
           <SectionHeader title="Voks+" label="Premium Content" viewAllLink="/plus" />
           <div className="mt-5">
             {vpLoading && (
@@ -57,53 +110,12 @@ export function HomePage() {
               <EmptyState title="No content yet" message="Check back soon for new premium content" />
             )}
             {!vpLoading && !vpError && voksPlus && voksPlus.length > 0 && (
-            <Swiper modules={[Autoplay]} spaceBetween={16} slidesPerView={1.15}>
-              {voksPlus.map((item) => {
-                const image =
-                  item._embedded?.['wp:featuredmedia']?.[0]?.media_details?.sizes?.medium_large?.source_url ??
-                  item._embedded?.['wp:featuredmedia']?.[0]?.source_url
-
-                return (
-                  <SwiperSlide key={item.id}>
-                    <Link to={`/plus/${item.slug}`} className="block">
-                      <div className="overflow-hidden rounded-3xl bg-gray-50">
-                        <div className="relative">
-                          {image && (
-                            <img
-                              src={image}
-                              alt={item.title.rendered}
-                              className="aspect-video w-full object-cover"
-                            />
-                          )}
-                          <div className="absolute inset-0 bg-black/20" />
-                          <div className="absolute left-4 top-4">
-                            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold">
-                              {item.acf?.content_type}
-                            </span>
-                          </div>
-                          <div className="absolute bottom-4 right-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-600 text-white shadow-lg">
-                            <FaPlay />
-                          </div>
-                        </div>
-                        <div className="p-4">
-                          <h3 className="line-clamp-2 text-lg font-bold">{item.title.rendered}</h3>
-                          <p className="mt-2 text-sm text-gray-600">{item.acf?.guest_name}</p>
-                          <div className="mt-3 flex items-center justify-between">
-                            <span className="text-xs font-medium text-gray-500">{item.acf?.duration}</span>
-                            <span className="text-xs font-semibold text-primary">Watch Now</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  </SwiperSlide>
-                )
-              })}
-            </Swiper>
+              <VoksPlusSlider items={voksPlus} />
             )}
           </div>
         </section>
 
-        <section>
+        <section className="scroll-mt-24">
           <SectionHeader title="Programs" label="All Shows" viewAllLink="/programs" />
           {prLoading && (
             <div className="mt-5 grid grid-cols-2 gap-4">

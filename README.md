@@ -1,162 +1,119 @@
-# Voks PWA - Gamified Mission System
+# Voks PWA — Gamified Radio Experience
 
-Voks PWA is a progressive web application for managing gamified missions, rewards, and leaderboards with Supabase backend and WordPress integration.
+Voks PWA is a progressive web application for Voks Radio Bandung, featuring gamified missions, rewards, live streaming, and an admin dashboard — powered by Supabase + WordPress.
 
 ## Features
 
+### 📻 Live Streaming
+- Real-time radio streaming with HLS.js
+- Live chat, polls, reactions, and giveaways
+- Now playing + schedule integration
+
 ### 🎯 Mission System
-- Complete mission CRUD operations
-- Mission statistics tracking
-- Status management (active, scheduled, completed)
-- WordPress mission updates integration
+- WordPress-defined mission catalog
+- Auto-claim, share, and listen missions
+- Progress tracking with XP rewards
+- Developer mission sandbox for testing
 
-### 🏆 Reward System  
-- Reward catalog management
-- Reward redemption history
-- Point-based reward system
-- User reward tracking
+### 🏆 Reward & Marketplace
+- Reward catalog synced from WordPress
+- VXP-based rewards + paid marketplace
+- Voucher pool management
+- Inventory lock with TTL
 
-### 📊 Analytics Dashboard
-- User, mission, XP, and redemption analytics
-- Interactive period filtering (7/30/90 days)
-- Bar chart visualizations with recharts
-- Loading/error/empty state handling
+### 💰 Wallet & Economy
+- Dual-ledger wallet (current + lifetime VXP)
+- Transaction history with atomic create+commit
+- Daily earnings cap + spending limits
+- XP level/badge system (DB-backed thresholds)
 
 ### 👑 Leaderboard
-- Lifetime, weekly, and monthly rankings
-- Auto-refresh functionality
-- Points and XP tracking
+- Lifetime, weekly, monthly rankings
+- XP-based positioning
+- Auto-refresh
 
-### 📣 Notification System
-- Broadcast notifications to all/premium users
-- Notification management
-- Real-time delivery via Supabase
+### 📣 Notifications
+- Broadcast to all/premium users
+- Real-time via Supabase
+- Notification stories component
 
 ### ⚙️ Admin Panel
-- Analytics dashboard
-- Mission management
-- Reward catalog
-- User management
-- Platform settings configuration
+- Dashboard, users, transactions, rewards
+- Mission management, campaigns
+- Analytics (charts with recharts)
+- Settings, feature flags, broadcasts
+- Automation, knowledge base, audit log
 
 ## Tech Stack
 
-- **Frontend**: React 18 + TypeScript + Vite
-- **Styling**: Tailwind CSS
-- **UI Components**: Radix UI
-- **Charts**: Recharts
-- **Backend**: Supabase (PostgreSQL, Auth, Functions)
-- **External API**: WordPress REST API
--(Add missing Vite cache optimization for Swiper integration)
+- **Frontend**: React 19 + TypeScript + Vite 8
+- **Styling**: Tailwind CSS 4 + Radix UI
+- **State**: React Query (server) + Zustand (client)
+- **Backend**: Supabase (PostgreSQL, Auth, Edge Functions)
+- **CMS**: WordPress REST API
+- **PWA**: vite-plugin-pwa (Workbox)
+- **Deploy**: Cloudflare Pages
 
-## Recent Updates (2026-07-13)
+## Architecture (6-Layer Flow)
 
-✅ **Fixed Homepage runtime error** - Resolved "Invalid hook call" issue with Swiper components by:
-- Cleared Vite cache (`node_modules/.vite`)
-- Added React and Swiper modules to `optimizeDeps.include`
-- Fixed unused React import in `HomePage.tsx`
+```
+UI → Hook → Service → Repository → Edge Function → Database
+```
 
-✅ **Enhanced Analytics Module** - Complete analytics dashboard with:
-- Full state handling (loading, error, empty, data)
-- 6 new analytics components (StatCard, AnalyticsBarChart, PeriodFilter, AnalyticsSkeleton, AnalyticsEmptyState, AnalyticsErrorState)
-- Auth verification in edge function
-- TypeScript compilation fixes
+- **UI**: Components render, call hooks only
+- **Hooks**: Bridge between UI and services
+- **Services**: Business logic
+- **Repositories**: Data access only
+- **Edge Functions**: Server-side logic (25 functions)
+- **Database**: PostgreSQL via Supabase
+
+Two data sources, never swap roles:
+- **WordPress** owns content: missions, rewards, programs, articles, promos
+- **Supabase** owns user data: profiles, auth, progress, transactions
+
+## Key Stats
+
+| Metric | Value |
+|--------|-------|
+| Edge Functions | 25 (all with Zod validation + structured logging) |
+| Database Tables | 65+ |
+| PWA Cache | 106 precache entries, ~3.4 MiB |
+| Build | 0 TypeScript errors |
+| Audit Score | 6.5 → 9.0+ / 10 |
 
 ## Getting Started
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+cp .env.example .env.local
+# Fill in VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY
+npm run dev
+```
 
-2. Set up environment variables:
-   ```bash
-   cp .env.example .env.local
-   # Add Supabase and WordPress credentials
-   ```
+## Available Commands
 
-3. Start development server:
-   ```bash
-   npm run dev
-   ```
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Vite dev server (PWA enabled) |
+| `npm run build` | `tsc -b && vite build` |
+| `npm run check` | `tsc --noEmit` |
+| `npm run lint` | `eslint .` |
+| `npm run preview` | Cloudflare Pages preview |
+| `npm run deploy` | Build + deploy to Cloudflare |
 
 ## Project Status
 
-✅ Completed modules:
-- Mission CRUD operations
-- Reward system  
-- Leaderboard
-- Analytics dashboard
-- Notification system
-- Admin settings
-- Homepage with Swiper integration
+✅ **Phase A** — Core Foundation (Auth, Streaming, Missions, Rewards, Profile)
+✅ **Phase B** — Engagement & Economy (Leaderboard, XP, Wallet, Admin Panel)
+✅ **Phase C** — Commerce & Automation (Marketplace, Checkout, Vouchers, Campaigns)
+✅ **Phase D** — Production Hardening (Security audit, Wallet V2, RLS, Edge Functions)
+✅ **Phase E** — Platform Completion (Feature flags, Admin tools, Fraud protection)
+✅ **Fase 0-3** — Audit V1 Remediation (Security, Data Integrity, Marketplace)
+✅ **Fase 4** — Architecture Enforcement (Layer separation, Decoupling, Naming)
+✅ **Fase 5** — Performance Optimization (Code splitting, Lazy loading, Caching)
 
-⚠️ Known issues: Build errors in Broadcast, Missions, Rewards, Leaderboard modules (pre-existing, not in scope)
-
-## Troubleshooting
+## Vite Cache Issues
 
 If you encounter "Invalid hook call" errors with Swiper:
-1. Clear Vite cache: `rm -rf node_modules/.vite`
-2. Ensure `optimizeDeps.include` config exists in `vite.config.ts`
-3. Check React imports are properly declared
-
-## Expand the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. Delete `node_modules/.vite`
+2. Verify `optimizeDeps.include` has `react`, `react-dom`, `swiper/react`, `swiper/modules`

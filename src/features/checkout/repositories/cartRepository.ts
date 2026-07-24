@@ -1,6 +1,16 @@
 import { supabase } from "@/lib/supabase";
 import type { Cart } from "../types";
 
+export async function getProductById(productId: string) {
+  const { data } = await supabase
+    .from("marketplace_products")
+    .select("id, name, product_type, price, is_active")
+    .eq("id", productId)
+    .maybeSingle();
+
+  return data;
+}
+
 export async function getCart(userId: string): Promise<Cart> {
   const { data, error } = await supabase.rpc("get_cart", {
     p_user_id: userId,

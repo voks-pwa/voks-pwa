@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import { supabase } from "@/lib/supabase";
 import type {
   LiveMessage,
@@ -9,16 +11,26 @@ import type {
 
 export type { LiveMessageInsert };
 
+const messageSchema = z.object({
+  user_id: z.string().uuid(),
+  message: z.string().min(1).max(500),
+  display_name: z.string().max(100).nullable().optional(),
+  avatar_url: z.string().max(500).nullable().optional(),
+  badge_name: z.string().max(100).nullable().optional(),
+  level: z.number().int().min(0),
+});
+
 export async function insertMessage(input: LiveMessageInsert): Promise<LiveMessage> {
+  const parsed = messageSchema.parse(input);
   const { data, error } = await supabase
     .from("live_messages")
     .insert({
-      user_id: input.user_id,
-      message: input.message,
-      display_name: input.display_name,
-      avatar_url: input.avatar_url,
-      badge_name: input.badge_name,
-      level: input.level,
+      user_id: parsed.user_id,
+      message: parsed.message,
+      display_name: parsed.display_name ?? null,
+      avatar_url: parsed.avatar_url ?? null,
+      badge_name: parsed.badge_name ?? null,
+      level: parsed.level,
     })
     .select()
     .single();

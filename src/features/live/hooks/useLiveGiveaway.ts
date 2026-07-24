@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
 import type { LiveGiveaway } from "../types";
 import * as repo from "../repositories/liveRepository";
+import * as channelRepo from "../repositories/liveChannelRepository";
 
 export function useLiveGiveaway(userId: string | undefined) {
   const [giveaways, setGiveaways] = useState<LiveGiveaway[]>([]);
@@ -11,19 +11,12 @@ export function useLiveGiveaway(userId: string | undefined) {
   useEffect(() => {
     repo.getActiveGiveaways().then(setGiveaways).catch(console.error);
 
-    const channel = supabase
-      .channel("live-giveaways")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "live_giveaways" },
-        () => {
-          repo.getActiveGiveaways().then(setGiveaways).catch(console.error);
-        }
-      )
-      .subscribe();
+    const channel = channelRepo.createGiveawayChannel(() => {
+      repo.getActiveGiveaways().then(setGiveaways).catch(console.error);
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      channelRepo.removeChannel(channel);
     };
   }, []);
 

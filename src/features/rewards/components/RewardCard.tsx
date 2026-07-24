@@ -1,4 +1,5 @@
 import type { RewardAggregate } from "../types/rewardAggregate";
+import { OptimizedImage } from "@/components/ui/OptimizedImage";
 
 interface Props {
   reward: RewardAggregate;
@@ -48,7 +49,7 @@ export function RewardCard({
     >
       <div className="relative h-48 overflow-hidden bg-gradient-to-br from-[#5d5b3d] via-[#887845] to-[#bda752]">
 
-        <img
+        <OptimizedImage
           src={imageSrc}
           alt={reward.name}
           className="h-full w-full object-cover"

@@ -1,7 +1,12 @@
-import { debit } from "@/features/wallet/services/walletEngine";
-import { validateTransaction } from "@/features/economy/services/economyEngine";
-import { initiatePayment } from "@/features/payment/services/paymentService";
-import { recordEvent } from "@/features/commerce/services/commerceEngine";
+import {
+  debit,
+  validateTransaction,
+  initiatePayment,
+  recordEvent,
+  requestVoucher,
+  confirmVoucherAssignment,
+  getInventoryByProductId,
+} from "@/core/checkout-engine";
 import { getActiveCart } from "./cartService";
 import {
   lockOrderInventory,
@@ -50,7 +55,7 @@ export async function executeCheckout(
         userId,
         amount: total,
         transactionType: "REDEEM",
-        transactionKey: `CHECKOUT_${userId}_${order.id}_${Date.now()}`,
+        transactionKey: `CHECKOUT_${userId}_${order.id}`,
         referenceType: "MARKETPLACE",
         referenceId: order.id,
         description: `Checkout: ${items.length} item(s) for ${total.toLocaleString()} VXP`,
@@ -62,8 +67,30 @@ export async function executeCheckout(
         return { success: false, error: walletResult.error ?? "Payment failed" };
       }
 
+      // Stock re-verification before finalizing
+      for (const item of items) {
+        const inventory = await getInventoryByProductId(item.product_id);
+        const available = inventory ? inventory.total_stock - inventory.reserved_stock : 0;
+        if (!inventory?.unlimited && available < 0) {
+          await releaseOrderInventory(order.id);
+          await updateOrderStatus(order.id, "CANCELLED");
+          return { success: false, error: `Insufficient stock for ${item.product_name}` };
+        }
+      }
+
       await updateOrderStatus(order.id, "PAID");
       await deductOrderInventory(order.id);
+
+      // Assign vouchers for VOUCHER items
+      const voucherItems = items.filter((i) => i.product_type === "VOUCHER");
+      for (const item of voucherItems) {
+        try {
+          const voucherResult = await requestVoucher(item.product_id);
+          if (voucherResult.success && voucherResult.voucher_id) {
+            await confirmVoucherAssignment(voucherResult.voucher_id, userId);
+          }
+        } catch { /* voucher failure non-blocking */ }
+      }
 
       const isAllDigital = items.every((i) => i.product_type === "DIGITAL" || i.product_type === "VOUCHER");
       if (isAllDigital) {

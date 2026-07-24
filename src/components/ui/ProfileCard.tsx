@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
+import { OptimizedImage } from '@/components/ui/OptimizedImage'
 
 interface ProfileCardProps {
   avatarUrl?: string | null
@@ -14,7 +15,7 @@ export function ProfileCard({ avatarUrl, displayName, badgeName }: ProfileCardPr
       className="mb-6 flex items-center justify-between rounded-2xl bg-white p-4 shadow-sm border border-gray-100"
     >
       <div className="flex items-center gap-4">
-        <img
+        <OptimizedImage
           src={avatarUrl || '/default-avatar.png'}
           alt="Profile"
           className="h-12 w-12 rounded-full object-cover ring-2 ring-gray-100"

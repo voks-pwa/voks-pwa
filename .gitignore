@@ -30,3 +30,7 @@ AI/*
 !.dev.vars.example
 .env*
 !.env.example
+
+# Project-specific
+AI_SKILLS/
+session-*.md

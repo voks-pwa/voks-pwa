@@ -340,6 +340,7 @@ export function BroadcastPage() {
                     src={wp.featured_image.source_url}
                     alt=""
                     className="h-16 w-16 shrink-0 rounded-xl object-cover"
+                    loading="lazy"
                   />
                 )}
                 <div className="flex-1 min-w-0">

@@ -1,4 +1,4 @@
-import { xpTransaction } from "./xpTransaction";
+import { debit } from "@/features/wallet/services/walletEngine";
 
 export interface DeductVXPInput {
   userId: string;
@@ -13,11 +13,13 @@ export async function deductVXP({
   reason,
   reference_id,
 }: DeductVXPInput) {
-  return xpTransaction({
+  return debit({
     userId,
-    amount: -Math.abs(amount),
-    reason,
-    reference_id,
-    transaction_type: "reward",
+    amount: Math.abs(amount),
+    transactionType: "REDEEM",
+    transactionKey: reference_id ? `REDEEM_${userId}_${reference_id}` : undefined,
+    referenceType: "reward",
+    referenceId: reference_id,
+    description: reason,
   });
 }

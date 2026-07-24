@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { getCatalogCount, upsertAchievementCatalogItem } from "../repositories/achievementRepository";
 import type { AchievementCatalogItem, AchievementMetric } from "../types";
 
 export const ACHIEVEMENT_CATALOG: AchievementCatalogItem[] = [
@@ -109,43 +109,14 @@ export const ACHIEVEMENT_CATALOG: AchievementCatalogItem[] = [
 ];
 
 export async function ensureAchievementCatalog(): Promise<void> {
-  const { count, error: countError } = await supabase
-    .from("achievements")
-    .select("*", { count: "exact", head: true });
+  const count = await getCatalogCount();
 
-  if (countError) {
-    console.error("[ACHIEVEMENT] count error", countError);
-    console.error("[ACHIEVEMENT] count error detail", JSON.stringify(countError, null, 2));
-    return;
-  }
+  if (count === null) return;
 
-  if (count && count >= ACHIEVEMENT_CATALOG.length) return;
+  if (count >= ACHIEVEMENT_CATALOG.length) return;
 
   for (const item of ACHIEVEMENT_CATALOG) {
-    const { error } = await supabase.from("achievements").upsert(
-      {
-        slug: item.slug,
-        title: item.title,
-        description: item.description,
-        badge_icon: item.badge_icon,
-        badge_name: item.badge_name,
-        tier: item.tier,
-        reward_vxp: item.reward_vxp,
-        trigger_type: item.trigger_type,
-        trigger_key: item.trigger_key,
-        target_value: item.target_value,
-        active: true,
-      },
-      {
-        onConflict: "slug",
-        ignoreDuplicates: true,
-      },
-    );
-
-    if (error) {
-      console.error(`[ACHIEVEMENT] seed failed for ${item.slug}`, error);
-      console.error(`[ACHIEVEMENT] seed error detail`, JSON.stringify(error, null, 2));
-    }
+    await upsertAchievementCatalogItem(item);
   }
 }
 

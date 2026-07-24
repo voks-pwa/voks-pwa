@@ -1,41 +1,44 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { z } from "npm:zod";
+import { requireAdmin } from "../_shared/adminAuth.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const querySchema = z.object({
+  mode: z.enum(["stats", "monitor"]).default("stats"),
+});
 
 Deno.serve(async (req) => {
+  console.log("[admin-missions] ▶ request", req.method, req.url);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   const authHeader = req.headers.get("authorization");
-  if (!authHeader) {
-    return new Response(
-      JSON.stringify({ success: false, error: "Missing authorization" }),
-      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
+  const adminCheck = await requireAdmin(authHeader);
+  if ("error" in adminCheck) return adminCheck.error;
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  const authUser = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-  if (authUser.error || !authUser.data.user) {
-    return new Response(
-      JSON.stringify({ success: false, error: "Unauthorized" }),
-      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-
   try {
     const url = new URL(req.url);
     const mode = url.searchParams.get("mode") ?? "stats";
 
-    if (mode === "monitor") {
+    const parsed = querySchema.safeParse({ mode });
+    if (!parsed.success) {
+      console.warn("[admin-missions] validation failed:", parsed.error.issues.map(i => i.message).join("; "));
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid mode parameter" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    console.log("[admin-missions] validation passed, mode:", parsed.data.mode);
+
+    if (parsed.data.mode === "monitor") {
+      console.log("[admin-missions] fetching monitor data");
       const { data: completions, error: ce } = await supabase
         .from("mission_completions")
         .select("mission_id, completed_at, reward_vxp");
@@ -61,6 +64,7 @@ Deno.serve(async (req) => {
         if (p.claimed) claimedCount++;
       }
 
+      console.log("[admin-missions] ✔ monitor response");
       return new Response(
         JSON.stringify({
           success: true,
@@ -82,6 +86,7 @@ Deno.serve(async (req) => {
       );
     }
 
+    console.log("[admin-missions] fetching stats data");
     const { data: completions, error: completionError } = await supabase
       .from("mission_completions")
       .select("mission_id");
@@ -108,11 +113,13 @@ Deno.serve(async (req) => {
       if (!row.completed) stats[missionId].in_progress++;
     }
 
+    console.log("[admin-missions] ✔ stats response");
     return new Response(
       JSON.stringify({ success: true, stats }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error("[admin-missions] ✖ EXCEPTION:", err instanceof Error ? err.message : String(err));
     return new Response(
       JSON.stringify({ success: false, error: err instanceof Error ? err.message : String(err) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

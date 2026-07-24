@@ -9,7 +9,7 @@ export {
   getUserAssignedVouchers,
   getAvailableVouchers,
   getVoucherDetail,
-} from "./services/voucherPoolEngine";
+} from "./engine/voucherPoolEngine";
 
 export {
   useVoucherPool,

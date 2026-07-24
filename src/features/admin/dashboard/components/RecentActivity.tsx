@@ -1,4 +1,5 @@
 import type { RecentActivityItem } from "../types/dashboard";
+import { OptimizedImage } from "@/components/ui/OptimizedImage";
 import { Star } from "lucide-react";
 
 interface Props {
@@ -38,12 +39,10 @@ export default function RecentActivity({
             className="flex items-center gap-4 border-b last:border-0 px-6 py-5 hover:bg-gray-50 transition-colors"
           >
 
-            <img
-              src={
-                activity.avatar_url ??
-                "https://placehold.co/100"
-              }
+            <OptimizedImage
+              src={activity.avatar_url ?? "https://placehold.co/100"}
               className="h-12 w-12 rounded-full object-cover"
+              alt=""
             />
 
             <div className="flex-1">

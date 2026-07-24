@@ -1,4 +1,4 @@
-export { processRedeem } from "./services/redeemEngine";
+export { processRedeem, type RedeemEngineDependencies } from "./engine/redeemEngine";
 export { useRedeem, useUserRedeems } from "./hooks/useRedeem";
 export { getUserRedeems, getRedeemById, updateRedeemStatus } from "./repositories/redeemRepository";
 export type {

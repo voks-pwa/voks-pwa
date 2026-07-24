@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run check
+        name: TypeScript type check
+
+      - run: npm test
+        name: Unit tests
+
+      - run: npm run build
+        name: Production build
+
+      - name: Check bundle size
+        run: |
+          $totalSize = (Get-ChildItem -Recurse -File dist/assets/*.js,dist/assets/*.css |
+            Measure-Object -Property Length -Sum).Sum
+          $totalSizeKB = [math]::Round($totalSize / 1024)
+          $limitKB = 3500
+          echo "Total JS+CSS bundle size: ${totalSizeKB} KiB (limit: ${limitKB} KiB)"
+          if ($totalSizeKB -gt $limitKB) {
+            Write-Error "Bundle size ${totalSizeKB} KiB exceeds limit ${limitKB} KiB"
+            exit 1
+          }
+        shell: pwsh
+        name: Bundle size check

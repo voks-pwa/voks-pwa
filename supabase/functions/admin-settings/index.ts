@@ -1,12 +1,22 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { z } from "npm:zod";
+import { requireAdmin } from "../_shared/adminAuth.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization,x-client-info,apikey,content-type",
-  "Access-Control-Allow-Methods":
-    "GET,POST,OPTIONS",
-};
+const updateProfileSchema = z.object({
+  action: z.literal("update_profile"),
+  display_name: z.string().optional(),
+  avatar_url: z.string().optional(),
+});
+
+const updateSettingsSchema = z.object({
+  action: z.literal("update_settings"),
+  settings: z.record(z.unknown()).optional(),
+});
+
+const getSchema = z.object({
+  action: z.literal("get").default("get"),
+});
 
 Deno.serve(async (req) => {
   console.log("[admin-settings] ▶ request", req.method, req.url);
@@ -40,48 +50,26 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("authorization");
     console.log("[admin-settings] authorization header:", authHeader ? "present" : "MISSING");
 
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Missing authorization",
-        }),
-        { status: 401, headers: corsHeaders }
-      );
-    }
+    const adminCheck = await requireAdmin(authHeader);
+    if ("error" in adminCheck) return adminCheck.error;
 
-    // ── Supabase auth.getUser ──────────────────────────────
-    console.log("[admin-settings] calling supabase.auth.getUser()");
-    const authUser = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-    console.log("[admin-settings] getUser result:", JSON.stringify({
-      hasUser: !!authUser.data?.user,
-      userId: authUser.data?.user?.id ?? null,
-      error: authUser.error?.message ?? null,
-    }));
+    const userId = adminCheck.caller.id;
 
-    if (authUser.error || !authUser.data.user) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Unauthorized",
-        }),
-        { status: 401, headers: corsHeaders }
-      );
-    }
-
-    const userId = authUser.data.user.id;
-
-    const body =
+    const rawBody =
       req.method === "POST"
-        ? await req.json().catch((e) => {
-            console.error("[admin-settings] failed to parse JSON body:", e);
-            return {};
-          })
-        : {};
+        ? await req.text().catch(() => null)
+        : null;
 
-    const action = body.action ?? "get";
+    let parsedBody: Record<string, unknown> = {};
+    if (rawBody !== null) {
+      try {
+        parsedBody = JSON.parse(rawBody);
+      } catch (e) {
+        console.error("[admin-settings] failed to parse JSON body:", e);
+      }
+    }
+
+    const action = String(parsedBody.action ?? "get");
     console.log("[admin-settings] action:", action, "userId:", userId);
 
     switch (action) {
@@ -133,7 +121,16 @@ Deno.serve(async (req) => {
       }
 
       case "update_profile": {
-        const { display_name, avatar_url } = body;
+        const upParsed = updateProfileSchema.safeParse(parsedBody);
+        if (!upParsed.success) {
+          console.warn("[admin-settings] update_profile validation failed");
+          return new Response(
+            JSON.stringify({ success: false, error: "Invalid update_profile payload" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        console.log("[admin-settings] update_profile validation passed");
+        const { display_name, avatar_url } = upParsed.data;
         console.log("[admin-settings] update_profile:", JSON.stringify({ display_name, avatar_url }));
 
         const { data, error } = await supabase
@@ -165,8 +162,16 @@ Deno.serve(async (req) => {
       }
 
       case "update_settings": {
-        const { settings } = body;
-        console.log("[admin-settings] update_settings keys:", settings && typeof settings === "object" ? Object.keys(settings) : "INVALID");
+        const usParsed = updateSettingsSchema.safeParse(parsedBody);
+        if (!usParsed.success) {
+          console.warn("[admin-settings] update_settings validation failed");
+          return new Response(
+            JSON.stringify({ success: false, error: "settings object required" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        console.log("[admin-settings] update_settings validation passed");
+        const { settings } = usParsed.data;
 
         if (!settings || typeof settings !== "object") {
           return new Response(

@@ -85,6 +85,7 @@ export function RewardDetailSheet({
             src={reward.image_url}
             alt={reward.name}
             className="h-full w-full object-cover"
+            loading="lazy"
             onError={(e) => {
               (e.target as HTMLElement).style.display = 'none'
             }}

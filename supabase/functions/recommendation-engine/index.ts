@@ -1,11 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Content-Type": "application/json",
-};
+import { z } from "npm:zod";
+import { corsHeaders } from "../_shared/cors.ts";
+import { parseBody, validationError } from "../_shared/validation.ts";
 
 const WP_API_URL =
   Deno.env.get("WP_API_URL") ?? "https://voksradio.com/wp-json/wp/v2";
@@ -32,19 +28,26 @@ interface WPReward {
     reward_type?: string;
   };
   _embedded?: {
-    "wp:featuredmedia"?: Array<{
-      source_url: string;
-    }>;
+    "wp:featuredmedia"?: Array<{ source_url: string }>;
   };
 }
 
+const inputSchema = z.object({
+  type: z.enum(["popular-missions", "popular-rewards", "personalized"]),
+  user_id: z.string().optional(),
+  limit: z.number().int().min(1).max(50).optional(),
+});
+
 Deno.serve(async (req) => {
+  console.log("[recommendation-engine] ▶ request", req.method, req.url);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   const authHeader = req.headers.get("authorization");
   if (!authHeader) {
+    console.warn("[recommendation-engine] missing authorization");
     return new Response(
       JSON.stringify({ success: false, error: "Missing authorization" }),
       { status: 401, headers: corsHeaders },
@@ -58,10 +61,19 @@ Deno.serve(async (req) => {
       { global: { headers: { authorization: authHeader } } },
     );
 
-    const { type, user_id, limit } = await req.json();
+    const rawBody = await req.text().catch(() => null);
+    const parsed = parseBody(rawBody, inputSchema);
+    if (!parsed.success) {
+      console.warn("[recommendation-engine] validation failed:", parsed.error);
+      return validationError(parsed.error, corsHeaders);
+    }
+    console.log("[recommendation-engine] validation passed, type:", parsed.data.type);
+
+    const { type, user_id, limit } = parsed.data;
     const p_limit = Math.min(limit ?? 10, 50);
 
     if (type === "popular-missions") {
+      console.log("[recommendation-engine] fetching popular missions");
       const { data: idsData, error: idsError } = await supabase
         .rpc("get_popular_mission_ids", { p_limit });
 
@@ -78,6 +90,7 @@ Deno.serve(async (req) => {
         ...(wpMissions[m.mission_id] ?? { title: `Mission #${m.mission_id}` }),
       }));
 
+      console.log("[recommendation-engine] ✔ popular-missions, count:", enriched.length);
       return new Response(
         JSON.stringify({ success: true, data: enriched }),
         { headers: corsHeaders },
@@ -85,6 +98,7 @@ Deno.serve(async (req) => {
     }
 
     if (type === "popular-rewards") {
+      console.log("[recommendation-engine] fetching popular rewards");
       const { data: idsData, error: idsError } = await supabase
         .rpc("get_popular_reward_ids", { p_limit });
 
@@ -103,6 +117,7 @@ Deno.serve(async (req) => {
         image_url: wpRewards[r.reward_id]?.image_url ?? null,
       }));
 
+      console.log("[recommendation-engine] ✔ popular-rewards, count:", enriched.length);
       return new Response(
         JSON.stringify({ success: true, data: enriched }),
         { headers: corsHeaders },
@@ -110,6 +125,7 @@ Deno.serve(async (req) => {
     }
 
     if (type === "personalized" && user_id) {
+      console.log("[recommendation-engine] fetching personalized recs for user:", user_id);
       const { data: recData, error: recError } = await supabase
         .rpc("get_user_recommendation_ids", { p_user_id: user_id, p_limit });
 
@@ -145,6 +161,7 @@ Deno.serve(async (req) => {
         ...(wpMissions[m.mission_id] ?? { title: `Mission #${m.mission_id}` }),
       }));
 
+      console.log("[recommendation-engine] ✔ personalized response");
       return new Response(
         JSON.stringify({
           success: true,
@@ -158,11 +175,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    console.warn("[recommendation-engine] invalid type or missing user_id");
     return new Response(
       JSON.stringify({ success: false, error: "Invalid type or missing user_id" }),
       { status: 400, headers: corsHeaders },
     );
   } catch (err) {
+    console.error("[recommendation-engine] ✖ EXCEPTION:", err instanceof Error ? err.message : "Unknown error");
     return new Response(
       JSON.stringify({
         success: false,

@@ -1,6 +1,56 @@
 import { supabase } from "@/lib/supabase";
 import type { UserAchievement } from "../types";
 
+export async function getCatalogCount(): Promise<number | null> {
+  const { count, error } = await supabase
+    .from("achievements")
+    .select("*", { count: "exact", head: true });
+
+  if (error) {
+    console.error("[ACHIEVEMENT] count error", error);
+    return null;
+  }
+
+  return count;
+}
+
+export async function upsertAchievementCatalogItem(item: {
+  slug: string;
+  title: string;
+  description: string;
+  badge_icon: string;
+  badge_name: string;
+  tier: string;
+  reward_vxp: number;
+  trigger_type: string;
+  trigger_key: string;
+  target_value: number;
+}): Promise<void> {
+  const { error } = await supabase.from("achievements").upsert(
+    {
+      slug: item.slug,
+      title: item.title,
+      description: item.description,
+      badge_icon: item.badge_icon,
+      badge_name: item.badge_name,
+      tier: item.tier,
+      reward_vxp: item.reward_vxp,
+      trigger_type: item.trigger_type,
+      trigger_key: item.trigger_key,
+      target_value: item.target_value,
+      active: true,
+    },
+    {
+      onConflict: "slug",
+      ignoreDuplicates: true,
+    },
+  );
+
+  if (error) {
+    console.error(`[ACHIEVEMENT] seed failed for ${item.slug}`, error);
+  }
+}
+
 export async function getCatalog(): Promise<
   Array<{
     id: number;

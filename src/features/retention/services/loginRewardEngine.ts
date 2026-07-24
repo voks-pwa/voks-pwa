@@ -5,18 +5,15 @@ import {
 import { recordDailyActivity } from "./streakEngine";
 import { grantReward } from "@/core/reward-engine";
 import { track } from "@/core/action-engine/engine";
-import { calculateXP, loadEconomyConfig } from "@/features/economy/services/economyEngine";
+import { calculateXP } from "@/features/economy/services/economyEngine";
 
 export async function loginRewardForStreak(userId: string, streakDay: number): Promise<number> {
-  const config = await loadEconomyConfig();
-
   const dailyCalc = await calculateXP({ source: "DAILY_LOGIN", userId, context: { streakDay } });
   const streakCalc = await calculateXP({ source: "STREAK_LOGIN", userId, context: { streakDay } });
 
   const value = dailyCalc.finalXP + (streakDay - 1) * streakCalc.finalXP;
-  const maxXp = config?.VXP_EARNING_DAILY_CAP ?? 200;
 
-  return Math.min(value, maxXp);
+  return value;
 }
 
 export async function processDailyLoginReward(userId: string): Promise<void> {

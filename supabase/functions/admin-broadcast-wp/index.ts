@@ -1,56 +1,53 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization,x-client-info,apikey,content-type",
-  "Access-Control-Allow-Methods":
-    "GET,POST,OPTIONS",
-};
+import { z } from "npm:zod";
+import { requireAdmin } from "../_shared/adminAuth.ts";
+import { corsHeaders } from "../_shared/cors.ts";
+import { parseBody, validationError } from "../_shared/validation.ts";
+import { fetchWithRetry } from "../_shared/retry.ts";
 
 const WP_API_URL = "https://voksradio.com/wp-json/wp/v2/notification?_embed";
 
+const inputSchema = z.object({
+  action: z.enum(["list"]).default("list"),
+});
+
 Deno.serve(async (req) => {
+  console.log("[admin-broadcast-wp] ▶ request", req.method, req.url);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
     const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Missing authorization" }),
-        { status: 401, headers: corsHeaders }
-      );
-    }
+    const adminCheck = await requireAdmin(authHeader);
+    if ("error" in adminCheck) return adminCheck.error;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const authUser = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-
-    if (authUser.error || !authUser.data.user) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized" }),
-        { status: 401, headers: corsHeaders }
-      );
+    const rawBody = await req.text().catch(() => null);
+    const parsed = parseBody(rawBody, inputSchema);
+    if (!parsed.success) {
+      console.warn("[admin-broadcast-wp] validation failed:", parsed.error);
+      return validationError(parsed.error, corsHeaders);
     }
+    console.log("[admin-broadcast-wp] validation passed");
 
-    const body = await req.json().catch(() => ({}));
-    const action = body.action ?? "list";
+    const { action } = parsed.data;
 
     switch (action) {
       case "list": {
-        const wpResponse = await fetch(WP_API_URL, {
+        console.log("[admin-broadcast-wp] fetching WordPress notifications");
+        const wpResponse = await fetchWithRetry(WP_API_URL, {
           headers: { "Accept": "application/json" },
           signal: AbortSignal.timeout(10000),
         });
 
         if (!wpResponse.ok) {
+          console.error("[admin-broadcast-wp] WordPress API returned", wpResponse.status);
           return new Response(
             JSON.stringify({ success: false, error: `WordPress API returned ${wpResponse.status}` }),
             { status: 502, headers: corsHeaders }
@@ -70,6 +67,7 @@ Deno.serve(async (req) => {
             (post._embedded as Record<string, unknown>)?.["wp:featuredmedia"]?.[0] as { source_url?: string } ?? null,
         }));
 
+        console.log("[admin-broadcast-wp] ✔ list response, items:", notifications.length);
         return new Response(
           JSON.stringify({ success: true, notifications }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -77,12 +75,14 @@ Deno.serve(async (req) => {
       }
 
       default:
+        console.warn("[admin-broadcast-wp] unknown action:", action);
         return new Response(
           JSON.stringify({ success: false, message: "Unknown action" }),
           { status: 400, headers: corsHeaders }
         );
     }
   } catch (err) {
+    console.error("[admin-broadcast-wp] ✖ EXCEPTION:", err instanceof Error ? err.message : String(err));
     return new Response(
       JSON.stringify({
         success: false,

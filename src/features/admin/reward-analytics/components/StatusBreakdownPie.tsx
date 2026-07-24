@@ -1,4 +1,10 @@
-import { AnalyticsPieChart } from "@/features/admin/analytics/components";
+import { lazy, Suspense } from "react";
+
+const AnalyticsPieChart = lazy(() =>
+  import("@/features/admin/analytics/components/AnalyticsPieChart").then(m => ({
+    default: m.AnalyticsPieChart,
+  })),
+);
 
 interface StatusBreakdownPieProps {
   data: Record<string, number>;
@@ -10,10 +16,12 @@ const STATUS_COLORS = [
 
 export function StatusBreakdownPie({ data }: StatusBreakdownPieProps) {
   return (
-    <AnalyticsPieChart
-      title="Redeem Status Breakdown"
-      data={data}
-      colors={STATUS_COLORS}
-    />
+    <Suspense fallback={<div className="h-[280px] animate-pulse rounded-3xl bg-gray-100" />}>
+      <AnalyticsPieChart
+        title="Redeem Status Breakdown"
+        data={data}
+        colors={STATUS_COLORS}
+      />
+    </Suspense>
   );
 }

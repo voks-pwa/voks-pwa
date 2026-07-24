@@ -1,9 +1,6 @@
 import { useAnnouncers } from '@/hooks/useAnnouncers'
 import { Link } from 'react-router-dom'
-import {
-  FaInstagram,
-  FaTiktok,
-} from 'react-icons/fa'
+import { Globe, Music2 } from 'lucide-react'
 
 export function AnnouncersPage() {
   const { data, isLoading, error } = useAnnouncers()
@@ -42,6 +39,7 @@ export function AnnouncersPage() {
                   <img
                     src={image}
                     alt={announcer.title.rendered}
+                    loading="lazy"
                     className="aspect-[4/5] w-full object-cover"
                   />
                 )}
@@ -70,7 +68,7 @@ hover:scale-110
 hover:bg-pink-100
 "
     >
-      <FaInstagram size={20} />
+      <Globe size={20} />
     </a>
   )}
 
@@ -90,7 +88,7 @@ hover:scale-110
 hover:bg-gray-200
 "
     >
-      <FaTiktok size={20} />
+      <Music2 size={20} />
     </a>
   )}
 

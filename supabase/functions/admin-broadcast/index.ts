@@ -1,12 +1,26 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { z } from "npm:zod";
+import { requireAdmin } from "../_shared/adminAuth.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization,x-client-info,apikey,content-type",
-  "Access-Control-Allow-Methods":
-    "GET,POST,OPTIONS",
-};
+const createSchema = z.object({
+  title: z.string().min(1, "title is required"),
+  message: z.string().min(1, "message is required"),
+  type: z.string().optional(),
+  priority: z.string().optional(),
+  audience: z.string().optional(),
+  deep_link: z.string().optional(),
+  image_url: z.string().optional(),
+  scheduled_at: z.string().optional(),
+});
+
+const sendSchema = z.object({
+  id: z.number().int().positive("id is required"),
+});
+
+const listSchema = z.object({
+  action: z.literal("list").default("list"),
+});
 
 Deno.serve(async (req) => {
   console.log("[admin-broadcast] ▶ request", req.method, req.url);
@@ -38,68 +52,45 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("authorization");
     console.log("[admin-broadcast] authorization header:", authHeader ? "present" : "MISSING");
 
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Missing authorization" }),
-        { status: 401, headers: corsHeaders }
-      );
-    }
+    const adminCheck = await requireAdmin(authHeader);
+    if ("error" in adminCheck) return adminCheck.error;
 
-    // ── Supabase auth.getUser ──────────────────────────────
-    console.log("[admin-broadcast] calling supabase.auth.getUser()");
-    const authUser = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-    console.log("[admin-broadcast] getUser result:", JSON.stringify({
-      hasUser: !!authUser.data?.user,
-      userId: authUser.data?.user?.id ?? null,
-      error: authUser.error?.message ?? null,
-    }));
+    const userId = adminCheck.caller.id;
 
-    if (authUser.error || !authUser.data.user) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized" }),
-        { status: 401, headers: corsHeaders }
-      );
-    }
-
-    const userId = authUser.data.user.id;
-
-    const body =
+    const rawBody =
       req.method === "POST"
-        ? await req.json().catch((e) => {
-            console.error("[admin-broadcast] failed to parse JSON body:", e);
-            return {};
-          })
-        : {};
+        ? await req.text().catch(() => null)
+        : null;
 
-    const action = body.action ?? "list";
+    let action = "list";
+    let parsedBody: Record<string, unknown> = {};
+
+    if (rawBody !== null) {
+      try {
+        parsedBody = JSON.parse(rawBody);
+      } catch {
+        console.error("[admin-broadcast] failed to parse JSON body");
+      }
+    }
+
+    action = String(parsedBody.action ?? "list");
     console.log("[admin-broadcast] action:", action, "userId:", userId);
 
     switch (action) {
       case "create": {
-        const {
-          title,
-          message,
-          type,
-          priority,
-          audience,
-          deep_link,
-          image_url,
-          scheduled_at,
-        } = body;
-
-        console.log("[admin-broadcast] create payload:", JSON.stringify({ title, hasMessage: !!message, type, priority, audience }));
-
-        if (!title || !message) {
+        const createParsed = createSchema.safeParse(parsedBody);
+        if (!createParsed.success) {
+          console.warn("[admin-broadcast] create validation failed:", createParsed.error.issues.map(i => i.message).join("; "));
           return new Response(
-            JSON.stringify({
-              success: false,
-              error: "title and message are required",
-            }),
-            { status: 400, headers: corsHeaders }
+            JSON.stringify({ success: false, error: "title and message are required" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
+        console.log("[admin-broadcast] create validation passed");
+
+        const { title, message, type, priority, audience, deep_link, image_url, scheduled_at } = createParsed.data;
+
+        console.log("[admin-broadcast] create payload:", JSON.stringify({ title, hasMessage: !!message, type, priority, audience }));
 
         console.log("[admin-broadcast] query: broadcasts.insert(...)");
         const { data, error } = await supabase
@@ -164,15 +155,17 @@ Deno.serve(async (req) => {
       }
 
       case "send": {
-        const { id } = body;
-        console.log("[admin-broadcast] send id:", id);
-
-        if (!id) {
+        const sendParsed = sendSchema.safeParse(parsedBody);
+        if (!sendParsed.success) {
+          console.warn("[admin-broadcast] send validation failed: missing id");
           return new Response(
             JSON.stringify({ success: false, error: "broadcast id required" }),
             { status: 400, headers: corsHeaders }
           );
         }
+        console.log("[admin-broadcast] send validation passed");
+
+        const { id } = sendParsed.data;
 
         console.log("[admin-broadcast] query: broadcasts.select(*).eq(id).single()");
         const { data: broadcast, error: fetchError } = await supabase

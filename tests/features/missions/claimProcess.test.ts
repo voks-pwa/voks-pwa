@@ -1,16 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { MissionConfig } from '@/features/missions/types/mission'
 
-const { mockRpc, mockFrom, mockSelect, mockEq, mockMaybeSingle } = vi.hoisted(() => ({
+const { mockRpc, mockFrom, mockSelect, mockEq, mockMaybeSingle, mockCalculateXP, mockGrantReward } = vi.hoisted(() => ({
   mockRpc: vi.fn(),
   mockFrom: vi.fn(),
   mockSelect: vi.fn(),
   mockEq: vi.fn(),
   mockMaybeSingle: vi.fn(),
+  mockCalculateXP: vi.fn(),
+  mockGrantReward: vi.fn(),
 }))
 
 vi.mock('@/lib/supabase', () => ({
   supabase: { rpc: mockRpc, from: mockFrom },
+}))
+
+vi.mock('@/features/economy/services/economyEngine', () => ({
+  calculateXP: mockCalculateXP,
+}))
+
+vi.mock('@/core/reward-engine', () => ({
+  grantReward: mockGrantReward,
 }))
 
 import { processMissionClaim, autoClaimIfEligible } from '@/features/missions/services/MissionClaimService'
@@ -33,7 +43,11 @@ function makeMission(overrides?: Partial<MissionConfig>): MissionConfig {
   }
 }
 
-beforeEach(() => { vi.clearAllMocks() })
+beforeEach(() => { 
+  vi.clearAllMocks()
+  mockCalculateXP.mockResolvedValue({ finalXP: 100 })
+  mockGrantReward.mockResolvedValue({ success: true, skipped: false })
+})
 
 describe('processMissionClaim', () => {
   it('returns error when userId is empty', async () => {
@@ -43,6 +57,7 @@ describe('processMissionClaim', () => {
   })
 
   it('calls claim_mission_reward RPC with correct params', async () => {
+    mockCalculateXP.mockResolvedValue({ finalXP: 200 })
     mockRpc.mockResolvedValue({ data: { success: true, reward: 200, current_vxp: 1500 }, error: null })
 
     await processMissionClaim('user-abc', makeMission({ id: 42, reward: 200, period: 'once' }))
@@ -80,6 +95,7 @@ describe('processMissionClaim', () => {
   })
 
   it('falls back to mission.reward when RPC omits reward', async () => {
+    mockCalculateXP.mockResolvedValue({ finalXP: 75 })
     mockRpc.mockResolvedValue({ data: { success: true, current_vxp: 600 }, error: null })
     const r = await processMissionClaim('user-1', makeMission({ reward: 75 }))
 
@@ -140,6 +156,7 @@ describe('autoClaimIfEligible', () => {
   })
 
   it('passes correct params to claim RPC from auto-claim', async () => {
+    mockCalculateXP.mockResolvedValue({ finalXP: 50 })
     mockMaybeSingle.mockResolvedValue({ data: null, error: null })
     mockRpc.mockResolvedValue({ data: { success: true, reward: 50, current_vxp: 1200 }, error: null })
 

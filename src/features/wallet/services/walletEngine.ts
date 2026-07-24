@@ -41,9 +41,8 @@ function generateTransactionKey(
   userId: string,
   referenceId?: string,
 ): string {
-  const ts = Date.now();
-  const ref = referenceId ? `${referenceId}_` : "";
-  return `${type}_${userId}_${ref}${ts}`;
+  const ref = referenceId ? `${referenceId}` : `manual_${Date.now()}`;
+  return `${type}_${userId}_${ref}`;
 }
 
 export async function credit(input: CreditInput): Promise<WalletResult> {

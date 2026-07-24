@@ -1,9 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "@/features/auth/useAuth";
-import { processRedeem } from "../services/redeemEngine";
+import { processRedeem, type RedeemEngineDependencies } from "../engine/redeemEngine";
 import { getUserRedeems } from "../repositories/redeemRepository";
 import type { RedeemInput } from "../types";
+import { recordEvent } from "@/features/commerce/services/commerceEngine";
+import { requestVoucher, assignVoucher } from "@/features/voucher/engine/voucherPoolEngine";
+import { createFulfillment } from "@/features/shipping/services/fulfillmentEngine";
 
 export function useRedeem() {
   const { user } = useAuth();
@@ -13,7 +16,8 @@ export function useRedeem() {
     mutationFn: async (input: Omit<RedeemInput, "userId">) => {
       if (!user) throw new Error("User not logged in");
 
-      return processRedeem({ ...input, userId: user.id });
+      const deps: RedeemEngineDependencies = { recordEvent, requestVoucher, assignVoucher, createFulfillment };
+      return processRedeem({ ...input, userId: user.id }, deps);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });

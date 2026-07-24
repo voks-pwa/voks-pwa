@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, BarChart3, Megaphone } from "lucide-react";
 import { useCampaignAnalytics } from "@/features/campaigns/hooks/useCampaignAnalytics";
 import { useCampaign } from "@/features/campaigns/hooks/useCampaigns";
-import { loadCampaignMissions } from "@/features/campaigns/services/campaignMissionLoader";
+import { useCampaignMissions } from "@/features/campaigns/hooks/useCampaignMissions";
 import { CampaignAnalyticsOverview } from "@/features/campaigns/components/analytics/CampaignAnalyticsOverview";
 import { CampaignCompletionFunnel } from "@/features/campaigns/components/analytics/CampaignCompletionFunnel";
 import { CampaignTopMissions } from "@/features/campaigns/components/analytics/CampaignTopMissions";
@@ -21,16 +21,13 @@ export function SponsorAnalyticsPage() {
   const { data: campaign } = useCampaign(slug);
   const { data, isLoading, isError } = useCampaignAnalytics(slug);
 
+  const { state: campaignState } = useCampaignMissions(slug);
   const missionTitles = useMemo(() => {
     const map = new Map<string, string>();
-    if (!slug) return map;
-    loadCampaignMissions(slug)
-      .then((missions) =>
-        missions.forEach((m) => map.set(String(m.id), m.title)),
-      )
-      .catch(() => undefined);
+    if (!campaignState?.missions) return map;
+    campaignState.missions.forEach((m) => map.set(String(m.id), m.title));
     return map;
-  }, [slug]);
+  }, [campaignState]);
 
   return (
     <div className="space-y-6">

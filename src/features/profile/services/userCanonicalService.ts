@@ -1,36 +1,15 @@
-import { supabase } from "@/lib/supabase";
 import { findProfile, findProfileByReferralCode } from "./profileRepository";
-import type { UserBadge, UserStreak } from "@/features/retention/types";
+import { getBadges } from "@/features/retention/repositories/badgeRepository";
+import { getStreaks } from "@/features/retention/repositories/streakRepository";
 import { getAdminPermissions } from "@/features/admin/shared/permissions";
 import type { CanonicalUser } from "../types/canonical";
 
-async function loadBadges(userId: string): Promise<UserBadge[]> {
-  const { data, error } = await supabase
-    .from("user_badges")
-    .select("*")
-    .eq("user_id", userId)
-    .order("earned_at", { ascending: true });
-
-  if (error) {
-    console.error("[CANONICAL USER] badges error", error.message);
-    return [];
-  }
-
-  return (data as UserBadge[]) ?? [];
+async function loadBadges(userId: string) {
+  return getBadges(userId);
 }
 
-async function loadStreaks(userId: string): Promise<UserStreak[]> {
-  const { data, error } = await supabase
-    .from("user_streaks")
-    .select("*")
-    .eq("user_id", userId);
-
-  if (error) {
-    console.error("[CANONICAL USER] streaks error", error.message);
-    return [];
-  }
-
-  return (data as UserStreak[]) ?? [];
+async function loadStreaks(userId: string) {
+  return getStreaks(userId);
 }
 
 export async function getCanonicalUser(userId: string): Promise<CanonicalUser> {

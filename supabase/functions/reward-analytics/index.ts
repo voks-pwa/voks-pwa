@@ -1,14 +1,14 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { z } from "npm:zod";
+import { corsHeaders } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization,x-client-info,apikey,content-type",
-  "Access-Control-Allow-Methods":
-    "GET,POST,OPTIONS",
-};
+const inputSchema = z.object({
+  days: z.number().int().min(1).max(365).optional().default(30),
+});
 
 Deno.serve(async (req) => {
+  console.log("[reward-analytics] ▶ request", req.method, req.url);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -16,6 +16,7 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
+      console.warn("[reward-analytics] missing authorization");
       return new Response(
         JSON.stringify({ success: false, error: "Missing authorization" }),
         { status: 401, headers: corsHeaders },
@@ -32,25 +33,39 @@ Deno.serve(async (req) => {
     );
 
     if (authUser.error || !authUser.data.user) {
+      console.warn("[reward-analytics] unauthorized");
       return new Response(
         JSON.stringify({ success: false, error: "Unauthorized" }),
         { status: 401, headers: corsHeaders },
       );
     }
 
-    const body =
-      req.method === "POST"
-        ? await req.json().catch(() => ({}))
-        : {};
+    let bodyInput: Record<string, unknown> = {};
+    if (req.method === "POST") {
+      try {
+        bodyInput = await req.json();
+      } catch {
+        bodyInput = {};
+      }
+    }
 
-    const days = body.days ?? 30;
+    const parsed = inputSchema.safeParse(bodyInput);
+    if (!parsed.success) {
+      console.warn("[reward-analytics] validation failed:", parsed.error.issues.map(i => i.message).join("; "));
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid input" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { days } = parsed.data;
     const since = new Date();
     since.setDate(since.getDate() - days);
     const sinceStr = since.toISOString();
 
+    console.log("[reward-analytics] fetching analytics, days:", days);
     const wpApiUrl = "https://voksradio.com/wp-json/wp/v2";
 
-    // ── Helper: aggregate by date ──
     function aggByDate(
       items: { [key: string]: unknown }[],
       dateField: string,
@@ -74,7 +89,6 @@ Deno.serve(async (req) => {
       return map;
     }
 
-    // ── Section 1: Reward Overview (WordPress) ──
     let wpTotal = 0;
     let wpPublished = 0;
     let wpFeatured = 0;
@@ -98,7 +112,6 @@ Deno.serve(async (req) => {
       // WordPress fetch failed
     }
 
-    // ── Section 2: Redeem Analytics ──
     let allRedeems: Record<string, unknown>[] = [];
     let recentRedeems: Record<string, unknown>[] = [];
     let redeemCountToday = 0;
@@ -141,7 +154,6 @@ Deno.serve(async (req) => {
       // Redeem section failed
     }
 
-    // ── Section 3: Wallet Analytics ──
     let walletDebits: { created_at: string; amount: number }[] = [];
     let totalVxpRedeemed = 0;
     let avgRedeemCost = 0;
@@ -174,7 +186,6 @@ Deno.serve(async (req) => {
       // Wallet section failed
     }
 
-    // ── Section 4: Inventory Analytics ──
     let inventoryItems: Record<string, unknown>[] = [];
     let inventoryMovements: { created_at: string; transaction_type: string; amount: number }[] = [];
     let lowStockCount = 0;
@@ -202,7 +213,6 @@ Deno.serve(async (req) => {
       // Inventory section failed
     }
 
-    // ── Section 5: Voucher Analytics ──
     let voucherRows: Record<string, unknown>[] = [];
     let voucherAvailable = 0;
     let voucherAssigned = 0;
@@ -235,7 +245,6 @@ Deno.serve(async (req) => {
       ? Math.round((voucherUsed / totalVouchers) * 100)
       : 0;
 
-    // ── Section 6: Shipping Analytics ──
     let shippingRows: Record<string, unknown>[] = [];
     let packingQueue = 0;
     let readyToShip = 0;
@@ -265,13 +274,13 @@ Deno.serve(async (req) => {
       // Shipping section failed
     }
 
-    // ── Section 7: Status Breakdown ──
     const statusBreakdown: Record<string, number> = {};
     for (const r of allRedeems) {
       const s = String(r.status ?? "unknown");
       statusBreakdown[s] = (statusBreakdown[s] ?? 0) + 1;
     }
 
+    console.log("[reward-analytics] ✔ response");
     const response = {
       success: true,
       data: {
@@ -335,15 +344,13 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error("[reward-analytics] ✖ EXCEPTION:", err instanceof Error ? err.message : String(err));
     return new Response(
       JSON.stringify({
         success: false,
         error: err instanceof Error ? err.message : String(err),
       }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type { MissionConfig } from "../types/mission";
 import { isAutoClaimMission } from "../validators";
+import { getMissionProgress } from "../repositories/missionProgressRepository";
 import { grantReward } from "@/core/reward-engine";
 import { calculateXP } from "@/features/economy/services/economyEngine";
 import type { XpSource } from "@/features/economy/types";
@@ -71,13 +72,7 @@ export async function processMissionClaim(userId: string, mission: MissionConfig
 export async function autoClaimIfEligible(userId: string, mission: MissionConfig) {
   if (!isAutoClaimMission(mission)) return null;
 
-  const { data: existing } = await supabase
-    .from("missions_progress")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("mission_id", mission.id)
-    .maybeSingle();
-
+  const existing = await getMissionProgress(userId, mission.id);
   if (existing?.claimed) return null;
 
   return processMissionClaim(userId, mission);

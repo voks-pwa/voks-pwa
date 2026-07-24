@@ -43,6 +43,15 @@ Read AI/ docs in this sequence before coding:
 - Edge Functions: `npm:@supabase/supabase-js@2` (Deno import), JSR deps in `supabase/functions/deno.json`
 - VS Code: Deno extension enabled only for `supabase/functions`
 
+## How AI agents should operate
+
+- Use `AGENTS.md` as the single-source instructions for automated agents. Link to other docs in `AI/` or `docs/` rather than copying content.
+- Before making code changes, run the project's verification commands: `npm run check` then `npm run build` (or the subset relevant to the change).
+- Prefer small, incremental edits and explain rationale in PR descriptions. When adding tests or build changes, include the commands you ran to validate them.
+- Environment: look for `.env` or `.env.local` for `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Do not commit secrets; use placeholders in docs.
+- For Cloudflare/Edge work, consult `wrangler.json` and the `supabase/functions/deno.json` files for runtime/compatibility details.
+- Keep changes minimal in documentation files: link to existing ADRs, architecture notes, or `AI/` docs instead of duplicating.
+
 ## Gotchas
 
 - **Swiper + Vite**: if "Invalid hook call" appears, clear `node_modules/.vite` and verify `optimizeDeps.include` in `vite.config.ts` has `react`, `react-dom`, `swiper/react`, `swiper/modules`

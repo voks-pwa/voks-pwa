@@ -1,52 +1,41 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { z } from "npm:zod";
+import { requireAdmin } from "../_shared/adminAuth.ts";
+import { corsHeaders } from "../_shared/cors.ts";
+import { parseBody, validationError } from "../_shared/validation.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+const inputSchema = z.object({
+  userId: z.string().min(1, "userId is required"),
+});
 
 Deno.serve(async (req) => {
+  console.log("[admin-user-detail] ▶ request", req.method, req.url);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
     const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Missing authorization" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const adminCheck = await requireAdmin(authHeader);
+    if ("error" in adminCheck) return adminCheck.error;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const authUser = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-
-    if (authUser.error || !authUser.data.user) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const rawBody = await req.text().catch(() => null);
+    const parsed = parseBody(rawBody, inputSchema);
+    if (!parsed.success) {
+      console.warn("[admin-user-detail] validation failed:", parsed.error);
+      return validationError(parsed.error, corsHeaders);
     }
+    console.log("[admin-user-detail] validation passed");
 
-    const body = await req.json().catch(() => ({}));
-    const userId = body.userId;
+    const { userId } = parsed.data;
 
-    if (!userId) {
-      return new Response(
-        JSON.stringify({ success: false, error: "userId is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
+    console.log("[admin-user-detail] fetching data for user:", userId);
     const [
       profileResult,
       missionCount,
@@ -67,6 +56,7 @@ Deno.serve(async (req) => {
 
     if (profileResult.error) throw profileResult.error;
 
+    console.log("[admin-user-detail] ✔ response for user:", userId);
     return new Response(
       JSON.stringify({
         success: true,
@@ -85,6 +75,7 @@ Deno.serve(async (req) => {
       }
     );
   } catch (err) {
+    console.error("[admin-user-detail] ✖ EXCEPTION:", String(err));
     return new Response(
       JSON.stringify({ success: false, error: String(err) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

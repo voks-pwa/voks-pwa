@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { supabase } from "@/lib/supabase";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { LiveMessage } from "../types";
 import * as repo from "../repositories/liveRepository";
+import * as channelRepo from "../repositories/liveChannelRepository";
 
 export function useLiveChat(
   userId: string | undefined,
@@ -9,45 +10,32 @@ export function useLiveChat(
 ) {
   const [messages, setMessages] = useState<LiveMessage[]>([]);
   const [sending, setSending] = useState(false);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     repo.getMessages(50).then(setMessages).catch(console.error);
 
-    const channel = supabase
-      .channel("live-chat")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "live_messages" },
-        (payload) => {
-          const msg = payload.new as LiveMessage;
-          if (!msg.deleted) {
-            setMessages((prev) => [...prev, msg]);
-          }
+    const channel = channelRepo.createChatChannel(
+      (payload) => {
+        const msg = payload as LiveMessage;
+        if (!msg.deleted) {
+          setMessages((prev) => [...prev, msg]);
         }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "live_messages" },
-        (payload) => {
-          const msg = payload.new as LiveMessage;
-          setMessages((prev) => prev.map((m) => (m.id === msg.id ? msg : m)));
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "live_messages" },
-        (payload) => {
-          const old = payload.old as LiveMessage;
-          setMessages((prev) => prev.filter((m) => m.id !== old.id));
-        }
-      )
-      .subscribe();
+      },
+      (payload) => {
+        const msg = payload as LiveMessage;
+        setMessages((prev) => prev.map((m) => (m.id === msg.id ? msg : m)));
+      },
+      (payload) => {
+        const old = payload as LiveMessage;
+        setMessages((prev) => prev.filter((m) => m.id !== old.id));
+      },
+    );
 
     channelRef.current = channel;
 
     return () => {
-      supabase.removeChannel(channel);
+      channelRepo.removeChannel(channel);
     };
   }, []);
 

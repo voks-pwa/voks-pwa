@@ -36,6 +36,19 @@ export async function findProfileByReferralCode(code: string) {
   return data as { id: string } | null;
 }
 
+export async function countProfiles(): Promise<number> {
+  const { count, error } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact", head: true });
+
+  if (error) {
+    console.error("[PROFILE_REPO] count error:", error.message);
+    return 0;
+  }
+
+  return count ?? 0;
+}
+
 export async function updateProfileRow(
   id: string,
   input: UpdateProfileInput,

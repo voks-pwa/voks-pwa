@@ -1,11 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Content-Type": "application/json",
-};
+import { z } from "npm:zod";
+import { corsHeaders } from "../_shared/cors.ts";
 
 interface RankInput {
   id: string;
@@ -15,6 +10,11 @@ interface RankInput {
   longest_streak: number;
   created_at: string;
 }
+
+const querySchema = z.object({
+  period: z.enum(["lifetime", "weekly", "monthly"]).default("lifetime"),
+  action: z.string().optional(),
+});
 
 function periodStart(period: string): Date | null {
   const now = new Date();
@@ -33,12 +33,15 @@ function periodStart(period: string): Date | null {
 }
 
 Deno.serve(async (req) => {
+  console.log("[leaderboard] ▶ request", req.method, req.url);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   const authHeader = req.headers.get("authorization");
   if (!authHeader) {
+    console.warn("[leaderboard] missing authorization");
     return new Response(
       JSON.stringify({ success: false, error: "Missing authorization" }),
       { status: 401, headers: corsHeaders },
@@ -54,6 +57,7 @@ Deno.serve(async (req) => {
     authHeader.replace("Bearer ", ""),
   );
   if (authUser.error || !authUser.data.user) {
+    console.warn("[leaderboard] unauthorized");
     return new Response(
       JSON.stringify({ success: false, error: "Unauthorized" }),
       { status: 401, headers: corsHeaders },
@@ -64,11 +68,21 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const period =
-      url.searchParams.get("period") ?? "lifetime";
-    const action = url.searchParams.get("action");
+    const rawPeriod = url.searchParams.get("period") ?? "lifetime";
+    const rawAction = url.searchParams.get("action") ?? undefined;
 
-    // ---- Admin: write a ranking snapshot (not part of read path) ----
+    const parsed = querySchema.safeParse({ period: rawPeriod, action: rawAction });
+    if (!parsed.success) {
+      console.warn("[leaderboard] validation failed:", parsed.error.issues.map(i => i.message).join("; "));
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid query parameters" }),
+        { status: 400, headers: corsHeaders },
+      );
+    }
+
+    const { period, action } = parsed.data;
+    console.log("[leaderboard] period:", period, "action:", action ?? "read");
+
     if (action === "snapshot") {
       const { data: roleData } = await supabase
         .from("profiles")
@@ -77,12 +91,14 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (roleData?.role !== "admin" && roleData?.role !== "superadmin") {
+        console.warn("[leaderboard] snapshot forbidden for user:", callerId);
         return new Response(
           JSON.stringify({ success: false, error: "Forbidden" }),
           { status: 403, headers: corsHeaders },
         );
       }
 
+      console.log("[leaderboard] building ranked users for snapshot, period:", period);
       const ranked = await buildRankedUsers(supabase, period);
       const batchAt = new Date().toISOString();
 
@@ -99,16 +115,15 @@ Deno.serve(async (req) => {
 
       if (error) throw error;
 
+      console.log("[leaderboard] ✔ snapshot created at:", batchAt);
       return new Response(
         JSON.stringify({ success: true, snapshot_at: batchAt }),
         { headers: corsHeaders },
       );
     }
 
-    // ---- Read path: pure SELECT ----
     const ranked = await buildRankedUsers(supabase, period);
 
-    // Latest snapshot → previous ranks (most recent batch for this period)
     const { data: batchRows } = await supabase.rpc(
       "latest_leaderboard_snapshot",
       { p_period: period },
@@ -139,18 +154,16 @@ Deno.serve(async (req) => {
       ? users.slice(Math.max(0, myIndex - 2), myIndex + 3)
       : [];
 
+    console.log("[leaderboard] ✔ response, users:", users.length);
     return new Response(
       JSON.stringify({
         success: true,
-        data: {
-          users,
-          myRank,
-          nearby,
-        },
+        data: { users, myRank, nearby },
       }),
       { headers: corsHeaders },
     );
   } catch (err) {
+    console.error("[leaderboard] ✖ EXCEPTION:", err instanceof Error ? err.message : String(err));
     return new Response(
       JSON.stringify({
         success: false,
@@ -167,7 +180,6 @@ async function buildRankedUsers(
 ): Promise<RankInput[]> {
   const start = periodStart(period);
 
-  // Base profiles
   const { data: profiles, error } = await supabase
     .from("profiles")
     .select(
@@ -181,7 +193,6 @@ async function buildRankedUsers(
 
   const ids = profiles.map((p: Record<string, unknown>) => p.id as string);
 
-  // Achievement counts
   const { data: ach } = await supabase
     .from("user_achievements")
     .select("user_id")
@@ -192,7 +203,6 @@ async function buildRankedUsers(
     achCount[uid] = (achCount[uid] ?? 0) + 1;
   }
 
-  // Streaks (longest)
   const { data: streaks } = await supabase
     .from("user_streaks")
     .select("user_id, longest_streak")
@@ -204,7 +214,6 @@ async function buildRankedUsers(
       (row as Record<string, unknown>).longest_streak as number;
   }
 
-  // Period totals (from vxp_transactions) when period != lifetime
   const periodTotal: Record<string, { total: number; count: number }> = {};
   if (start) {
     const { data: tx } = await supabase
@@ -240,8 +249,6 @@ async function buildRankedUsers(
     return base as unknown as RankInput;
   });
 
-  // Deterministic ranking per AI/73 (stable, no random):
-  // current_vxp > lifetime_vxp > achievement_count > longest_streak > created_at
   const sorters: Array<(u: RankInput) => number> = [
     (u) => Number(u.current_vxp) || 0,
     (u) => Number(u.lifetime_vxp) || 0,

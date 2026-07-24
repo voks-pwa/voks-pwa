@@ -130,6 +130,7 @@ export function RewardDetailPage() {
             src={reward.image_url}
             alt={reward.name}
             className="h-64 w-full object-cover"
+            loading="lazy"
             onError={(e) => {
               (e.target as HTMLElement).style.display = "none";
             }}

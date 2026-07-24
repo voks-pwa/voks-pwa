@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { X } from 'lucide-react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 
 import { useNotifications } from '@/hooks/useNotifications'
 
@@ -56,6 +57,15 @@ export function NotificationsPage() {
         !dismissed.includes(item.id)
     ) ?? []
 
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  const virtualizer = useVirtualizer({
+    count: visibleNotifications.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 140,
+    overscan: 5,
+  })
+
   if (isLoading) {
 
     return (
@@ -68,7 +78,11 @@ export function NotificationsPage() {
 
   return (
     <>
-      <div className="p-6 pb-24">
+      <div
+        ref={scrollRef}
+        className="p-6 pb-24 overflow-auto"
+        style={{ maxHeight: '100vh' }}
+      >
 
         <h1 className="mb-6 text-3xl font-bold">
           Notifications
@@ -92,76 +106,86 @@ export function NotificationsPage() {
 
         ) : (
 
-          <div className="space-y-4">
-
-            {visibleNotifications.map(item => (
-
-              <div
-                key={item.id}
-                className="
-                  relative
-                  rounded-3xl
-                  bg-white
-                  p-5
-                  shadow
-                "
-              >
-
-                <button
-                  onClick={() =>
-                    dismissNotification(item.id)
-                  }
-                  className="
-                    absolute
-                    right-4
-                    top-4
-                    rounded-full
-                    p-1
-                    text-gray-400
-                    hover:bg-gray-100
-                  "
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualizer.getVirtualItems().map(virtualItem => {
+              const item = visibleNotifications[virtualItem.index]
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: `${virtualItem.size}px`,
+                    transform: `translateY(${virtualItem.start}px)`,
+                  }}
                 >
-                  <X size={18} />
-                </button>
-
-                <Link
-                  to={`/notifications/${item.id}`}
-                  className="block"
-                >
-
-                  <div className="mb-3">
-
-                    <span
+                  <div
+                    className="
+                      relative
+                      rounded-3xl
+                      bg-white
+                      p-5
+                      shadow
+                    "
+                  >
+                    <button
+                      onClick={() =>
+                        dismissNotification(item.id)
+                      }
                       className="
+                        absolute
+                        right-4
+                        top-4
                         rounded-full
-                        bg-red-100
-                        px-3
-                        py-1
-                        text-xs
-                        font-semibold
-                        text-red-600
+                        p-1
+                        text-gray-400
+                        hover:bg-gray-100
                       "
                     >
-                      {item.acf?.notification_type ??
-                        'Update'}
-                    </span>
+                      <X size={18} />
+                    </button>
 
+                    <Link
+                      to={`/notifications/${item.id}`}
+                      className="block"
+                    >
+                      <div className="mb-3">
+                        <span
+                          className="
+                            rounded-full
+                            bg-red-100
+                            px-3
+                            py-1
+                            text-xs
+                            font-semibold
+                            text-red-600
+                          "
+                        >
+                          {item.acf?.notification_type ??
+                            'Update'}
+                        </span>
+                      </div>
+
+                      <h2 className="text-xl font-bold">
+                        {item.acf?.notification_title}
+                      </h2>
+
+                      <p className="mt-3 text-gray-600">
+                        {item.acf?.notification_message}
+                      </p>
+                    </Link>
                   </div>
-
-                  <h2 className="text-xl font-bold">
-                    {item.acf?.notification_title}
-                  </h2>
-
-                  <p className="mt-3 text-gray-600">
-                    {item.acf?.notification_message}
-                  </p>
-
-                </Link>
-
-              </div>
-
-            ))}
-
+                </div>
+              )
+            })}
           </div>
 
         )}

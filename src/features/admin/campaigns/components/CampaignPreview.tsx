@@ -56,7 +56,7 @@ export function CampaignPreview({ campaign }: { campaign: AdminCampaign }) {
           <div className={`mx-auto max-h-[70vh] overflow-auto ${device.id === "mobile" ? "max-w-sm" : device.id === "tablet" ? "max-w-md" : "max-w-lg"}`}>
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#bda752] to-[#a8913f] p-6 text-white">
               {campaign.banner_url && (
-                <img src={campaign.banner_url} alt={campaign.title} className="absolute inset-0 h-full w-full object-cover opacity-30" />
+                <img src={campaign.banner_url} alt={campaign.title} className="absolute inset-0 h-full w-full object-cover opacity-30" loading="lazy" />
               )}
               <div className="relative">
                 {campaign.sponsor_name && (

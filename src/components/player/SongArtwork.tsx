@@ -1,3 +1,5 @@
+import { OptimizedImage } from '@/components/ui/OptimizedImage'
+
 interface SongArtworkProps {
   artworkUrl: string | null
   title: string
@@ -37,7 +39,7 @@ export function SongArtwork({
       {/* Vinyl */}
       <div className="relative">
         {artworkUrl ? (
-          <img
+          <OptimizedImage
             src={artworkUrl}
             alt={`${title} artwork`}
             style={{

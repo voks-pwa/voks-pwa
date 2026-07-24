@@ -1,54 +1,48 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { z } from "npm:zod";
+import { requireAdmin } from "../_shared/adminAuth.ts";
+import { corsHeaders } from "../_shared/cors.ts";
+import { parseBody, validationError } from "../_shared/validation.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+const inputSchema = z.object({
+  action: z.enum(["ban", "unban", "delete", "update_role", "adjust_vxp"]),
+  userId: z.string().min(1, "userId is required"),
+  actorId: z.string().optional(),
+  amount: z.number().optional(),
+  reason: z.string().optional(),
+  role: z.string().optional(),
+});
 
 Deno.serve(async (req) => {
+  console.log("[admin-user-actions] ▶ request", req.method, req.url);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   const authHeader = req.headers.get("authorization");
-  if (!authHeader) {
-    return new Response(
-      JSON.stringify({ success: false, error: "Missing authorization" }),
-      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
+  const adminCheck = await requireAdmin(authHeader);
+  if ("error" in adminCheck) return adminCheck.error;
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  const authUser = await supabase.auth.getUser(
-    authHeader.replace("Bearer ", ""),
-  );
-
-  if (authUser.error || !authUser.data.user) {
-    return new Response(
-      JSON.stringify({ success: false, error: "Unauthorized" }),
-      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
-
   try {
-    const body = await req.json();
-    const { action, userId, actorId, amount, reason } = body;
-
-    if (!userId) {
-      return new Response(
-        JSON.stringify({ success: false, error: "userId required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    const rawBody = await req.text().catch(() => null);
+    const parsed = parseBody(rawBody, inputSchema);
+    if (!parsed.success) {
+      console.warn("[admin-user-actions] validation failed:", parsed.error);
+      return validationError(parsed.error, corsHeaders);
     }
+    console.log("[admin-user-actions] validation passed, action:", parsed.data.action);
+
+    const { action, userId, actorId, amount, reason, role } = parsed.data;
 
     switch (action) {
       case "ban": {
+        console.log("[admin-user-actions] banning user:", userId);
         const { error } = await supabase
           .from("profiles")
           .update({ role: "banned" })
@@ -57,13 +51,14 @@ Deno.serve(async (req) => {
         if (error) throw error;
 
         await supabase.from("admin_audit_log").insert({
-          actor_id: actorId ?? authUser.data.user.id,
+          actor_id: actorId ?? adminCheck.caller.id,
           action: "ban_user",
           entity: "user_profile",
           entity_id: userId,
           details: "User banned",
         });
 
+        console.log("[admin-user-actions] ✔ ban success:", userId);
         return new Response(
           JSON.stringify({ success: true, message: "User banned" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -71,6 +66,7 @@ Deno.serve(async (req) => {
       }
 
       case "unban": {
+        console.log("[admin-user-actions] unbanning user:", userId);
         const { error } = await supabase
           .from("profiles")
           .update({ role: "member" })
@@ -79,13 +75,14 @@ Deno.serve(async (req) => {
         if (error) throw error;
 
         await supabase.from("admin_audit_log").insert({
-          actor_id: actorId ?? authUser.data.user.id,
+          actor_id: actorId ?? adminCheck.caller.id,
           action: "unban_user",
           entity: "user_profile",
           entity_id: userId,
           details: "User unbanned",
         });
 
+        console.log("[admin-user-actions] ✔ unban success:", userId);
         return new Response(
           JSON.stringify({ success: true, message: "User unbanned" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -93,6 +90,7 @@ Deno.serve(async (req) => {
       }
 
       case "delete": {
+        console.log("[admin-user-actions] deleting user:", userId);
         const { error: profileError } = await supabase
           .from("profiles")
           .update({ role: "banned", display_name: "[Deleted User]" })
@@ -101,27 +99,62 @@ Deno.serve(async (req) => {
         if (profileError) throw profileError;
 
         await supabase.from("admin_audit_log").insert({
-          actor_id: actorId ?? authUser.data.user.id,
+          actor_id: actorId ?? adminCheck.caller.id,
           action: "delete_user",
           entity: "user_profile",
           entity_id: userId,
           details: "User deleted (profile anonymized)",
         });
 
+        console.log("[admin-user-actions] ✔ delete success:", userId);
         return new Response(
           JSON.stringify({ success: true, message: "User deleted" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
 
+      case "update_role": {
+        if (!role || !["member", "admin", "superadmin", "banned"].includes(role)) {
+          console.warn("[admin-user-actions] invalid role:", role);
+          return new Response(
+            JSON.stringify({ success: false, error: "Invalid role" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+
+        console.log("[admin-user-actions] updating role for", userId, "to", role);
+        const { error } = await supabase
+          .from("profiles")
+          .update({ role })
+          .eq("id", userId);
+
+        if (error) throw error;
+
+        await supabase.from("admin_audit_log").insert({
+          actor_id: adminCheck.caller.id,
+          action: "role_update",
+          entity: "user_profile",
+          entity_id: userId,
+          details: `User role updated to ${role}`,
+        });
+
+        console.log("[admin-user-actions] ✔ role update success:", userId, "→", role);
+        return new Response(
+          JSON.stringify({ success: true, message: `Role updated to ${role}` }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
       case "adjust_vxp": {
         if (typeof amount !== "number" || amount === 0) {
+          console.warn("[admin-user-actions] invalid VXP amount:", amount);
           return new Response(
             JSON.stringify({ success: false, error: "Invalid amount" }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
           );
         }
 
+        console.log("[admin-user-actions] adjusting VXP for", userId, "by", amount);
         const { data: profile } = await supabase
           .from("profiles")
           .select("current_vxp, lifetime_vxp")
@@ -129,6 +162,7 @@ Deno.serve(async (req) => {
           .single();
 
         if (!profile) {
+          console.warn("[admin-user-actions] user not found:", userId);
           return new Response(
             JSON.stringify({ success: false, error: "User not found" }),
             { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -140,6 +174,7 @@ Deno.serve(async (req) => {
         const nextCurrent = current + amount;
 
         if (nextCurrent < 0) {
+          console.warn("[admin-user-actions] insufficient VXP for", userId);
           return new Response(
             JSON.stringify({ success: false, error: "Insufficient VXP" }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -163,13 +198,14 @@ Deno.serve(async (req) => {
           .eq("id", userId);
 
         await supabase.from("admin_audit_log").insert({
-          actor_id: actorId ?? authUser.data.user.id,
+          actor_id: actorId ?? adminCheck.caller.id,
           action: "adjust_vxp",
           entity: "user_profile",
           entity_id: userId,
           details: `VXP adjusted by ${amount}: ${reason ?? "Admin adjustment"}`,
         });
 
+        console.log("[admin-user-actions] ✔ VXP adjustment success:", userId, amount);
         return new Response(
           JSON.stringify({ success: true, current_vxp: nextCurrent, lifetime_vxp: nextLifetime }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -183,6 +219,7 @@ Deno.serve(async (req) => {
         );
     }
   } catch (err) {
+    console.error("[admin-user-actions] ✖ EXCEPTION:", String(err));
     return new Response(
       JSON.stringify({ success: false, error: String(err) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },

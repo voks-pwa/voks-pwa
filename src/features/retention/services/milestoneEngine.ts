@@ -4,7 +4,7 @@ import { MILESTONE_CATALOG, type MilestoneDefinition } from "./milestoneCatalog"
 import { grantReward } from "@/core/reward-engine";
 import { track } from "@/core/action-engine/engine";
 import { calculateXP } from "@/features/economy/services/economyEngine";
-import { supabase } from "@/lib/supabase";
+import { getClaimedMissionCount, getReferralCount, getProgressForMission, getShareCount } from "../repositories/metricsRepository";
 
 async function readMilestoneMetric(
   metric: MilestoneDefinition["metric"],
@@ -16,37 +16,17 @@ async function readMilestoneMetric(
       return canonical.lifetime_vxp;
     }
     case "missions": {
-      const { count } = await supabase
-        .from("missions_progress")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("claimed", true);
-      return count ?? 0;
+      return getClaimedMissionCount(userId);
     }
     case "referrals": {
-      const { count } = await supabase
-        .from("referrals")
-        .select("*", { count: "exact", head: true })
-        .eq("referrer_id", userId)
-        .eq("reward_granted", true);
-      return count ?? 0;
+      return getReferralCount(userId);
     }
     case "listening_hours": {
-      const { data } = await supabase
-        .from("missions_progress")
-        .select("progress")
-        .eq("user_id", userId)
-        .eq("mission_id", listenMissionId())
-        .maybeSingle();
-      return Math.floor((data?.progress ?? 0) / 3600);
+      const seconds = await getProgressForMission(userId, listenMissionId());
+      return Math.floor(seconds / 3600);
     }
     case "shares": {
-      const { count } = await supabase
-        .from("activity_logs")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("activity_type", "share");
-      return count ?? 0;
+      return getShareCount(userId);
     }
     case "profile": {
       const canonical = await getCanonicalUser(userId);

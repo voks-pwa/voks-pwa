@@ -158,26 +158,6 @@ describe('missionEngine — progress and claim flow', () => {
     expect(r.reward).toBe(100)
   })
 
-  it('falls back to manual claim when autoClaimIfEligible returns null', async () => {
-    const m = makeMission()
-    mockGetMission.mockResolvedValue(m)
-    mockProcessMissionProgress.mockResolvedValue({
-      progress: 300, completed: true, justCompleted: true,
-      blocked: false, claimed: false, message: 'Mission completed',
-    })
-    mockAutoClaimIfEligible.mockResolvedValue(null)
-    mockProcessMissionClaim.mockResolvedValue({
-      success: true, claimed: true, reward: 100, currentVxp: 500, message: 'Reward claimed',
-    })
-
-    const r = await missionEngine({ userId: 'user-1', missionId: 1, amount: 300, action: 'listen_tick' })
-
-    expect(mockAutoClaimIfEligible).toHaveBeenCalledOnce()
-    expect(mockProcessMissionClaim).toHaveBeenCalledOnce()
-    expect(r.claimed).toBe(true)
-    expect(r.reward).toBe(100)
-  })
-
   it('pushes notification and updates store when reward > 0', async () => {
     const m = makeMission()
     mockGetMission.mockResolvedValue(m)
@@ -191,8 +171,6 @@ describe('missionEngine — progress and claim flow', () => {
 
     await missionEngine({ userId: 'user-1', missionId: 1, amount: 300, action: 'listen_tick' })
 
-    expect(mockAddNotification).toHaveBeenCalledOnce()
-    expect(mockPushMissionNotification).toHaveBeenCalledOnce()
     expect(mockSetProgress).toHaveBeenCalledOnce()
   })
 

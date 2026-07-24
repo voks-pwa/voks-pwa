@@ -1,14 +1,15 @@
+import { memo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { handleDeepLink } from "@/utils/deepLink";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
-import { useQuery } from "@tanstack/react-query";
-import { getPromos } from "@/services/wordpress-api";
+import { usePromos } from "@/hooks/usePromos";
 import { Skeleton } from "./Skeleton";
 import { ErrorState } from "./ErrorState";
 import { ChevronRight } from "lucide-react";
+import { OptimizedImage } from "./OptimizedImage";
 
 function getPromoImage(promo: { _embedded?: Record<string, unknown> }) {
   const media = (promo._embedded?.["wp:featuredmedia"] as Array<Record<string, unknown>> | undefined)?.[0];
@@ -18,14 +19,10 @@ function getPromoImage(promo: { _embedded?: Record<string, unknown> }) {
     || "";
 }
 
-export function PromoBanner() {
+export const PromoBanner = memo(function PromoBanner() {
   const navigate = useNavigate();
 
-  const { data: promos, isLoading, isError, refetch } = useQuery({
-    queryKey: ["promos"],
-    queryFn: getPromos,
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: promos, isLoading, isError, refetch } = usePromos();
 
   if (isLoading) {
     return <Skeleton className="h-48 w-full rounded-3xl" />;
@@ -70,11 +67,10 @@ export function PromoBanner() {
                 className="relative block h-48 w-full overflow-hidden rounded-3xl sm:h-52 focus-visible:outline-2 focus-visible:outline-[#bda752]"
               >
                 {image ? (
-                  <img
+                  <OptimizedImage
                     src={image}
                     alt=""
                     className="h-full w-full object-cover"
-                    loading="lazy"
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#5d5b3d] to-[#bda752]" />
@@ -96,4 +92,4 @@ export function PromoBanner() {
       </div>
     </div>
   );
-}
+})

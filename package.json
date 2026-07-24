@@ -13,32 +13,36 @@
     "preview": "npm run build && wrangler dev",
     "generate:icons": "node scripts/generate-pwa-icons.mjs",
     "prototype:mission": "npx tsx src/features/missions/prototype/tui.ts",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "npm run build && wrangler deploy",
+    "check:size": "node scripts/check-bundle-size.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.2",
     "@tailwindcss/line-clamp": "^0.4.4",
     "@tailwindcss/vite": "^4.3.0",
     "@tanstack/react-query": "^5.101.0",
+    "@tanstack/react-virtual": "^3.14.8",
     "axios": "^1.18.1",
+    "dompurify": "^3.4.12",
     "hls.js": "^1.6.16",
     "lucide-react": "^1.20.0",
     "pdf-parse": "^2.4.5",
     "pdfjs-dist": "^6.1.200",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-icons": "^5.6.0",
     "react-router-dom": "^7.17.0",
     "recharts": "^3.9.2",
     "swiper": "^12.2.0",
     "tailwindcss": "^4.3.0",
     "vaul": "^1.1.2",
     "vite-plugin-pwa": "^1.3.0",
+    "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.43.0",
     "@eslint/js": "^10.0.1",
+    "@types/dompurify": "^3.0.5",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -55,6 +59,7 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12",
+    "vite-imagetools": "^10.0.1",
     "vitest": "^4.1.10",
     "wrangler": "^4.107.0"
   }

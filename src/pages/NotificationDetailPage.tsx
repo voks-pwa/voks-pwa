@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import {
   useNavigate,
   useParams,
@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 
 import { useNotifications } from '@/hooks/useNotifications'
-import { getMedia } from '@/services/wordpress-api'
+import { useMedia } from '@/hooks/useMedia'
 
 import {
   markNotificationRead,
@@ -36,32 +36,22 @@ export function NotificationDetailPage() {
         item.id === Number(id)
     )
 
-  const [image, setImage] =
-    useState('')
-    
-useEffect(() => {
-  if (notification?.id) {
-    markNotificationRead(
-      notification.id
-    )
-  }
-}, [notification])
+  const mediaId =
+    notification?.acf
+      ?.notification_image
+
+  const { data: media } =
+    useMedia(mediaId)
+
+  const image =
+    media?.source_url ?? ''
 
   useEffect(() => {
-    async function loadImage() {
-      const mediaId =
-        notification?.acf
-          ?.notification_image
-
-      if (!mediaId) return
-
-      const media =
-        await getMedia(mediaId)
-
-      setImage(media.source_url)
+    if (notification?.id) {
+      markNotificationRead(
+        notification.id
+      )
     }
-
-    loadImage()
   }, [notification])
 
   if (!notification) {

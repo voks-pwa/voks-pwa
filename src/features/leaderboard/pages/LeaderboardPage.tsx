@@ -97,6 +97,7 @@ function UserRow({
           src={user.avatar_url ?? "https://placehold.co/80"}
           alt={user.display_name ?? ""}
           className="h-12 w-12 rounded-full object-cover ring-2 ring-gray-100"
+          loading="lazy"
         />
 
         <div className="min-w-0 flex-1">
