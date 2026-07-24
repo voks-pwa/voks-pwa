@@ -295,7 +295,72 @@ Final deliverables:
 
 ---
 
-## Session: LivePage Social Hub (Variant C)
+## Session: Phase F — Asset Management System
+
+### Completed
+
+**Upload Gateway Worker** (`workers/asset-upload/src/index.ts`):
+- POST handler: multipart/form-data → validate MIME (jpeg/png/webp) + size (5MB) + JWT → store in R2 with UUID → insert metadata to Supabase `assets` table
+- DELETE handler: verify owner → delete from R2 + Supabase
+- OPTIONS handler: CORS (localhost + voks.app + voks-pwa.pages.dev)
+- File converted to WebP server-side; path pattern: `{asset_type}/{uuid}.webp`
+- 10 asset type folders: avatars, announcers, programs, campaigns, rewards, marketplace, badges, achievements, promos
+
+**Database Migration** (`20260724000000_create_assets.sql`):
+- `assets` table with UUID PK, owner_id FK→profiles, asset_type enum, storage_path, public_url, mime_type, size
+- RLS: everyone SELECT public asset types, owner SELECT own, service_role full access
+
+**Asset Module** (`src/features/assets/`):
+- `types.ts`: `UploadAssetResponse`, `AssetRecord`, `RemoveAssetResponse`
+- `repositories/assetRepository.ts`: Supabase REST queries for assets table
+- `services/assetService.ts`: `uploadAsset()` POST to Worker with retry, `removeAsset()` DELETE from Worker
+
+**React Components**:
+- `AssetUploader.tsx`: dropzone UI, file validation, upload progress, preview
+- `AssetImage.tsx`: lazy-loaded `<img>` with fallback placeholder and refresh-on-error
+
+**Avatar Service Integration**:
+- `uploadAvatarViaAsset()`, `deleteOldAvatarViaAsset()`, `resolveAvatarUrl()` — new methods using Asset Management System
+- `uploadAvatar()` tries asset Worker first, falls back to legacy Supabase Storage
+- `getAvatarSrc()` handles URL and storage path formats
+
+**Verification**: 
+- `npm run check` ✅ — 0 TypeScript errors
+- `npm run build` ✅ — 106 precache entries, 3421 KiB
+
+### Key Decisions
+- Worker deployed separately (not Pages Functions) — cleaner separation, can add image processing later
+- JWT auth verified via Supabase `auth/v1/user` endpoint — no need for DB call
+- OffscreenCanvas server-side: resize (max 2048px) + WebP conversion (quality 0.85) + thumbnail 256px (quality 0.7)
+- File stored as `{folder}/{uuid}.webp` + `{folder}/{uuid}.thumb.webp` in R2
+- Worker serves GET requests for images with Cache-Control headers
+- Asset metadata stored in Supabase, binaries in R2 — follows existing architecture pattern
+- `avatarService.ts` maintains backward compat with legacy Supabase Storage fallback
+- `VITE_UPLOAD_GATEWAY_URL` env var configures Worker URL; defaults to `/api/upload` for Pages proxy
+- Migration `20260822000003_data_integrity.sql` had `SET search_path = ''` without schema qualification — fixed with `public.` prefix
+- Custom domain `cdn.voksradio.com` already connected to R2 bucket `voks-assets` (SSL active) — Worker now uses `CDN_URL` env for generated public URLs
+
+### Deployed
+- Worker: `https://voks-asset-upload.voksmedsos.workers.dev`
+- R2 bucket: `voks-assets`
+- CDN: `cdn.voksradio.com` → R2 (SSL active)
+- Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, CDN_URL
+- Migrations: 20260822000003 (fixed), 20260822000004, 20260822000005
+- ESLint: clean (0 errors in asset module)
+- Build: 106 entries, 3421 KiB
+
+### Remaining for Phase F
+- Integrasi program/announcer/campaign/reward/marketplace modules
+- On-the-fly responsive image resizing
+- Cache invalidation strategy
+
+### Remaining for Phase F
+- Create R2 bucket `voks-assets` on Cloudflare
+- Set Worker secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+- `wrangler deploy` the Worker
+- `supabase db push` migration to remote
+- Set `VITE_UPLOAD_GATEWAY_URL` on Cloudflare Pages env vars
+- Verify end-to-end flow
 
 ### LiveStudioPage — Social Hub rewrite
 - Compact video (40vh max) with program info overlaid on gradient

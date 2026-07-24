@@ -56,12 +56,12 @@ ON CONFLICT (level) DO NOTHING;
 
 -- RPC to get all level thresholds
 CREATE OR REPLACE FUNCTION get_xp_levels()
-RETURNS SETOF xp_levels
+RETURNS SETOF public.xp_levels
 LANGUAGE sql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
-  SELECT * FROM xp_levels ORDER BY level ASC;
+  SELECT * FROM public.xp_levels ORDER BY level ASC;
 $$;
 
 -- RPC to calculate level from lifetime XP
@@ -77,11 +77,11 @@ DECLARE
   v_next_xp_required INTEGER;
   v_max_level INTEGER;
 BEGIN
-  SELECT MAX(level) INTO v_max_level FROM xp_levels;
+  SELECT MAX(level) INTO v_max_level FROM public.xp_levels;
 
   SELECT lvl.level, lvl.xp_required
   INTO v_current_level, v_current_xp_required
-  FROM xp_levels lvl
+  FROM public.xp_levels lvl
   WHERE lvl.xp_required <= p_lifetime_xp
   ORDER BY lvl.level DESC
   LIMIT 1;
@@ -92,7 +92,7 @@ BEGIN
   END IF;
 
   SELECT xp_required INTO v_next_xp_required
-  FROM xp_levels
+  FROM public.xp_levels
   WHERE level = v_current_level + 1;
 
   IF v_next_xp_required IS NULL THEN
@@ -148,12 +148,12 @@ ON CONFLICT (slug) DO NOTHING;
 
 -- RPC to get all badge definitions
 CREATE OR REPLACE FUNCTION get_xp_badges()
-RETURNS SETOF xp_badges
+RETURNS SETOF public.xp_badges
 LANGUAGE sql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
-  SELECT * FROM xp_badges ORDER BY sort_order ASC;
+  SELECT * FROM public.xp_badges ORDER BY sort_order ASC;
 $$;
 
 -- RPC to calculate badge for a user
@@ -169,12 +169,12 @@ DECLARE
   v_badge TEXT;
 BEGIN
   SELECT role, lifetime_vxp INTO v_role, v_lifetime_vxp
-  FROM profiles WHERE id = p_user_id;
+  FROM public.profiles WHERE id = p_user_id;
 
   -- Role-based badges take priority
   IF v_role IN ('superadmin', 'admin', 'announcer') THEN
     SELECT title INTO v_badge
-    FROM xp_badges
+    FROM public.xp_badges
     WHERE min_role = v_role
     ORDER BY sort_order ASC
     LIMIT 1;
@@ -186,7 +186,7 @@ BEGIN
 
   -- VXP-based badges
   SELECT title INTO v_badge
-  FROM xp_badges
+  FROM public.xp_badges
   WHERE min_role IS NULL
     AND min_lifetime_vxp <= v_lifetime_vxp
   ORDER BY min_lifetime_vxp DESC
@@ -254,16 +254,16 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
   SELECT 'VXP_EARNING_DAILY_CAP', setting_value, 'soft_limit', 'Daily earning cap for VXP'
-  FROM economy_settings WHERE setting_key = 'VXP_EARNING_DAILY_CAP'
+  FROM public.economy_settings WHERE setting_key = 'VXP_EARNING_DAILY_CAP'
   UNION ALL
   SELECT 'VXP_SPENDING_DAILY_CAP', setting_value, 'soft_limit', 'Daily spending cap for VXP'
-  FROM economy_settings WHERE setting_key = 'VXP_SPENDING_DAILY_CAP'
+  FROM public.economy_settings WHERE setting_key = 'VXP_SPENDING_DAILY_CAP'
   UNION ALL
   SELECT 'VXP_MIN_BALANCE_FOR_REDEMPTION', setting_value, 'hard_limit', 'Minimum balance required for redemption'
-  FROM economy_settings WHERE setting_key = 'VXP_MIN_BALANCE_FOR_REDEMPTION'
+  FROM public.economy_settings WHERE setting_key = 'VXP_MIN_BALANCE_FOR_REDEMPTION'
   UNION ALL
   SELECT 'STREAK_BREAK_ALLOWANCE', setting_value, 'soft_limit', 'Allowed streak breaks before reset'
-  FROM economy_settings WHERE setting_key = 'STREAK_BREAK_ALLOWANCE';
+  FROM public.economy_settings WHERE setting_key = 'STREAK_BREAK_ALLOWANCE';
 $$;
 
 -- ============================================================
@@ -306,25 +306,33 @@ $$;
 -- ============================================================
 -- 2.13: Fix subscription_invoices.wallet_txn_id — INT → BIGINT + FK
 -- ============================================================
-ALTER TABLE subscription_invoices
-  ALTER COLUMN wallet_txn_id TYPE BIGINT USING wallet_txn_id::BIGINT;
-
--- Add FK if wallet_txn_id references wallet_ledger.id (BIGINT)
--- Only add if the column has values pointing to existing wallet_ledger entries
 DO $$
 BEGIN
   IF EXISTS (
-    SELECT 1 FROM subscription_invoices
-    WHERE wallet_txn_id IS NOT NULL
-      AND NOT EXISTS (SELECT 1 FROM wallet_ledger WHERE id = wallet_txn_id)
+    SELECT FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'subscription_invoices'
+  ) AND EXISTS (
+    SELECT FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'wallet_ledger'
   ) THEN
-    RAISE NOTICE 'Some wallet_txn_id values do not reference existing wallet_ledger entries; FK skipped';
-  ELSE
     ALTER TABLE subscription_invoices
-      ADD CONSTRAINT fk_subscription_invoices_wallet_txn
-      FOREIGN KEY (wallet_txn_id)
-      REFERENCES wallet_ledger(id)
-      ON DELETE SET NULL;
+      ALTER COLUMN wallet_txn_id TYPE BIGINT USING wallet_txn_id::BIGINT;
+
+    IF EXISTS (
+      SELECT 1 FROM subscription_invoices
+      WHERE wallet_txn_id IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM wallet_ledger WHERE id = wallet_txn_id)
+    ) THEN
+      RAISE NOTICE 'Some wallet_txn_id values do not reference existing wallet_ledger entries; FK skipped';
+    ELSE
+      ALTER TABLE subscription_invoices
+        ADD CONSTRAINT fk_subscription_invoices_wallet_txn
+        FOREIGN KEY (wallet_txn_id)
+        REFERENCES wallet_ledger(id)
+        ON DELETE SET NULL;
+    END IF;
+  ELSE
+    RAISE NOTICE 'subscription_invoices table does not exist; skipping 2.13';
   END IF;
 END;
 $$;
@@ -335,16 +343,26 @@ $$;
 DO $$
 BEGIN
   IF EXISTS (
-    SELECT 1 FROM reward_redeems rr
-    WHERE NOT EXISTS (SELECT 1 FROM reward_catalog rc WHERE rc.id = rr.reward_id)
+    SELECT FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'reward_redeems'
+  ) AND EXISTS (
+    SELECT FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'reward_catalog'
   ) THEN
-    RAISE NOTICE 'Some reward_redeems.reward_id values do not reference existing reward_catalog entries; FK skipped';
+    IF EXISTS (
+      SELECT 1 FROM reward_redeems rr
+      WHERE NOT EXISTS (SELECT 1 FROM reward_catalog rc WHERE rc.id = rr.reward_id)
+    ) THEN
+      RAISE NOTICE 'Some reward_redeems.reward_id values do not reference existing reward_catalog entries; FK skipped';
+    ELSE
+      ALTER TABLE reward_redeems
+        ADD CONSTRAINT fk_reward_redeems_reward_catalog
+        FOREIGN KEY (reward_id)
+        REFERENCES reward_catalog(id)
+        ON DELETE RESTRICT;
+    END IF;
   ELSE
-    ALTER TABLE reward_redeems
-      ADD CONSTRAINT fk_reward_redeems_reward_catalog
-      FOREIGN KEY (reward_id)
-      REFERENCES reward_catalog(id)
-      ON DELETE RESTRICT;
+    RAISE NOTICE 'reward_redeems or reward_catalog table does not exist; skipping 2.14';
   END IF;
 END;
 $$;

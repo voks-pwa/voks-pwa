@@ -3,7 +3,9 @@ import { Link } from "react-router-dom";
 import { ChevronLeft, Radio, Music, Calendar, Clock, MessageCircle, Info, List } from "lucide-react";
 import { LiveStudioPlayer } from "@/components/live/LiveStudioPlayer";
 import { LiveChat } from "@/features/live/components/LiveChat";
-import { useLivePresence } from "@/features/live/hooks/useLivePresence";
+import { LiveReactions } from "@/features/live/components/LiveReactions";
+import { LivePoll } from "@/features/live/components/LivePoll";
+import { LiveGiveaway } from "@/features/live/components/LiveGiveaway";
 import { useCurrentProgram } from "@/hooks/useCurrentProgram";
 import { usePrograms } from "@/hooks/usePrograms";
 import { useAuth } from "@/features/auth/useAuth";
@@ -22,7 +24,6 @@ export function LiveStudioPage() {
   const { user } = useAuth();
   const currentProgram = useCurrentProgram();
   const { data: programs } = usePrograms();
-  const { viewerCount } = useLivePresence(user?.id);
   const [activeTab, setActiveTab] = useState<Tab>("chat");
 
   const schedule = useMemo(
@@ -49,23 +50,30 @@ export function LiveStudioPage() {
         </Link>
       </div>
 
-      <div className="relative overflow-hidden rounded-3xl bg-black shadow-xl">
-        <div className="max-h-[40vh] overflow-hidden">
-          <LiveStudioPlayer viewerCount={viewerCount} />
+      <div className="overflow-hidden rounded-3xl bg-black shadow-xl">
+        <LiveStudioPlayer />
+      </div>
+      {currentProgram && (
+        <div className="mt-3 rounded-2xl bg-white p-4 shadow-sm">
+          <span className="inline-block rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+            On Air Now
+          </span>
+          <h2 className="mt-2 text-base font-bold text-gray-900">
+            {currentProgram.title.rendered}
+          </h2>
+          {currentProgram.acf?.host && (
+            <p className="mt-0.5 text-sm text-gray-500">{currentProgram.acf.host}</p>
+          )}
         </div>
-        {currentProgram && (
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-4 pt-8">
-            <span className="inline-block rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">
-              ON AIR NOW
-            </span>
-            <h2 className="mt-1 text-base font-bold text-white">
-              {currentProgram.title.rendered}
-            </h2>
-            {currentProgram.acf?.host && (
-              <p className="text-sm text-gray-300">{currentProgram.acf.host}</p>
-            )}
-          </div>
-        )}
+      )}
+
+      <div className="mt-3 space-y-3">
+        <div className="rounded-2xl bg-white p-4 shadow-sm">
+          <LivePoll userId={user?.id} />
+        </div>
+        <div className="rounded-2xl bg-white p-4 shadow-sm">
+          <LiveGiveaway userId={user?.id} />
+        </div>
       </div>
 
       <div className="sticky top-0 z-10 -mx-4 border-b border-gray-100 bg-white/95 backdrop-blur-sm sm:mx-0">
@@ -93,8 +101,13 @@ export function LiveStudioPage() {
 
       <div className="mt-4">
         {activeTab === "chat" && (
-          <div className="h-[500px] lg:h-[600px]">
-            <LiveChat />
+          <div>
+            <div className="h-[500px] lg:h-[600px]">
+              <LiveChat />
+            </div>
+            <div className="mt-3">
+              <LiveReactions userId={user?.id} />
+            </div>
           </div>
         )}
 

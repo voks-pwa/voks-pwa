@@ -1,0 +1,15 @@
+{
+  "name": "voks-asset-upload",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "r2_buckets": [
+    {
+      "binding": "ASSETS_BUCKET",
+      "bucket_name": "voks-assets"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

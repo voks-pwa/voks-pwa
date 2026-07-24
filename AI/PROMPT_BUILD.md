@@ -1,120 +1,55 @@
-Baca seluruh dokumentasi yang tercantum pada AI/15_CURRENT_TASK.md terlebih dahulu.
+Baca seluruh dokumentasi berikut terlebih dahulu:
 
-AI/15_CURRENT_TASK.md adalah satu-satunya sumber kebenaran (Single Source of Truth) mengenai sprint yang sedang berjalan.
+AI/15_CURRENT_TASK.md
 
-Ikuti seluruh instruksi yang terdapat di dalam file tersebut sebelum melakukan perubahan kode.
+AI/230_ASSET_MANAGEMENT_SYSTEM.md
 
-Working Rules
+AI/231_CLOUDFLARE_R2_SETUP.md
 
-Ikuti Repository Pattern.
+AI/232_ASSET_DATABASE_SCHEMA.md
 
-Gunakan Canonical User Service sebagai Single Source of Truth.
+AI/233_UPLOAD_GATEWAY.md
 
-Gunakan Wallet Ledger V2 untuk seluruh transaksi VXP.
+AI/234_IMAGE_PROCESSING_PIPELINE.md
 
-Gunakan Economy Engine untuk seluruh perhitungan XP, reward, pricing, multiplier, dan economy.
-
-Jangan membuat query langsung ke:
-
-profiles
-wallet_summary
-user_badges
-user_streaks
-
-Semua akses database harus melalui Repository Layer.
-
-Architecture Rules
-
-Jangan mengubah arsitektur yang sudah ada.
-
-Jangan melakukan refactor besar di luar scope sprint.
-
-Jangan membuat improvisasi fitur.
-
-Jangan menambahkan dependency baru kecuali benar-benar dibutuhkan oleh sprint.
-
-Seluruh perubahan harus tetap konsisten dengan blueprint yang ada pada folder AI.
-
-Scope Rules
-
-Kerjakan hanya sprint yang sedang aktif sesuai AI/15_CURRENT_TASK.md.
-
-Jangan mengerjakan sprint berikutnya.
-
-Jangan mengubah module yang tidak berhubungan.
-
-Jika menemukan bug di luar sprint:
-
-Catat sebagai Technical Debt.
-Jangan diperbaiki kecuali memang menjadi bagian sprint.
-Verification
-
-Sebelum sprint dianggap selesai, lakukan:
-
-TypeScript Check
-ESLint
-Production Build
-
-Pastikan semuanya PASS.
-
-Documentation Update
-
-Setelah sprint selesai, update:
+AI/235_ASSET_CHECKLIST.md
 
 AI/17_CHANGELOG.md
-AI/15_CURRENT_TASK.md
-Checklist sesuai phase yang sedang berjalan
-Dokumen milestone bila diperlukan
 
-Jangan membuat dokumentasi baru di luar blueprint kecuali diminta.
+AI/194_TECHNICAL_DEBT_REGISTER.md
 
-Report Format
+Kemudian kerjakan Asset Management System sesuai blueprint.
 
-Selalu berikan laporan dengan format berikut:
+Aturan:
 
-Summary
+- Jangan mengubah arsitektur platform.
+- Gunakan Repository Pattern.
+- Semua upload harus melalui Cloudflare Worker.
+- Cloudflare R2 hanya menerima upload dari Worker.
+- PostgreSQL tidak boleh menyimpan binary image.
+- Semua image diubah menjadi WebP.
+- Semua filename menggunakan UUID.
+- Metadata disimpan di tabel assets.
+- Seluruh modul harus menggunakan Asset Service.
 
-Ringkasan pekerjaan.
+Lakukan:
 
-Files Changed
+- TypeScript Check
+- ESLint
+- Production Build
 
-Daftar file yang berubah.
+Update:
 
-Verification
-TypeScript
-ESLint
-Build
-Impact
+- AI/17_CHANGELOG.md
+- AI/235_ASSET_CHECKLIST.md
+- AI/15_CURRENT_TASK.md
 
-Dampak terhadap sistem.
+Output:
 
-Remaining
+- Ringkasan
+- File yang berubah
+- Verifikasi
+- Dampak
+- Remaining
 
-Apa yang masih tersisa untuk sprint berikutnya.
-
-Stop Rule
-
-Setelah satu sprint selesai:
-
-BERHENTI.
-
-Jangan lanjut ke sprint berikutnya.
-
-Tunggu approval.
-
-Absolute Priority
-Stabilitas Platform
-Konsistensi Arsitektur
-Tidak ada duplicate logic
-Tidak ada duplicate cache
-Tidak ada direct database query
-Build harus selalu PASS
-Goal
-
-Selesaikan proyek sesuai roadmap yang terdapat pada folder AI hingga mencapai:
-
-Phase E Complete
-Production Ready
-QA Complete
-Public Launch
-Version 1.0 Stable
+Berhenti setelah Asset Management System selesai dan tunggu approval.

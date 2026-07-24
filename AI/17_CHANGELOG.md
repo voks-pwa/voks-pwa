@@ -8,9 +8,47 @@ Version: 1.0
 
 ---
 
-## 2026-07-23
+## 2026-07-24
 
-### Audit V1 Remediation — Fase 0 & Fase 1 ✅
+### Phase F — Asset Management System ✅
+
+**Upload Gateway Worker** (`workers/asset-upload/`):
+- POST handler: menerima file upload (form-data: file, asset_type, owner_id), validasi MIME (jpeg/png/webp), size limit 5 MB, JWT auth via Supabase
+- DELETE handler: verifikasi owner, hapus dari R2 (+ thumbnail) + metadata dari Supabase
+- GET handler: serve image dari R2 dengan cache headers (public, max-age=31536000)
+- OPTIONS handler: CORS restricted ke allowlist (localhost, voks.app, voks-pwa.pages.dev)
+- **Image processing**: OffscreenCanvas server-side → resize (max 2048px) + WebP conversion (quality 0.85) + thumbnail 256px (quality 0.7)
+- File disimpan di R2 dengan UUID naming: `{folder}/{uuid}.webp` + `{folder}/{uuid}.thumb.webp`
+- Path pattern per 10 asset types: avatars, announcers, programs, campaigns, rewards, marketplace, badges, achievements, promos
+
+**Database Migration** (`20260822000005_create_assets_table.sql`):
+- `assets` table: id (UUID PK), owner_id (FK profiles), asset_type (10 enum), storage_path, public_url, thumbnail_url, mime_type, size, width, height, created_at, updated_at
+- RLS: public read, owner INSERT/UPDATE/DELETE, updated_at auto-trigger
+- Applied to remote Supabase via `supabase db push`
+
+**Asset Module** (`src/features/assets/`):
+- Types: `Asset`, `AssetInsert`, `AssetUploadInput`, `AssetUploadResult` with width/height/thumbnail fields
+- Repository: `getAsset()`, `getAssetsByOwner()`, `getAssetsByType()`, `insertAsset()`, `deleteAsset()` via Supabase REST
+- Service: `uploadAsset()` (POST ke Worker), `removeAsset()` (DELETE ke Worker), `uploadAndReplace()` (delete old + upload new)
+- Hooks: `useAssetUpload()`, `useAssetUploadWithReplace()` (React Query mutations)
+- Components: `AssetUploader` (dropzone + preview + upload progress), `AssetImage` (lazy image with fallback)
+
+**Avatar Service Integration**:
+- `avatarService.ts`: tambah `uploadAvatarViaAsset()`, `deleteOldAvatarViaAsset()`, `resolveAvatarUrl()`
+- `uploadAvatar()` sekarang coba via Asset Worker dulu (server-side processing), fallback ke legacy Supabase Storage
+- `getAvatarSrc()` otomatis handle URL vs storage path
+
+**Migration Fixes**:
+- `20260822000003_data_integrity.sql`: fix `SET search_path = ''` → qualify table references with `public.`
+- `20260822000003`: wrap `subscription_invoices` / `reward_redeems` ALTER TABLE in existence checks (tables from Phase C not on remote)
+
+**Deployment**:
+- Worker deployed: `https://voks-asset-upload.voksmedsos.workers.dev`
+- CDN domain: `cdn.voksradio.com` → R2 bucket (SSL active)
+- Worker secrets set: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, CDN_URL
+- Migrations applied: 22000003 (fixed), 22000004, 22000005
+
+**Verification**: `npm run check` ✅ (0 errors), `npm run build` ✅ (106 precache entries, 3421 KiB), ESLint ✅
 
 **Full codebase audit (AI/AUDIT_V1.md)** — 12 dimensions, 676 files scanned, Production Readiness Score 6.5/10.
 Remediation roadmap (AI/TODO_v2.md): 7 phases, 96 tasks.
