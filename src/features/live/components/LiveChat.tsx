@@ -6,7 +6,7 @@ import { useProfile } from "@/features/profile/hooks/useProfile";
 import type { LiveMessage } from "../types";
 
 export function LiveChat() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { data: profile } = useProfile();
   const { messages, send, remove, pin, sending } = useLiveChat(user?.id, profile ?? undefined);
   const [input, setInput] = useState("");
@@ -48,7 +48,20 @@ export function LiveChat() {
         <div className="space-y-3">
           {messages.map((msg) => {
             if (msg.deleted) return null;
-            return (
+if (loading) {
+    return (
+      <div className="flex h-full flex-col rounded-2xl bg-black/40 backdrop-blur-sm">
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+          <h3 className="text-sm font-bold text-white">Live Chat</h3>
+        </div>
+        <div className="flex flex-1 items-center justify-center">
+          <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
               <LiveChatMessage
                 key={msg.id}
                 message={msg}
@@ -83,7 +96,7 @@ export function LiveChat() {
       ) : (
         <div className="border-t border-white/10 px-4 py-3">
           <a
-            href={`/auth/login?redirect=${encodeURIComponent("/live")}`}
+            href={`/login?redirect=${encodeURIComponent("/live")}`}
             className="block rounded-xl bg-white/10 py-2 text-center text-xs font-semibold text-white/60 transition hover:bg-white/20"
           >
             Sign in to chat

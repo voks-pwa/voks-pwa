@@ -109,10 +109,10 @@ export async function getActivePoll(): Promise<LivePoll | null> {
     .eq("active", true)
     .order("created_at", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if (error && error.code === "PGRST116") return null;
   if (error) throw error;
+  if (!poll) return null;
 
   const { data: options, error: optsError } = await supabase
     .from("live_poll_options")

@@ -58,6 +58,12 @@ export function AuthProvider({
 
         setUser(session.user);
 
+      } catch (err) {
+
+        console.error("[AUTH] session load failed", err);
+
+        setUser(null);
+
       } finally {
 
         setLoading(false);

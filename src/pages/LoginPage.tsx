@@ -7,27 +7,21 @@ export function LoginPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    // 1. LOGIKA MENANGKAP KODE REFERRAL DARI URL QUERY (?ref=...)
     const params = new URLSearchParams(window.location.search)
     const ref = params.get('ref')
+    const redirect = params.get('redirect')
 
     if (ref) {
       console.log('REFERRAL DETECTED', ref)
       saveReferralCode(ref)
     }
 
- console.log(
-  'REF SAVED',
-  ref
-)
+    if (redirect) {
+      sessionStorage.setItem('redirectAfterLogin', redirect)
+    }
 
-console.log(
-  'LOCAL STORAGE',
-  localStorage.getItem(
-    'voks_referral_code'
-  )
-)
-      
+    console.log('REF SAVED', ref)
+    console.log('LOCAL STORAGE', localStorage.getItem('voks_referral_code'))
   }, [navigate])
 
   return (

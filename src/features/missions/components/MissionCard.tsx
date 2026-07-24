@@ -105,7 +105,7 @@ export function MissionCard({ mission, progress }: Props) {
           ) : !user ? (
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); navigate("/auth/login?redirect=/missions"); }}
+              onClick={(e) => { e.stopPropagation(); navigate("/login?redirect=/missions"); }}
               className="rounded-xl bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-500 transition hover:bg-gray-200"
             >
               Login

@@ -2,3 +2,4 @@ export const AZURACAST_BASE_URL = 'https://a7.alhastream.com/api'
 export const STATION_ID = 42
 export const NOW_PLAYING_POLL_INTERVAL_MS = 15_000
 export const VOKS_STREAM_URL = 'https://a7.alhastream.com:4000/radio'
+export const OWNCAST_STATUS_URL = 'https://voks-live-status-proxy.voksmedsos.workers.dev/api/status'

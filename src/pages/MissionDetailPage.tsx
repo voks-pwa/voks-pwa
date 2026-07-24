@@ -120,7 +120,7 @@ export function MissionDetailPage() {
 
       <div className="mt-6">
         {isGuest ? (
-          <Link to="/auth/login?redirect=/missions" className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gray-200 py-3.5 text-base font-bold text-gray-600 transition hover:bg-gray-300">
+          <Link to="/login?redirect=/missions" className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gray-200 py-3.5 text-base font-bold text-gray-600 transition hover:bg-gray-300">
             Login to View Missions
           </Link>
         ) : isClaimed ? (

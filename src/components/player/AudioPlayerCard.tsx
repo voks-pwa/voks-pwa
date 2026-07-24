@@ -162,6 +162,41 @@ export const AudioPlayerCard = memo(function AudioPlayerCard({
           <p className="truncate text-sm text-gray-500">
             {isError ? "Check your connection" : displayTrack.artist}
           </p>
+
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleMute}
+              aria-label={volume === 0 ? "Unmute" : "Mute"}
+              className="flex h-6 w-6 shrink-0 items-center justify-center text-gray-400 transition hover:text-gray-600"
+            >
+              {volume === 0 ? (
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 9v6h4l3 3V6l-3 3H9z" />
+                  <path d="M18 6l-6 6 6 6" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 5L6 9H2v6h4l5 4V5z" />
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                </svg>
+              )}
+            </button>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={Math.round(volume * 100)}
+              onChange={(e) => setVolume(Number(e.target.value) / 100)}
+              className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-black/10 accent-[#bda752]"
+              aria-label="Volume"
+            />
+            <span className="w-8 text-right text-xs text-gray-400 tabular-nums">
+              {Math.round(volume * 100)}%
+            </span>
+          </div>
         </div>
 
         <button
