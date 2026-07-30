@@ -13,7 +13,7 @@ AS $$
 DECLARE
   v_count BIGINT;
 BEGIN
-  UPDATE marketplace_orders
+  UPDATE public.marketplace_orders
   SET order_status = 'CANCELLED',
       updated_at = now()
   WHERE order_status = 'PENDING'
@@ -38,14 +38,14 @@ DECLARE
   v_reward_id INTEGER;
 BEGIN
   SELECT reward_id INTO v_reward_id
-  FROM marketplace_products
+  FROM public.marketplace_products
   WHERE id = p_product_id AND reward_id IS NOT NULL;
 
   IF v_reward_id IS NULL THEN
     RETURN FALSE;
   END IF;
 
-  UPDATE reward_inventory
+  UPDATE public.reward_inventory
   SET current_stock = p_new_stock,
       updated_at = now()
   WHERE reward_id = v_reward_id;
@@ -74,7 +74,7 @@ DECLARE
 BEGIN
   SELECT product_id, voucher_code, status, assigned_user, expired_at
   INTO v_product_id, v_voucher.voucher_code, v_voucher.status, v_voucher.assigned_user, v_voucher.expired_at
-  FROM marketplace_voucher_pool
+  FROM public.marketplace_voucher_pool
   WHERE id = p_voucher_id;
 
   IF v_product_id IS NULL THEN
@@ -82,15 +82,14 @@ BEGIN
   END IF;
 
   SELECT reward_id INTO v_reward_id
-  FROM marketplace_products
+  FROM public.marketplace_products
   WHERE id = v_product_id AND reward_id IS NOT NULL;
 
   IF v_reward_id IS NULL THEN
     RETURN FALSE;
   END IF;
 
-  -- Upsert into reward_voucher_pool
-  INSERT INTO reward_voucher_pool (reward_id, voucher_code, status, assigned_user, expired_at)
+  INSERT INTO public.reward_voucher_pool (reward_id, voucher_code, status, assigned_user, expired_at)
   VALUES (v_reward_id, v_voucher.voucher_code, v_voucher.status, v_voucher.assigned_user, v_voucher.expired_at)
   ON CONFLICT (voucher_code) DO NOTHING;
 

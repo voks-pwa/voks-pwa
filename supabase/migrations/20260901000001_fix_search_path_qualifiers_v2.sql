@@ -1,11 +1,96 @@
--- Phase 0: Fix RLS — System update via SECURITY DEFINER RPC
--- Bypass RLS untuk update kolom yang perlu diubah oleh system
--- (referral_code, referred_by, profile_completed, profile_reward_claimed, lifetime_vxp)
+-- Fix v2: qualify all table references in functions with SET search_path = ''
+-- 7 functions across 2 migration files had unqualified table names
 
 -- ============================================================
--- RPC 1: Update profile safe (bypass RLS)
--- Digunakan oleh: profileRepository.ts
+-- From 20260822000004_marketplace_integrity.sql
 -- ============================================================
+
+CREATE OR REPLACE FUNCTION release_stale_locks()
+RETURNS TABLE(released_orders BIGINT)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_count BIGINT;
+BEGIN
+  UPDATE public.marketplace_orders
+  SET order_status = 'CANCELLED',
+      updated_at = now()
+  WHERE order_status = 'PENDING'
+    AND updated_at < now() - interval '15 minutes';
+
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RETURN QUERY SELECT v_count;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION sync_inventory_to_reward(p_product_id UUID, p_new_stock INTEGER)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_reward_id INTEGER;
+BEGIN
+  SELECT reward_id INTO v_reward_id
+  FROM public.marketplace_products
+  WHERE id = p_product_id AND reward_id IS NOT NULL;
+
+  IF v_reward_id IS NULL THEN
+    RETURN FALSE;
+  END IF;
+
+  UPDATE public.reward_inventory
+  SET current_stock = p_new_stock,
+      updated_at = now()
+  WHERE reward_id = v_reward_id;
+
+  RETURN FOUND;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION sync_voucher_to_reward_pool(p_voucher_id UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_product_id UUID;
+  v_reward_id INTEGER;
+  v_voucher RECORD;
+BEGIN
+  SELECT product_id, voucher_code, status, assigned_user, expired_at
+  INTO v_product_id, v_voucher.voucher_code, v_voucher.status, v_voucher.assigned_user, v_voucher.expired_at
+  FROM public.marketplace_voucher_pool
+  WHERE id = p_voucher_id;
+
+  IF v_product_id IS NULL THEN
+    RETURN FALSE;
+  END IF;
+
+  SELECT reward_id INTO v_reward_id
+  FROM public.marketplace_products
+  WHERE id = v_product_id AND reward_id IS NOT NULL;
+
+  IF v_reward_id IS NULL THEN
+    RETURN FALSE;
+  END IF;
+
+  INSERT INTO public.reward_voucher_pool (reward_id, voucher_code, status, assigned_user, expired_at)
+  VALUES (v_reward_id, v_voucher.voucher_code, v_voucher.status, v_voucher.assigned_user, v_voucher.expired_at)
+  ON CONFLICT (voucher_code) DO NOTHING;
+
+  RETURN FOUND;
+END;
+$$;
+
+-- ============================================================
+-- From 20260829000000_fix_rls_mission.sql
+-- ============================================================
+
 CREATE OR REPLACE FUNCTION update_profile_safe(
   p_user_id UUID,
   p_data JSONB
@@ -57,10 +142,6 @@ BEGIN
 END;
 $$;
 
--- ============================================================
--- RPC 2: Set referred_by (bypass RLS)
--- Digunakan oleh: authService.ts (processReferralAfterLogin)
--- ============================================================
 CREATE OR REPLACE FUNCTION set_referred_by(
   p_user_id UUID,
   p_referrer_id UUID
@@ -74,10 +155,6 @@ BEGIN
 END;
 $$;
 
--- ============================================================
--- RPC 3: Set profile completion flags (bypass RLS)
--- Digunakan oleh: profileService.ts, authService.ts (checkAndFireProfileCompletion)
--- ============================================================
 CREATE OR REPLACE FUNCTION set_profile_completion(
   p_user_id UUID
 ) RETURNS VOID
@@ -91,10 +168,6 @@ BEGIN
 END;
 $$;
 
--- ============================================================
--- RPC 4: claim_mission_reward — FIX tambah lifetime_vxp
--- Override semua definisi sebelumnya (ada di 3 file migration)
--- ============================================================
 CREATE OR REPLACE FUNCTION claim_mission_reward(
   p_user_id UUID,
   p_mission_id BIGINT,

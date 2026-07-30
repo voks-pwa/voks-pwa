@@ -14,7 +14,7 @@ AS $$
 DECLARE
   v_count BIGINT;
 BEGIN
-  UPDATE wallet_ledger
+  UPDATE public.wallet_ledger
   SET status = 'EXPIRED',
       updated_at = now(),
       metadata = COALESCE(metadata, '{}'::jsonb) || '{"expired_by": "stale_recovery", "expired_at": "' || now()::text || '"}'::jsonb
@@ -209,13 +209,13 @@ DECLARE
   result JSONB;
 BEGIN
   SELECT jsonb_build_object(
-    'total_transactions', (SELECT COUNT(*) FROM wallet_ledger WHERE user_id = p_user_id),
-    'total_xp_earned', (SELECT COALESCE(SUM(amount), 0) FROM wallet_ledger WHERE user_id = p_user_id AND amount > 0 AND status = 'SUCCESS'),
-    'total_xp_spent', (SELECT COALESCE(SUM(ABS(amount)), 0) FROM wallet_ledger WHERE user_id = p_user_id AND amount < 0 AND status = 'SUCCESS'),
-    'missions_completed', (SELECT COUNT(*) FROM missions_progress WHERE user_id = p_user_id AND completed = true),
-    'rewards_redeemed', (SELECT COUNT(*) FROM reward_redeems WHERE user_id = p_user_id AND status = 'APPROVED'),
-    'current_streak', (SELECT COALESCE(current_streak, 0) FROM user_streaks WHERE user_id = p_user_id),
-    'badges_earned', (SELECT COUNT(*) FROM user_badges WHERE user_id = p_user_id)
+    'total_transactions', (SELECT COUNT(*) FROM public.wallet_ledger WHERE user_id = p_user_id),
+    'total_xp_earned', (SELECT COALESCE(SUM(amount), 0) FROM public.wallet_ledger WHERE user_id = p_user_id AND amount > 0 AND status = 'SUCCESS'),
+    'total_xp_spent', (SELECT COALESCE(SUM(ABS(amount)), 0) FROM public.wallet_ledger WHERE user_id = p_user_id AND amount < 0 AND status = 'SUCCESS'),
+    'missions_completed', (SELECT COUNT(*) FROM public.missions_progress WHERE user_id = p_user_id AND completed = true),
+    'rewards_redeemed', (SELECT COUNT(*) FROM public.reward_redeems WHERE user_id = p_user_id AND status = 'APPROVED'),
+    'current_streak', (SELECT COALESCE(current_streak, 0) FROM public.user_streaks WHERE user_id = p_user_id),
+    'badges_earned', (SELECT COUNT(*) FROM public.user_badges WHERE user_id = p_user_id)
   ) INTO result;
 
   RETURN result;
@@ -232,10 +232,10 @@ DECLARE
   result JSONB;
 BEGIN
   SELECT jsonb_build_object(
-    'total_attempts', (SELECT COUNT(*) FROM missions_progress WHERE mission_id = p_mission_id),
-    'total_completions', (SELECT COUNT(*) FROM missions_progress WHERE mission_id = p_mission_id AND completed = true),
-    'unique_users', (SELECT COUNT(DISTINCT user_id) FROM missions_progress WHERE mission_id = p_mission_id),
-    'last_completion', (SELECT MAX(updated_at) FROM missions_progress WHERE mission_id = p_mission_id AND completed = true)
+    'total_attempts', (SELECT COUNT(*) FROM public.missions_progress WHERE mission_id = p_mission_id),
+    'total_completions', (SELECT COUNT(*) FROM public.missions_progress WHERE mission_id = p_mission_id AND completed = true),
+    'unique_users', (SELECT COUNT(DISTINCT user_id) FROM public.missions_progress WHERE mission_id = p_mission_id),
+    'last_completion', (SELECT MAX(updated_at) FROM public.missions_progress WHERE mission_id = p_mission_id AND completed = true)
   ) INTO result;
 
   RETURN result;
@@ -295,7 +295,7 @@ AS $$
 BEGIN
   RETURN QUERY
   SELECT COALESCE(SUM(amount), 0)::BIGINT
-  FROM wallet_ledger
+  FROM public.wallet_ledger
   WHERE user_id = p_user_id
     AND amount > 0
     AND status = 'SUCCESS'
