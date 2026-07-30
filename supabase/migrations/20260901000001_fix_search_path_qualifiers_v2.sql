@@ -106,7 +106,7 @@ BEGIN
     display_name          = COALESCE(p_data->>'display_name', display_name),
     bio                   = COALESCE(p_data->>'bio', bio),
     phone_number          = COALESCE(p_data->>'phone_number', phone_number),
-    birthday              = COALESCE(p_data->>'birthday', birthday),
+    birthday              = COALESCE((p_data->>'birthday')::DATE, birthday),
     gender                = COALESCE(p_data->>'gender', gender),
     city                  = COALESCE(p_data->>'city', city),
     province              = COALESCE(p_data->>'province', province),
