@@ -1,12 +1,13 @@
 import { ArrowLeft, Gift } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useProfile } from "@/features/profile/hooks/useProfile";
 import { MissionHeader } from "@/features/missions/components/MissionHeader";
-import { MissionStatistics } from "@/features/missions/components/MissionStatistics";
 import { MissionList } from "@/features/missions/components/MissionList";
 import { MissionHistory } from "@/features/missions/components/MissionHistory";
 
 export function MissionsPage() {
   const navigate = useNavigate();
+  const { data: profile } = useProfile();
 
   return (
     <>
@@ -24,32 +25,29 @@ export function MissionsPage() {
             <span>Kembali</span>
           </button>
 
-          {/* JALAN PINTAS KE REWARD STORE (IKON GIFT) */}
-          <button 
-            onClick={() => navigate('/rewards')}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 text-[#bda752] border border-amber-100/50 hover:bg-amber-100/50 transition-colors"
-            title="Reward Store"
-          >
-            <Gift size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            {profile && (
+              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 border border-amber-100/50">
+                {profile.current_vxp} VXP
+              </span>
+            )}
+            {/* JALAN PINTAS KE REWARD STORE (IKON GIFT) */}
+            <button 
+              onClick={() => navigate('/rewards')}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 text-[#bda752] border border-amber-100/50 hover:bg-amber-100/50 transition-colors"
+              title="Reward Store"
+            >
+              <Gift size={18} />
+            </button>
+          </div>
         </div>
 
-        {/* SECTION HEADER UTAMA MISI */}
-        <div className="mb-6">
-          <MissionHeader />
-        </div>
+        <MissionHeader />
 
-        {/* SECTION STATISTIK */}
-        <div className="mt-6">
-          <MissionStatistics />
-        </div>
-
-        {/* SECTION DAFTAR MISI */}
         <div className="mt-6">
           <MissionList />
         </div>
 
-        {/* SECTION RIWAYAT KLAIM MISI */}
         <div className="mt-6">
           <MissionHistory />
         </div>

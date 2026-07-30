@@ -23,6 +23,8 @@ export interface WPMission {
     mission_listen_mode?: string
     mission_start?: string
     mission_end?: string
+    mission_time_start?: string
+    mission_time_end?: string
     mission_sort?: number
     mission_campaign_slug?: string
     period?: "daily" | "weekly" | "monthly" | "once"

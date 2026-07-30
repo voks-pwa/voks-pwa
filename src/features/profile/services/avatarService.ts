@@ -38,21 +38,19 @@ function blobToFile(blob: Blob, fileName: string): File {
   return new File([blob], fileName, { type: 'image/webp' })
 }
 
-// New: upload via Asset Management System (Worker → R2)
-export async function uploadAvatarViaAsset(userId: string, file: File): Promise<{ assetId: string; publicUrl: string }> {
-  const resized = await resizeImage(file)
-  const assetFile = blobToFile(resized, `${userId}-avatar.webp`)
-  const result = await uploadAsset(assetFile, 'avatar', userId)
-  return { assetId: result.assetId, publicUrl: result.publicUrl }
+export interface AvatarUploadResult {
+  assetId: string
+  publicUrl: string
 }
 
-// Legacy: upload directly to Supabase Storage (falls back if Worker unavailable)
-export async function uploadAvatar(userId: string, file: File): Promise<string> {
+// Upload via Asset Management System (Worker → R2), fallback ke Supabase Storage
+export async function uploadAvatar(userId: string, file: File): Promise<AvatarUploadResult> {
   try {
-    const result = await uploadAvatarViaAsset(userId, file)
-    return result.publicUrl
+    const resized = await resizeImage(file)
+    const assetFile = blobToFile(resized, `${userId}-avatar.webp`)
+    const result = await uploadAsset(assetFile, 'avatar', userId)
+    return { assetId: result.assetId, publicUrl: result.publicUrl }
   } catch {
-    // Fallback: legacy Supabase Storage upload
     const resized = await resizeImage(file)
     const path = `${userId}/avatar.jpg`
     const { error: uploadError } = await supabase.storage
@@ -70,31 +68,25 @@ export async function uploadAvatar(userId: string, file: File): Promise<string> 
       }
     }
     const { data } = supabase.storage.from('avatars').getPublicUrl(path)
-    return data.publicUrl
+    return { assetId: '', publicUrl: data.publicUrl }
   }
 }
 
-// New: delete via Asset Management System
-export async function deleteOldAvatarViaAsset(assetId: string | null): Promise<boolean> {
-  if (!assetId) return false
-  return removeAsset(assetId)
-}
-
-// Legacy: delete from Supabase Storage
-export async function deleteOldAvatar(url: string | null) {
+// Delete avatar by asset ID (via Worker → R2) atau fallback URL-based
+export async function deleteOldAvatar(assetId: string | null, url: string | null) {
+  if (assetId) {
+    const ok = await removeAsset(assetId).catch(() => false)
+    if (ok) return
+  }
+  if (!url) return
   try {
-    await removeAssetByUrl(url)
+    const parsed = new URL(url)
+    const pathMatch = parsed.pathname.match(/\/avatars\/(.+)$/)
+    if (pathMatch) {
+      await supabase.storage.from('avatars').remove([pathMatch[1]])
+    }
   } catch {
     // swallow
-  }
-}
-
-async function removeAssetByUrl(url: string | null) {
-  if (!url) return
-  const parsed = new URL(url)
-  const pathMatch = parsed.pathname.match(/\/avatars\/(.+)$/)
-  if (pathMatch) {
-    await supabase.storage.from('avatars').remove([pathMatch[1]])
   }
 }
 

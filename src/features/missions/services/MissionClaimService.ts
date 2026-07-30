@@ -25,10 +25,15 @@ export async function processMissionClaim(userId: string, mission: MissionConfig
   });
   const amount = calc.finalXP;
 
+  const dateKey = new Date().toISOString().split('T')[0]
+  const referenceId = mission.period === "daily"
+    ? `${mission.id}-${dateKey}`
+    : String(mission.id)
+
   const guard = await grantReward({
     userId,
     source: "mission",
-    referenceId: String(mission.id),
+    referenceId,
     amount,
     reason: `Mission: ${mission.title}`,
   });

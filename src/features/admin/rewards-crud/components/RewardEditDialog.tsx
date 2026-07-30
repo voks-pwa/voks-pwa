@@ -4,7 +4,6 @@ import { Loader2 } from "lucide-react";
 export interface RewardEditData {
   id: number;
   name: string;
-  title?: string;
   subtitle: string;
   description: string;
   cost: number;
@@ -24,9 +23,6 @@ interface Props {
 }
 
 interface FormState {
-  name: string;
-  subtitle: string;
-  description: string;
   cost: string;
   stock: string;
   active: boolean;
@@ -37,9 +33,6 @@ interface FormState {
 
 function initReward(reward: RewardEditData | null): FormState {
   return {
-    name: reward?.name ?? "",
-    subtitle: reward?.subtitle ?? "",
-    description: reward?.description ?? "",
     cost: reward ? String(reward.cost) : "",
     stock: reward ? String(reward.stock) : "",
     active: reward?.active ?? false,
@@ -68,10 +61,6 @@ export function RewardEditDialog({
   function validate(): boolean {
     const next: Record<string, string> = {};
 
-    if (!form.name.trim()) {
-      next.name = "Name is required";
-    }
-
     if (!form.cost || isNaN(Number(form.cost))) {
       next.cost = "Cost must be a number";
     }
@@ -97,9 +86,9 @@ export function RewardEditDialog({
 
     onSave({
       id: reward.id,
-      name: form.name.trim(),
-      subtitle: form.subtitle.trim(),
-      description: form.description.trim(),
+      name: reward.name,
+      subtitle: reward.subtitle,
+      description: reward.description,
       cost: Number(form.cost),
       stock: Number(form.stock),
       active: form.active,
@@ -144,97 +133,16 @@ export function RewardEditDialog({
         <h2 className="text-xl font-bold">
           Edit Reward
         </h2>
+        {reward?.name && (
+          <p className="mt-1 text-sm text-gray-400 truncate pr-4">
+            {reward.name}
+          </p>
+        )}
 
         <form
           onSubmit={handleSubmit}
           className="mt-6 space-y-4"
         >
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-gray-700">
-              Name
-            </label>
-
-            <input
-              value={form.name}
-              onChange={(e) =>
-                setField("name", e.target.value)
-              }
-              className={`
-                w-full
-                rounded-xl
-                border
-                px-4
-                py-2
-                outline-none
-                transition-colors
-                focus:ring-2
-                focus:ring-[#bda752]
-                ${
-                  errors.name
-                    ? "border-red-400"
-                    : "border-gray-200"
-                }
-              `}
-            />
-
-            {errors.name && (
-              <p className="mt-1 text-xs text-red-500">
-                {errors.name}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-gray-700">
-              Subtitle
-            </label>
-
-            <input
-              value={form.subtitle}
-              onChange={(e) =>
-                setField("subtitle", e.target.value)
-              }
-              className="
-                w-full
-                rounded-xl
-                border
-                border-gray-200
-                px-4
-                py-2
-                outline-none
-                transition-colors
-                focus:ring-2
-                focus:ring-[#bda752]
-              "
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-gray-700">
-              Description
-            </label>
-
-            <textarea
-              value={form.description}
-              onChange={(e) =>
-                setField("description", e.target.value)
-              }
-              rows={3}
-              className="
-                w-full
-                rounded-xl
-                border
-                border-gray-200
-                px-4
-                py-2
-                outline-none
-                transition-colors
-                focus:ring-2
-                focus:ring-[#bda752]
-              "
-            />
-          </div>
-
           <div className="flex gap-4">
             <div className="flex-1">
               <label className="mb-1 block text-sm font-semibold text-gray-700">

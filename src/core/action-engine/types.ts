@@ -23,7 +23,9 @@ export type ActionEventName =
   | "LOW_STOCK"
   | "VOUCHER_ASSIGNED"
   | "VOUCHER_REFUND"
-  | "SHIPPING_STATUS";
+   | "SHIPPING_STATUS"
+   | "FAVORITE_PROGRAM"
+   | "FAVORITE_ANNOUNCER";
 
 export interface ActionEventPayloads {
   USER_LOGIN: { at: string };
@@ -51,6 +53,8 @@ export interface ActionEventPayloads {
   VOUCHER_ASSIGNED: { voucher_id: string; voucher_code: string };
   VOUCHER_REFUND: { voucher_id: string; action: string };
   SHIPPING_STATUS: { shipping_id: string; from_status: string; to_status: string; tracking_number: string };
+  FAVORITE_PROGRAM: { target_id: string; timestamp: string };
+  FAVORITE_ANNOUNCER: { target_id: string; timestamp: string };
 }
 
 export interface ActionEvent<T extends ActionEventName = ActionEventName> {

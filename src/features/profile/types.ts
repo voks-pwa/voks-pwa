@@ -15,6 +15,7 @@ export interface Profile {
   /** @deprecated Use phone_number */
   phone: string | null;
   avatar_url: string | null;
+  avatar_asset_id: string | null;
 
   instagram: string | null;
   tiktok: string | null;
@@ -55,6 +56,7 @@ export interface UpdateProfileInput {
   bio?: string;
   phone_number?: string;
   avatar_url?: string;
+  avatar_asset_id?: string;
 
   instagram?: string;
   tiktok?: string;

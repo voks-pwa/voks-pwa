@@ -21,8 +21,10 @@ export function mapMission(wp: WPMission): MissionConfig {
     daily: Boolean(wp.acf?.daily),
     period: wp.acf?.period ?? "once",
     durationMinutes: wp.acf?.duration_minutes != null ? Number(wp.acf.duration_minutes) : undefined,
-    start: wp.acf?.mission_start ?? "",
-    end: wp.acf?.mission_end ?? "",
+    dateStart: wp.acf?.mission_start ?? "",
+    dateEnd: wp.acf?.mission_end ?? "",
+    timeStart: wp.acf?.mission_time_start ?? "",
+    timeEnd: wp.acf?.mission_time_end ?? "",
     sort: Number(wp.acf?.mission_sort ?? 0),
     campaignSlug: wp.acf?.mission_campaign_slug || undefined,
   };

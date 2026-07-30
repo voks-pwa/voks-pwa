@@ -54,3 +54,36 @@ User → AssetUploader → assetService.uploadAsset()
 
 1. **Integrasi lintas modul** — Program, Announcer, Campaign, Reward, Marketplace
 2. **Responsive image** — on-the-fly resizing via Worker query params
+
+---
+
+## Session: Favorite System Implementation — 2026-07-29 ✅
+
+**Status**: Complete
+
+### Progress
+
+| Layer | Status |
+|-------|--------|
+| Migration | ✅ `20260829000001_create_user_favorites.sql` |
+| Feature Module | ✅ `src/features/favorites/` (types, repo, service, queries, mutations, hooks) |
+| Action Events | ✅ `FAVORITE_PROGRAM`, `FAVORITE_ANNOUNCER` in types.ts |
+| Mission Consumer | ✅ Mapped to `favorite_program` / `favorite_announcer` |
+| ProgramDetailPage | ✅ Heart button wired with toggle + track |
+| AnnouncerDetailPage | ✅ Heart button added + wired |
+| TypeScript | ✅ 0 errors |
+| Build | ✅ 106 entries, 3439 KiB |
+| Lint | ✅ Clean (pre-existing errors only) |
+
+### Architecture
+
+```
+User clicks Heart → useToggleFavoriteMutation → toggleFavorite()
+  → addFavorite() / removeFavorite() (repository)
+  → track("FAVORITE_PROGRAM"/"FAVORITE_ANNOUNCER", userId, { target_id, timestamp })
+  → missionConsumer → runMission({ action: "favorite_program"/"favorite_announcer" })
+```
+
+### Remaining
+- WordPress mission config: create mission with `action: "favorite_program"`, `target: 1`, reward VXP
+- Apply migration to remote Supabase

@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 
 import { PersistentAudioPlayer } from "@/components/player/PersistentAudioPlayer";
 import { BottomNavigation } from "@/components/navigation/BottomNavigation";
+import { RewardPopup } from "@/features/missions/components/RewardPopup";
 
 export function PublicLayout() {
   return (
@@ -15,6 +16,8 @@ export function PublicLayout() {
       </main>
 
       <BottomNavigation />
+
+      <RewardPopup />
     </>
   );
 }

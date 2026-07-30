@@ -17,8 +17,10 @@ export interface MissionConfig {
   daily: boolean;
   period: "daily" | "weekly" | "monthly" | "once";
   durationMinutes?: number;
-  start?: string;
-  end?: string;
+  dateStart: string;
+  dateEnd: string;
+  timeStart: string;
+  timeEnd: string;
   sort: number;
   campaignSlug?: string;
 }

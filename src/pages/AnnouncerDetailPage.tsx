@@ -5,13 +5,21 @@ import {
   Mic2,
   Radio,
   ArrowRight,
+  Heart,
 } from 'lucide-react'
 
 import { useAnnouncer } from '@/hooks/useAnnouncer'
 import { useProgramsByHost } from '@/hooks/useProgramsByHost'
+import {
+  useIsFavorited,
+  useToggleFavoriteMutation,
+} from '@/features/favorites'
+import { useAuth } from '@/features/auth/useAuth'
+import { showToast } from "@/components/ui/showToast";
 
 export function AnnouncerDetailPage() {
   const { slug } = useParams()
+  const { user } = useAuth()
 
   const {
     data: announcer,
@@ -23,6 +31,19 @@ export function AnnouncerDetailPage() {
     useProgramsByHost(
       announcer?.title.rendered
     )
+
+  const {
+    data: isFavorited,
+    isLoading: isFavoritedLoading,
+  } = useIsFavorited(
+    "announcer",
+    announcer?.id?.toString() ?? "",
+  )
+
+  const {
+    mutate: toggleFavorite,
+    isPending: isToggling,
+  } = useToggleFavoriteMutation()
 
   if (isLoading) {
     return (
@@ -136,18 +157,58 @@ export function AnnouncerDetailPage() {
 
       <div className="mx-auto max-w-4xl p-6">
 
-        {/* FOLLOW */}
+         {/* FOLLOW */}
 
-        <div
-          className="
-            mb-8
-            flex
-            flex-wrap
-            gap-3
-          "
-        >
+         <div
+           className="
+             mb-8
+             flex
+             flex-wrap
+             gap-3
+           "
+         >
 
-          {announcer.acf?.link_instagram && (
+           <button
+             onClick={() => {
+               if (!user) {
+                 showToast({
+                   type: "error",
+                   title: "Please log in to favorite",
+                 })
+                 return
+               }
+               if (!announcer?.id) return
+
+               toggleFavorite({
+                 userId: user.id,
+                 targetType: "announcer",
+                 targetId: announcer.id.toString(),
+               })
+             }}
+             disabled={isFavoritedLoading || isToggling}
+             className={`
+               flex
+               flex-1
+               items-center
+               justify-center
+               gap-2
+               rounded-3xl
+               px-5
+               py-4
+               font-semibold
+               ${
+                 isFavorited
+                   ? 'bg-[#bda752] text-white'
+                   : 'bg-white text-gray-700'
+               }
+             `}
+           >
+             <Heart size={20} />
+
+             Favorite
+           </button>
+
+           {announcer.acf?.link_instagram && (
             <a
               href={
                 announcer.acf

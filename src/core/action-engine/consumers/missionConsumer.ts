@@ -14,6 +14,8 @@ const EVENT_ACTION_MAP: Record<string, string> = {
   SHARE: "share",
   REFERRAL_SUCCESS: "referral",
   SCHEDULER_TICK: "scheduler_tick",
+  FAVORITE_PROGRAM: "favorite_program",
+  FAVORITE_ANNOUNCER: "favorite_announcer",
 };
 
 export function missionConsumer(event: ActionEvent) {

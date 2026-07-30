@@ -2,7 +2,7 @@ import type {
   MissionConfig,
 } from './missionTypes'
 
-import { isMissionAvailableNow } from './missionAvailability'
+import { isMissionAvailableNow, isMissionInCampaignPeriod } from './missionAvailability'
 
 type MissionProgressRecord = {
   completed?: boolean
@@ -19,6 +19,10 @@ export function canRunMission(
   }
 
   if (!isMissionAvailableNow(mission)) {
+    return false
+  }
+
+  if (!isMissionInCampaignPeriod(mission)) {
     return false
   }
 

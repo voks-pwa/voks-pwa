@@ -12,9 +12,15 @@ import { showToast } from "@/components/ui/showToast";
 import { useProgram } from '@/hooks/useProgram'
 import { useAnnouncersByIds } from '@/hooks/useAnnouncer'
 import { useReminder } from '@/hooks/useReminder'
+import {
+  useIsFavorited,
+  useToggleFavoriteMutation,
+} from '@/features/favorites'
+import { useAuth } from '@/features/auth/useAuth'
 
 export function ProgramDetailPage() {
   const { slug } = useParams()
+  const { user } = useAuth()
 
   const {
     data: program,
@@ -36,6 +42,19 @@ export function ProgramDetailPage() {
     program?.acf?.jadwal_hari,
     program?.acf?.jam_mulai
   )
+
+  const {
+    data: isFavorited,
+    isLoading: isFavoritedLoading,
+  } = useIsFavorited(
+    "program",
+    program?.id?.toString() ?? "",
+  )
+
+  const {
+    mutate: toggleFavorite,
+    isPending: isToggling,
+  } = useToggleFavoriteMutation()
 
   if (isLoading) {
     return (
@@ -179,16 +198,37 @@ export function ProgramDetailPage() {
           </button>
 
           <button
-            className="
+            onClick={() => {
+              if (!user) {
+                showToast({
+                  type: "error",
+                  title: "Please log in to favorite",
+                })
+                return
+              }
+              if (!program?.id) return
+
+              toggleFavorite({
+                userId: user.id,
+                targetType: "program",
+                targetId: program.id.toString(),
+              })
+            }}
+            disabled={isFavoritedLoading || isToggling}
+            className={`
               flex
               flex-col
               items-center
               justify-center
               rounded-3xl
-              bg-white
               p-4
               shadow
-            "
+              ${
+                isFavorited
+                  ? 'bg-[#bda752] text-white'
+                  : 'bg-white'
+              }
+            `}
           >
             <Heart size={20} />
 

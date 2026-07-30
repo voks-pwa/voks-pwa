@@ -1,9 +1,11 @@
 import { Loader2, AlertCircle, Target } from "lucide-react";
 import { useMissionProgress } from "@/hooks/useMissionProgress";
 import { useMissions } from "@/hooks/useMissions";
+import { useProfile } from "@/features/profile/hooks/useProfile";
 import { MissionCard } from "./MissionCard";
 import type { MissionConfig, MissionProgress } from "../services/missionTypes";
 import { deriveMissionState } from "../services/missionStateMachine";
+import { calculateProfileCompletion } from "@/features/profile/utils/profileCompletion";
 
 const VISIBLE_STATES = new Set(["NOT_STARTED", "IN_PROGRESS", "READY_TO_CLAIM"]);
 
@@ -15,6 +17,7 @@ function getMissionState(
 }
 
 export function MissionList(){
+  const { data: profile } = useProfile()
   const { data: missions = [], isLoading: missionsLoading, isError: missionsError } = useMissions();
   const { data: progress = [] } = useMissionProgress();
 
@@ -54,7 +57,11 @@ export function MissionList(){
     progress.map((p: MissionProgress) => [p.mission_id, p])
   );
 
+  const profileCompleted = profile ? calculateProfileCompletion(profile) >= 100 : false
+
   const visible = sorted.filter((mission: MissionConfig) => {
+    if (mission.action === "checkin") return false
+    if (mission.action === "profile" && profileCompleted) return false
     const state = getMissionState(mission, progressMap.get(mission.id));
     return VISIBLE_STATES.has(state);
   });

@@ -9,6 +9,7 @@ import { HomePage } from "@/pages/HomePage";
 import { MorePage } from "@/pages/MorePage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { LoginPage } from "@/pages/LoginPage";
+import { ReferralLandingPage } from "@/pages/ReferralLandingPage";
 import { FeatureGuard } from "@/components/ui/FeatureGuard";
 import { ProtectedRoute } from "@/components/ui/ProtectedRoute";
 
@@ -321,6 +322,10 @@ export function AppRoutes() {
           }
         />
       </Route>
+
+      {/* REFERRAL — no layout, minimal redirect */}
+
+      <Route path="/ref/:code" element={<ReferralLandingPage />} />
 
       {/* EMPTY */}
 

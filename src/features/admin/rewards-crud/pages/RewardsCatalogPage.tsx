@@ -13,11 +13,10 @@ import type { RewardEditData } from "../components/RewardEditDialog";
 
 function normalizeRow(
   row: RewardAggregate
-): RewardEditData & { title: string } {
+): RewardEditData {
   return {
     id: row.id,
     name: row.name,
-    title: row.name,
     subtitle: row.subtitle ?? "",
     description: row.description ?? "",
     cost: row.cost,
@@ -61,10 +60,20 @@ export function RewardsCatalogPage() {
   const rows: RewardRowItem[] =
     useMemo(() => {
       return localRewards
-        .map(normalizeRow)
+        .map((row) => ({
+          id: row.id,
+          title: row.name,
+          subtitle: row.subtitle ?? "",
+          cost: row.cost,
+          stock: row.stock,
+          active: row.reward_active,
+          featured: row.featured,
+          priority: row.priority,
+          status: row.reward_active ? "Available" : "Inactive",
+        }))
         .filter(
           (reward) =>
-            reward.name
+            reward.title
               .toLowerCase()
               .includes(search.toLowerCase())
         )

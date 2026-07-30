@@ -6,7 +6,7 @@ import { logout } from "@/features/auth/authService"
 import { useCanonicalUser } from "@/features/profile/hooks/useCanonicalUser"
 import { useProfile } from "@/features/profile/hooks/useProfile"
 import { useUpdateProfile } from "@/features/profile/hooks/useUpdateProfile"
-import { uploadAvatar, deleteOldAvatar, getAvatarSrc } from "@/features/profile/services/avatarService"
+import { uploadAvatar, deleteOldAvatar, getAvatarSrc, type AvatarUploadResult } from "@/features/profile/services/avatarService"
 import { useProfileStore } from "@/stores/profile-store"
 import { Skeleton } from "@/components/ui/Skeleton"
 import { SocialLinkInput } from "@/components/ui/SocialLinkInput"
@@ -95,10 +95,13 @@ export function ProfilePage() {
     setSaving(true)
     try {
       let avatarUrl = profile?.avatar_url ?? null
+      let avatarAssetId = profile?.avatar_asset_id ?? null
       if (avatarFile) {
         try {
-          await deleteOldAvatar(avatarUrl)
-          avatarUrl = await uploadAvatar(user.id, avatarFile)
+          await deleteOldAvatar(avatarAssetId, avatarUrl)
+          const result: AvatarUploadResult = await uploadAvatar(user.id, avatarFile)
+          avatarUrl = result.publicUrl
+          avatarAssetId = result.assetId
         } catch (err) {
           console.error("Avatar upload failed, keeping existing:", err)
         }
@@ -106,7 +109,9 @@ export function ProfilePage() {
       const payload: UpdateProfileInput = {
         display_name: displayName, full_name: fullName, bio, phone_number: phoneNumber,
         birthday, gender, city, province, favorite_program: favoriteProgram, favorite_music: favoriteMusic,
-        instagram, tiktok, youtube, facebook, threads, website, avatar_url: avatarUrl ?? undefined,
+        instagram, tiktok, youtube, facebook, threads, website,
+        avatar_url: avatarUrl ?? undefined,
+        avatar_asset_id: avatarAssetId ?? undefined,
       }
       await saveProfileMutation({ id: user.id, payload })
       await refetch()

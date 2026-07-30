@@ -50,6 +50,37 @@ Version: 1.0
 
 **Verification**: `npm run check` ✅ (0 errors), `npm run build` ✅ (106 precache entries, 3421 KiB), ESLint ✅
 
+---
+
+## 2026-07-29
+
+### Favorite System for Programs & Announcers ✅
+
+**Migration** (`20260829000001_create_user_favorites.sql`):
+- `user_favorites` table: id (PK), user_id (FK auth.users), target_type (enum: program/announcer), target_id (text), created_at
+- UNIQUE constraint on (user_id, target_type, target_id) — prevents duplicate favorites
+- RLS: user-scoped (user can only manage own favorites)
+- Indexes on user_id and (target_type, target_id)
+
+**Feature Module** (`src/features/favorites/`):
+- `types.ts`: `UserFavorite`, `FavoriteTargetType`, `FavoriteInput`
+- `repositories/favoriteRepository.ts`: `findUserFavorites`, `isFavorited`, `addFavorite`, `removeFavorite`
+- `services/favoriteService.ts`: `toggleFavorite()` — toggles favorite + calls `track()` with `FAVORITE_PROGRAM` or `FAVORITE_ANNOUNCER` event
+- `queries/favoriteQueries.ts`: React Query keys (`favoriteKeys`)
+- `mutations/favoriteMutations.ts`: `useToggleFavorite` mutation with cache invalidation
+- `hooks/useFavorites.ts`: `useUserFavorites`, `useIsFavorited`, `useToggleFavoriteMutation`
+- `index.ts`: barrel exports
+
+**Action Engine Integration**:
+- `types.ts`: Added `FAVORITE_PROGRAM` and `FAVORITE_ANNOUNCER` to `ActionEventName` + payloads
+- `missionConsumer.ts`: Mapped `FAVORITE_PROGRAM` → `"favorite_program"` and `FAVORITE_ANNOUNCER` → `"favorite_announcer"`
+
+**UI Integration**:
+- `ProgramDetailPage.tsx`: Heart button wired with `useIsFavorited` + `useToggleFavoriteMutation` — active state (gold) when favorited, tracks action event on toggle
+- `AnnouncerDetailPage.tsx`: Heart button added in action bar with same wiring
+
+**Verification**: `npm run check` ✅ (0 errors), `npm run build` ✅ (106 entries, 3439 KiB), ESLint ✅ (pre-existing errors only)
+
 **Full codebase audit (AI/AUDIT_V1.md)** — 12 dimensions, 676 files scanned, Production Readiness Score 6.5/10.
 Remediation roadmap (AI/TODO_v2.md): 7 phases, 96 tasks.
 
@@ -3755,8 +3786,48 @@ Mission Engine v1.0 declared STABLE / FROZEN.
 
 Verification:
 - TypeScript check: exit 0
-- Production build: exit 0 (2872 modules)
+- Production build: exit 0
 - ESLint: exit 0
+
+---
+
+## 2026-07-29
+
+### Mission & Reward — Bug Fixes ✅
+
+**Fix — Profile Completion retroactive check** (`src/features/auth/authService.ts`):
+- Tambah `checkAndFireProfileCompletion()` — dipanggil di `handlePostLogin()` setelah `syncAuthProfile()`
+- Fix: user signup via OAuth yang profile-nya sudah 100% lengkap dari metadata Google sekarang tetap trigger `PROFILE_COMPLETED` event dan mission auto-claim
+- Import `findProfile`, `calculateProfileCompletion`, `updateProfileRow`
+
+**Fix — SHARE event tracking** (`src/pages/MorePage/index.tsx`):
+- Tambah `track("SHARE", userId, ...)` di `handleShare()` — sebelumnya share dari MorePage tidak trigger mission/achievement
+- Import `track` dari action-engine
+
+**Feat — VXP Perolehan card** (`src/pages/MorePage/index.tsx`):
+- Card baru "Saldo VXP" (current_vxp) dan "Total Perolehan" (lifetime_vxp) di bawah hero section
+- Tampil hanya untuk user yang sudah login
+- Grid 2 kolom dengan ikonografi bersih sesuai tema
+
+**Fix — Complete Profile mission display logic** (`src/features/missions/components/MissionList.tsx`):
+- Filter: jika `mission.action === "profile"` dan profile sudah complete (>= 100%), sembunyikan dari list
+- UI-level safety net — tidak perlu rely ke event chain
+- Misi hilang otomatis setelah profile lengkap
+
+**Fix — Sembunyikan Daily Checkin dari MissionList** (`src/features/missions/components/MissionList.tsx`):
+- Filter: `mission.action === "checkin"` tidak ditampilkan di list
+- Checkin mission cuma bisa diakses via button di MorePage
+
+**Feat — Checkin Button di MorePage** (`src/pages/MorePage/index.tsx`):
+- Komponen `CheckinButton` inline antara VXP card dan ProfileCard
+- Click → `track("CHECKIN", userId, { date: today })` → mission engine auto-claim
+- localStorage key `voks-checkin-{YYYY-MM-DD}` untuk persist state harian
+- State: "Checkin Harian" (active) → "Sudah Checkin Hari Ini" (done, hijau)
+- Reset otomatis next day via tanggal di storage key
+
+Verification:
+- `npm run check`: exit 0
+- `npm run build`: exit 0
 
 ### Sprint 9 — Achievement System & Retention Engine
 
@@ -3794,3 +3865,96 @@ Verification:
 - TypeScript check: exit 0
 - Production build: exit 0
 - ESLint: exit 0
+
+---
+
+## 2026-07-29 (Phase 0)
+
+### Fix RLS — System update via SECURITY DEFINER RPC ✅
+
+**Database Migration** (`20260829000000_fix_rls_mission.sql`):
+- 4 RPC baru `SECURITY DEFINER` (bypass RLS untuk system update):
+
+| RPC | Fungsi |
+|-----|--------|
+| `update_profile_safe(p_user_id, p_data JSONB)` | Update profile fields + referral_code, profile_completed, profile_reward_claimed. Insert fallback jika row belum ada |
+| `set_referred_by(p_user_id, p_referrer_id)` | Set referred_by di profiles (dipanggil saat referral) |
+| `set_profile_completion(p_user_id)` | Set profile_completed=true, profile_reward_claimed=true |
+| `claim_mission_reward` (FIX) | Update lifetime_vxp JUGA — sebelumnya cuma current_vxp |
+
+**Fix — profileRepository.ts**:
+- `updateProfileRow()` sekarang panggil `update_profile_safe` RPC — ganti direct `supabase.from("profiles").update()`
+- Aman untuk update referral_code, profile_completed, profile_reward_claimed (yang tadinya di-block RLS)
+
+**Fix — authService.ts**:
+- `processReferralAfterLogin()` panggil `set_referred_by` RPC — ganti `updateProfileRow` langsung
+- `checkAndFireProfileCompletion()` panggil `set_profile_completion` RPC
+
+**Fix — profileService.ts**:
+- `updateProfile()` panggil `set_profile_completion` RPC — ganti `updateProfileRow` langsung
+
+**Akibat yang sudah fix**:
+- ✅ Profile save sekarang persist di Supabase (RLS gak block referral_code)
+- ✅ Referral bisa di-assign (RLS gak block referred_by)
+- ✅ Profile completion mission bisa auto-claim (RLS gak block profile_completed/claimed)
+- ✅ lifetime_vxp naik setiap claim mission (badge user naik)
+- ✅ Redeem reward: current_vxp turun, lifetime_vxp tetap (badge gak turun)
+
+Verification:
+- `npm run check`: exit 0
+- `npm run build`: exit 0
+- Migration applied: 4 RPC verified via `pg_proc`
+
+---
+
+## 2026-07-29 (Phase 1, 2, 3)
+
+### Phase 1 — Referral Code + Link ✅
+
+**Referral code format** (`src/features/profile/services/profileService.ts`):
+- `generateReferralCode()` → format `voks-{4digit}` (misal `voks-4645`)
+- Uniqueness check: loop 10x cari kode unik via `findProfileByReferralCode()`
+- Async function (await uniqueness check)
+
+**Referral landing page** (`src/pages/ReferralLandingPage.tsx` — BARU):
+- Route: `/ref/:code`
+- Baca referral code dari URL → save ke localStorage → redirect ke `/login`
+- Kalo user sudah login: proses referral langsung (`handlePostLogin(user)`) → redirect ke `/more`
+
+**Route** (`src/routes/AppRoutes.tsx`):
+- `path="/ref/:code" element={<ReferralLandingPage />}` — no layout, minimal redirect
+
+### Phase 2 — New ACF Time Fields ✅
+
+**MissionConfig type** (`src/features/missions/types/mission.ts`):
+- Ganti `start`/`end` → `timeStart`/`timeEnd` (daily time window HH:MM)
+- Tambah `dateStart`/`dateEnd` (campaign period datetime)
+
+**WPMission ACF type** (`src/features/missions/services/missionTypes.ts`):
+- Tambah `mission_time_start`, `mission_time_end`
+
+**Mapper** (`src/features/missions/services/missionMapper.ts`):
+- Map `dateStart` ← `mission_start`, `dateEnd` ← `mission_end`
+- Map `timeStart` ← `mission_time_start`, `timeEnd` ← `mission_time_end`
+
+**Availability** (`src/features/missions/services/missionAvailability.ts`):
+- `parseTime()` fix: extract HH:MM dari datetime string (`"2026-07-29 07:00:00"` → `"07:00:00"`)
+- `isMissionAvailableNow()` → pake `timeStart`/`timeEnd`
+- New `isMissionInCampaignPeriod()` → cek `dateStart`/`dateEnd`
+
+**Validator** (`src/features/missions/services/missionValidator.ts`):
+- `canRunMission()` → tambah pengecekan `isMissionInCampaignPeriod()`
+
+### Phase 3 — Bug Fixes ✅
+
+**MissionClaimService.ts**:
+- `referenceId` untuk daily mission: `${mission.id}-${dateKey}` (misal `12341-2026-07-29`)
+- Fix: repeat claim bisa jalan tiap hari (gak ke-block `reward_grants` uniqueness)
+
+**CheckinButton** (`src/pages/MorePage/index.tsx`):
+- Tambah `queryClient.invalidateQueries({ queryKey: ["profile", user.id] })`
+- Fix: VXP langsung update di UI setelah checkin tanpa refresh halaman
+
+Verification:
+- `npm run check`: exit 0
+- `npm run build`: exit 0

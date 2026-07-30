@@ -53,24 +53,12 @@ export async function updateProfileRow(
   id: string,
   input: UpdateProfileInput,
 ) {
-  const { data, error } = await supabase
-    .from("profiles")
-    .update(input)
-    .eq("id", id)
-    .select()
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("update_profile_safe", {
+    p_user_id: id,
+    p_data: input,
+  });
 
   if (error) throw error;
 
-  if (data) return data as Profile;
-
-  const { data: insertData, error: insertError } = await supabase
-    .from("profiles")
-    .insert({ id, ...input })
-    .select()
-    .maybeSingle();
-
-  if (insertError) throw insertError;
-
-  return insertData as Profile;
+  return data as unknown as Profile;
 }

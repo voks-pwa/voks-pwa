@@ -4,7 +4,8 @@ import { supabase } from "@/lib/supabase";
 import { isPilotAtCap } from "./pilotConfig";
 import { track } from "@/core/action-engine";
 import { getReferralCode, clearReferralCode } from "@/lib/referralStorage";
-import { findProfileByReferralCode, updateProfileRow } from "@/features/profile/services/profileRepository";
+import { findProfile, findProfileByReferralCode, updateProfileRow } from "@/features/profile/services/profileRepository";
+import { calculateProfileCompletion } from "@/features/profile/utils/profileCompletion";
 
 export async function syncAuthProfile(authUser: User) {
   try {
@@ -34,6 +35,22 @@ export async function handlePostLogin(user: User) {
   });
   await processReferralAfterLogin(user.id);
   await syncAuthProfile(user);
+  await checkAndFireProfileCompletion(user.id);
+}
+
+export async function checkAndFireProfileCompletion(userId: string) {
+  try {
+    const profile = await findProfile(userId);
+    if (!profile) return;
+
+    const completion = calculateProfileCompletion(profile);
+    if (completion >= 100 && !profile.profile_reward_claimed) {
+      await supabase.rpc("set_profile_completion", { p_user_id: userId });
+      track("PROFILE_COMPLETED", userId, { completed_at: new Date().toISOString() });
+    }
+  } catch (err) {
+    console.error("[AUTH] profile completion check failed:", err);
+  }
 }
 
 export async function processReferralAfterLogin(userId: string) {
@@ -47,7 +64,10 @@ export async function processReferralAfterLogin(userId: string) {
 
     if (!referrer || referrer.id === userId) return;
 
-    await updateProfileRow(userId, { referred_by: referrer.id });
+    await supabase.rpc("set_referred_by", {
+      p_user_id: userId,
+      p_referrer_id: referrer.id,
+    });
 
     const { count: existingCount } = await supabase
       .from("referrals")

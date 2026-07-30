@@ -131,6 +131,18 @@
 - Edge Function input validation audit
 - Any TODO comments related to production features
 
+### Session: Favorite System Implementation — 2026-07-29
+
+### Completed
+- Migration `20260829000001_create_user_favorites.sql` — `user_favorites` table with RLS (user-scoped), unique constraint on (user_id, target_type, target_id)
+- Feature module `src/features/favorites/` — types, repository, service, queries, mutations, hooks
+- Action event types `FAVORITE_PROGRAM` and `FAVORITE_ANNOUNCER` added to action-engine types
+- missionConsumer: mapped `FAVORITE_PROGRAM` → `"favorite_program"` and `FAVORITE_ANNOUNCER` → `"favorite_announcer"`
+- ProgramDetailPage: Heart button wired with `useIsFavorited` + `useToggleFavoriteMutation` — toggles favorite, tracks action event, shows active state
+- AnnouncerDetailPage: Heart button added in action bar with same wiring
+- Service layer: `toggleFavorite()` calls `track()` with appropriate event name on favorite add
+- All verification: `npm run check` ✅, `npm run build` ✅, lint clean (pre-existing errors only)
+
 ### Phase D Summary (6 sprints)
 
 | Sprint | Module | Key Deliverables |
@@ -370,3 +382,124 @@ Final deliverables:
 - Schedule tab = weekly lineup from usePrograms
 - Removed 2-column grid — single column, tab-driven layout
 - Verified: `npm run check && npm run build` pass clean
+
+---
+
+## Session: Mission & VXP Bug Fixes — 2026-07-29
+
+### Completed
+
+**Fix 1 — Retroactive profile completion check**:
+- `authService.ts`: tambah `checkAndFireProfileCompletion()` yang dipanggil di `handlePostLogin()` setelah `syncAuthProfile()`
+- `import { findProfile }` dan `calculateProfileCompletion`
+- Flow: login → sync profile → cek completion ≥100% & !claimed → set flags → `track("PROFILE_COMPLETED")`
+- Fix: user OAuth baru yang profile-lengkap dari metadata Google sekarang tetap trigger mission
+
+**Fix 2 — SHARE event tracking di MorePage**:
+- `MorePage/index.tsx`: tambah `track("SHARE", userId, ...)` di `handleShare()`
+- Import `track` dari `@/core/action-engine`
+- Fix: share dari MorePage sekarang trigger SHARE missions + achievements
+
+**Fix 3 — VXP Perolehan card**:
+- `MorePage/index.tsx`: tambah card grid 2-kolom antara hero section dan ProfileCard
+- Kiri: "Saldo VXP" → `profile.current_vxp`
+- Kanan: "Total Perolehan" → `profile.lifetime_vxp`
+- Tampil hanya untuk authenticated user
+
+### Known issues not addressed
+- Dual mission cache (React Query + missionWP.ts in-memory) bisa bikin UI stale — perlu subscription atau polling jika jadi masalah
+
+### Verification
+- `npm run check` → exit 0
+- `npm run build` → exit 0
+
+---
+
+## Sub-session: Phase 1, 2, 3 — Lengkap — 2026-07-29
+
+### Completed
+
+**Phase 1 — Referral Code + Link**:
+- Format `voks-{4digit}` dengan uniqueness check
+- `ReferralLandingPage.tsx` (BARU) — route `/ref/:code`
+- Handle: user belum login → save code → redirect login; sudah login → proses langsung
+
+**Phase 2 — New ACF Time Fields**:
+- `MissionConfig` type: `timeStart/timeEnd` (daily window) + `dateStart/dateEnd` (campaign period)
+- `WPMission` ACF type: tambah `mission_time_start`, `mission_time_end`
+- `missionMapper.ts`: map field baru
+- `missionAvailability.ts`: `parseTime` fix, `isMissionAvailableNow` pake `timeStart`/`timeEnd`, new `isMissionInCampaignPeriod`
+- `missionValidator.ts`: `canRunMission` tambah campaign period check
+
+**Phase 3 — Bug Fixes**:
+- `MissionClaimService.ts`: `referenceId` harian (`${mission.id}-${dateKey}`) — fix repeat claim
+- `MorePage/index.tsx` (CheckinButton): `queryClient.invalidateQueries` — fix stale VXP di UI
+
+### Remaining WordPress Data Fix
+- Ubah `mission_action` dari `"manual"` → `"profile"` untuk mission "Complete Your Profile" (ID 12465) di WordPress admin
+- Pastikan `mission_time_start`/`mission_time_end` diisi untuk mission yang perlu time window (Dengerin Pagi Bandung: 07:00-09:00)
+- Pastikan `mission_start`/`mission_end` diisi untuk campaign period
+
+### Verification
+- `npm run check` → exit 0
+- `npm run build` → exit 0
+
+---
+
+## Sub-session: Phase 0 — Fix RLS via SECURITY DEFINER RPC — 2026-07-29
+
+### Masalah
+RLS `20260822000002` block update kolom `referral_code`, `referred_by`, `profile_completed`, `profile_reward_claimed`. Profile save gagal, referral gak jalan, profile mission gak bisa auto-claim.
+
+### Fix
+
+**Migration `20260829000000_fix_rls_mission.sql`** — 4 RPC SECURITY DEFINER:
+- `update_profile_safe(p_user_id, p_data JSONB)` — gantikan `supabase.from("profiles").update()` langsung. Update semua field profile termasuk referral_code, profile_completed, profile_reward_claimed. Insert fallback kalo row belum ada.
+- `set_referred_by(p_user_id, p_referrer_id)` — set referred_by bypass RLS
+- `set_profile_completion(p_user_id)` — set profile_completed + profile_reward_claimed jadi true
+- `claim_mission_reward` **FIX** — tambah `lifetime_vxp = lifetime_vxp + p_reward_vxp` (sebelumnya cuma current_vxp)
+
+**Code changes:**
+- `profileRepository.ts`: `updateProfileRow()` → panggil `update_profile_safe` RPC
+- `authService.ts`: `processReferralAfterLogin()` → panggil `set_referred_by` RPC; `checkAndFireProfileCompletion()` → panggil `set_profile_completion` RPC
+- `profileService.ts`: `updateProfile()` completion → panggil `set_profile_completion` RPC
+
+### Status
+- ✅ Profile save persist di Supabase
+- ✅ Referral bisa di-assign ke user baru
+- ✅ Profile completion mission auto-claim jalan
+- ✅ lifetime_vxp naik setiap claim mission
+- ✅ Redeem reward: current_vxp turun, lifetime_vxp tetap (badge gak turun)
+- Dual mission cache (React Query + missionWP.ts) — masih known issue
+
+### Verification
+- `npm run check` → exit 0
+- `npm run build` → exit 0
+- Migration applied: 4 RPC verified via `pg_proc`
+
+---
+
+## Sub-session: Mission Logic Improvement + Checkin Button — 2026-07-29
+
+### Completed
+
+**Fix 1 — Complete Profile mission display logic**:
+- `MissionList.tsx`: filter `mission.action === "profile"` kalo `calculateProfileCompletion >= 100`
+- Import `useProfile`, `calculateProfileCompletion`
+- UI-level safety: meskipun event chain gagal, mission gak muncul untuk user yang profile-nya udah lengkap
+- Misi otomatis hilang dari list setelah profile selesai diisi
+
+**Fix 2 — Sembunyikan Daily Checkin dari missions page**:
+- `MissionList.tsx`: filter `mission.action === "checkin"` — gak ditampilkan di MissionList
+- Checkin mission cuma bisa di-trigger via button di MorePage
+
+**Fix 3 — Checkin Button di MorePage**:
+- `MorePage/index.tsx`: tambah komponen `CheckinButton` inline
+- Posisi: antara VXP Summary card dan ProfileCard
+- Flow: click → `track("CHECKIN", userId, { date: today })` → mission engine → auto-claim
+- localStorage key `voks-checkin-{YYYY-MM-DD}` untuk daily state — reset otomatis next day
+- Dua state visual: "Checkin Harian" (active, emas) → "Sudah Checkin Hari Ini" (done, hijau)
+
+### Verification
+- `npm run check` → exit 0
+- `npm run build` → exit 0

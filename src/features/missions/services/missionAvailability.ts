@@ -7,8 +7,10 @@ function parseTime(
 ) {
   if (!value) return null
 
-  const [h, m] =
-    value.split(':').map(Number)
+  const timePart = value.includes(' ') ? value.split(' ')[1] : value
+  const [h, m] = timePart.split(':').map(Number)
+
+  if (isNaN(h) || isNaN(m)) return null
 
   return h * 60 + m
 }
@@ -23,12 +25,12 @@ export function isMissionAvailableNow(
 
   const start =
     parseTime(
-      mission.start
+      mission.timeStart
     )
 
   const end =
     parseTime(
-      mission.end
+      mission.timeEnd
     )
 
   if (
@@ -50,4 +52,26 @@ export function isMissionAvailableNow(
     minutes <= end
   )
 
+}
+
+export function isMissionInCampaignPeriod(
+  mission: MissionConfig
+) {
+  if (!mission.dateStart && !mission.dateEnd) return true
+
+  const now = new Date()
+
+  if (mission.dateStart) {
+    const startDate = new Date(mission.dateStart)
+    if (isNaN(startDate.getTime())) return true
+    if (startDate > now) return false
+  }
+
+  if (mission.dateEnd) {
+    const endDate = new Date(mission.dateEnd)
+    if (isNaN(endDate.getTime())) return true
+    if (endDate < now) return false
+  }
+
+  return true
 }
