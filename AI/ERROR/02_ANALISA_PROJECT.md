@@ -1,0 +1,23 @@
+baca :
+AI\00_PROJECT_OVERVIEW.md
+AI\00_SYSTEM_ARCHITECTURE_v1.md
+AI\01_PROJECT_RULES.md
+AI\02_CODING_RULES.md
+AI\03_ARCHITECTURE.md
+AI\04_DATABASE.md
+AI\05_WORDPRESS.md
+AI\06_SUPABASE.md
+AI\07_ADMIN_PANEL.md
+AI\08_MISSION_ENGINE.md
+AI\09_REWARD_SYSTEM.md
+AI\10_PLAYER_SYSTEM.md
+AI\11_NOTIFICATION_SYSTEM.md
+AI\12_API_REFERENCE.md
+AI\13_EDGE_FUNCTIONS.md
+AI\14_FOLDER_STRUCTURE.md
+AI\25_PRODUCT_POLISH_CHECKLIST.md
+AI\22_PRODUCT_VISION.md
+AI\23_PUBLIC_APP_GUIDELINE.md
+AI\24_PUBLIC_APP_UI_SPEC.md
+
+Analisa dan pahami project saya. kemudian berikan masukan dari ini. Saya ingin membereskan project ini secepatnnya. kamu berikan Analisa dan Apa yang tidak perlu dan apa yang harus ditambahkan.

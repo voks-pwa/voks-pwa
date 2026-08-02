@@ -15,7 +15,6 @@ dev-dist
 .codegraph/
 
 # Editor directories and files
-AI/*
 .vscode/*
 !.vscode/extensions.json
 .idea
