@@ -2,6 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { z } from "npm:zod";
 import { requireAdmin } from "../_shared/adminAuth.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { fetchWithRetry } from "../_shared/retry.ts";
 
 const inputSchema = z.object({
   days: z.number().int().min(1).max(365).optional().default(30),
@@ -206,6 +207,129 @@ Deno.serve(async (req) => {
       } else {
         broadcastTrend[createdDay].pending += 1;
       }
+    }
+
+    // ── Section 5: Engagement — activity_logs + user_favorites (isolated) ──
+    const activitySince = new Date();
+    activitySince.setDate(activitySince.getDate() - Math.max(days, 30));
+    const activitySinceStr = activitySince.toISOString();
+    const sinceDateStr = since.toISOString().slice(0, 10);
+
+    let activityRows: { created_at: string; user_id: string; activity_type: string; metadata: Record<string, unknown> | null }[] = [];
+    try {
+      const pages: typeof activityRows = [];
+      for (let offset = 0; offset < 20000; offset += 1000) {
+        const { data, error } = await supabase
+          .from("activity_logs")
+          .select("created_at, user_id, activity_type, metadata")
+          .gte("created_at", activitySinceStr)
+          .order("created_at", { ascending: false })
+          .range(offset, offset + 999);
+        if (error) {
+          console.error("[admin-analytics] activity_logs error:", error.message);
+          break;
+        }
+        if (!data || data.length === 0) break;
+        pages.push(...data as typeof pages);
+        if (data.length < 1000) break;
+      }
+      activityRows = pages;
+    } catch (err) {
+      console.error("[admin-analytics] activity_logs fetch threw:", err instanceof Error ? err.message : String(err));
+    }
+
+    // Active users: DAU (today), WAU (7d), MAU (30d) — distinct user_id
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOf7d = new Date(startOfToday.getTime() - 6 * 86400000);
+    const startOf30d = new Date(startOfToday.getTime() - 29 * 86400000);
+
+    const dauSet = new Set<string>();
+    const wauSet = new Set<string>();
+    const mauSet = new Set<string>();
+    const activeUsersByDate: Record<string, Set<string>> = {};
+    for (const row of activityRows) {
+      const t = new Date(row.created_at).getTime();
+      if (t >= startOfToday.getTime()) dauSet.add(row.user_id);
+      if (t >= startOf7d.getTime()) wauSet.add(row.user_id);
+      if (t >= startOf30d.getTime()) mauSet.add(row.user_id);
+      const day = new Date(row.created_at).toISOString().slice(0, 10);
+      if (day >= sinceDateStr) {
+        (activeUsersByDate[day] ??= new Set()).add(row.user_id);
+      }
+    }
+    const activeTrend: Record<string, number> = {};
+    for (const [day, set] of Object.entries(activeUsersByDate)) {
+      activeTrend[day] = set.size;
+    }
+
+    // Stream plays, banner clicks, page views
+    const playsByDate: Record<string, number> = {};
+    const clicksByDate: Record<string, number> = {};
+    const topPromoMap: Record<string, { count: number; title: string }> = {};
+    const topPageMap: Record<string, number> = {};
+    let streamPlaysTotal = 0;
+    let bannerClicksTotal = 0;
+
+    for (const row of activityRows) {
+      if (row.created_at < sinceStr) continue;
+      const day = new Date(row.created_at).toISOString().slice(0, 10);
+      const meta = row.metadata ?? {};
+      if (row.activity_type === "player_play") {
+        streamPlaysTotal += 1;
+        playsByDate[day] = (playsByDate[day] ?? 0) + 1;
+      } else if (row.activity_type === "banner_click") {
+        bannerClicksTotal += 1;
+        clicksByDate[day] = (clicksByDate[day] ?? 0) + 1;
+        const id = String(meta.promo_id ?? "unknown");
+        const title = String(meta.promo_title ?? "");
+        if (!topPromoMap[id]) topPromoMap[id] = { count: 0, title };
+        topPromoMap[id].count += 1;
+      } else if (row.activity_type === "page_view") {
+        const path = String(meta.path ?? meta.page ?? "unknown");
+        topPageMap[path] = (topPageMap[path] ?? 0) + 1;
+      }
+    }
+
+    const topPromos = Object.entries(topPromoMap)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 10)
+      .map(([id, v]) => ({ id, title: v.title, count: v.count }));
+
+    const topPages = Object.entries(topPageMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([path, count]) => ({ path, count }));
+
+    // Top favorite programs & announcers from user_favorites
+    let topPrograms: { id: string; count: number }[] = [];
+    let topAnnouncers: { id: string; count: number }[] = [];
+    try {
+      const favPages: { target_type: string; target_id: string }[] = [];
+      for (let offset = 0; offset < 20000; offset += 1000) {
+        const { data, error } = await supabase
+          .from("user_favorites")
+          .select("target_type, target_id")
+          .order("created_at", { ascending: false })
+          .range(offset, offset + 999);
+        if (error) {
+          console.error("[admin-analytics] user_favorites error:", error.message);
+          break;
+        }
+        if (!data || data.length === 0) break;
+        favPages.push(...data as typeof favPages);
+        if (data.length < 1000) break;
+      }
+      const favProgram = new Map<string, number>();
+      const favAnnouncer = new Map<string, number>();
+      for (const fav of favPages) {
+        if (fav.target_type === "program") favProgram.set(fav.target_id, (favProgram.get(fav.target_id) ?? 0) + 1);
+        else if (fav.target_type === "announcer") favAnnouncer.set(fav.target_id, (favAnnouncer.get(fav.target_id) ?? 0) + 1);
+      }
+      topPrograms = [...favProgram.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([id, count]) => ({ id, count }));
+      topAnnouncers = [...favAnnouncer.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([id, count]) => ({ id, count }));
+    } catch (err) {
+      console.error("[admin-analytics] user_favorites fetch threw:", err instanceof Error ? err.message : String(err));
     }
 
     // ── External: AzuraCast listener data (isolated) ──
@@ -510,6 +634,26 @@ Deno.serve(async (req) => {
         },
         rewardBreakdown: rewardByStatus,
         missionBreakdown: missionByType,
+        activeUsers: {
+          dau: dauSet.size,
+          wau: wauSet.size,
+          mau: mauSet.size,
+          trend: activeTrend,
+        },
+        streamPlays: {
+          total: streamPlaysTotal,
+          trend: playsByDate,
+        },
+        bannerClicks: {
+          total: bannerClicksTotal,
+          trend: clicksByDate,
+          topPromos,
+        },
+        topPages,
+        topFavorites: {
+          programs: topPrograms,
+          announcers: topAnnouncers,
+        },
         devices: deviceMap,
         browsers: browserMap,
         platforms: platformMap,

@@ -25,7 +25,9 @@ export type ActionEventName =
   | "VOUCHER_REFUND"
    | "SHIPPING_STATUS"
    | "FAVORITE_PROGRAM"
-   | "FAVORITE_ANNOUNCER";
+   | "FAVORITE_ANNOUNCER"
+   | "PAGE_VIEW"
+   | "BANNER_CLICK";
 
 export interface ActionEventPayloads {
   USER_LOGIN: { at: string };
@@ -55,6 +57,8 @@ export interface ActionEventPayloads {
   SHIPPING_STATUS: { shipping_id: string; from_status: string; to_status: string; tracking_number: string };
   FAVORITE_PROGRAM: { target_id: string; timestamp: string };
   FAVORITE_ANNOUNCER: { target_id: string; timestamp: string };
+  PAGE_VIEW: { path: string; page: string; timestamp: string };
+  BANNER_CLICK: { promo_id: number | string; promo_title: string; position: string; timestamp: string };
 }
 
 export interface ActionEvent<T extends ActionEventName = ActionEventName> {

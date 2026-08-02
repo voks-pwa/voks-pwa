@@ -20,7 +20,8 @@ export function useRedeem() {
       return processRedeem({ ...input, userId: user.id }, deps);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["profiles", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["profiles"] });
       queryClient.invalidateQueries({ queryKey: ["rewards"] });
       queryClient.invalidateQueries({ queryKey: ["user-redeems"] });
     },

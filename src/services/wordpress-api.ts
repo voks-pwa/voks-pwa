@@ -10,6 +10,8 @@ import type { WPReward } from "@/features/rewards/rewardTypes";
 
 import type { WordPressPromo } from "@/types/promo";
 
+import { decodeWpText } from "@/lib/html";
+
 const WP_API_URL = "https://voksradio.com/wp-json/wp/v2";
 
 export async function getMissions(): Promise<WPMission[]> {
@@ -21,7 +23,8 @@ export async function getMissions(): Promise<WPMission[]> {
     throw new Error("Failed to fetch missions");
   }
 
-  return response.json() as Promise<WPMission[]>;
+  const data = (await response.json()) as WPMission[];
+  return data.map(decodeWpText);
 }
 
 export async function getNotifications(): Promise<
@@ -35,7 +38,8 @@ export async function getNotifications(): Promise<
     throw new Error("Failed to fetch notifications");
   }
 
-  return response.json();
+  const data = (await response.json()) as WordPressNotification[];
+  return data.map(decodeWpText);
 }
 
 export async function getAnnouncers(): Promise<
@@ -49,7 +53,8 @@ export async function getAnnouncers(): Promise<
     throw new Error("Failed to fetch announcers");
   }
 
-  return response.json();
+  const data = (await response.json()) as WordPressAnnouncer[];
+  return data.map(decodeWpText);
 }
 
 export async function getAnnouncer(
@@ -67,7 +72,7 @@ export async function getAnnouncer(
 
   const data = await response.json();
 
-  return data[0] ?? null;
+  return data[0] ? decodeWpText(data[0]) : null;
 }
 
 export async function getPrograms(): Promise<
@@ -81,7 +86,8 @@ export async function getPrograms(): Promise<
     throw new Error("Failed to fetch programs");
   }
 
-  return response.json();
+  const data = (await response.json()) as WordPressProgram[];
+  return data.map(decodeWpText);
 }
 
 export async function getVoksPlus(): Promise<
@@ -97,7 +103,8 @@ export async function getVoksPlus(): Promise<
     );
   }
 
-  return response.json();
+  const data = (await response.json()) as WordPressVoksPlus[];
+  return data.map(decodeWpText);
 }
 
 export async function getVoksPlusItem(
@@ -117,7 +124,7 @@ export async function getVoksPlusItem(
 
   const data = await response.json();
 
-  return data[0] ?? null;
+  return data[0] ? decodeWpText(data[0]) : null;
 }
 
 export async function getMedia(
@@ -141,7 +148,8 @@ export async function getPromos(): Promise<WordPressPromo[]> {
   if (!response.ok) {
     throw new Error("Failed to fetch promos");
   }
-  return response.json() as Promise<WordPressPromo[]>;
+  const data = (await response.json()) as WordPressPromo[];
+  return data.map(decodeWpText);
 }
 
 export async function getPromo(
@@ -155,7 +163,7 @@ export async function getPromo(
     throw new Error("Failed to fetch promo");
   }
   const data = await response.json();
-  return data[0] ?? null;
+  return data[0] ? decodeWpText(data[0]) : null;
 }
 
 export async function getRewards(): Promise<WPReward[]> {
@@ -167,7 +175,7 @@ export async function getRewards(): Promise<WPReward[]> {
     throw new Error("Failed to fetch rewards");
   }
 
-  const rewards: WPReward[] = await response.json();
+  const rewards: WPReward[] = (await response.json()).map(decodeWpText);
 
   const rewardsWithImages = await Promise.all(
   rewards.map(async (reward) => {

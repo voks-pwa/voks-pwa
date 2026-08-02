@@ -1,12 +1,20 @@
 import { History, Loader2, CheckCircle2, Trophy, Clock, Target } from "lucide-react";
 import { useMissions } from "@/hooks/useMissions";
-import { useMissionProgress } from "@/hooks/useMissionProgress";
+import { useAuth } from "@/features/auth/useAuth";
+import { getUserMissionCompletions } from "../repositories/missionCompletionRepository";
+import { useQuery } from "@tanstack/react-query";
 
 export function MissionHistory() {
+  const { user } = useAuth();
   const { data: missions = [], isLoading: missionsLoading } = useMissions();
-  const { data: progress = [], isLoading: progressLoading } = useMissionProgress();
 
-  if (missionsLoading || progressLoading) {
+  const { data: completions = [], isLoading: completionsLoading } = useQuery({
+    queryKey: ["mission-completions", user?.id],
+    enabled: !!user,
+    queryFn: () => getUserMissionCompletions(user!.id),
+  });
+
+  if (missionsLoading || completionsLoading) {
     return (
       <section className="mt-10">
         <div className="mb-4 flex items-center gap-2">
@@ -22,10 +30,6 @@ export function MissionHistory() {
 
   const missionMap = new Map(missions.map((m) => [m.id, m]));
 
-  const history = [...progress]
-    .filter((p) => p.claimed)
-    .reverse();
-
   return (
     <section className="mt-10">
       <div className="mb-4 flex items-center gap-2">
@@ -34,17 +38,17 @@ export function MissionHistory() {
       </div>
 
       <div className="space-y-3">
-        {history.length === 0 && (
+        {completions.length === 0 && (
           <div className="rounded-2xl bg-white p-6 text-center text-gray-400 shadow-sm">
             No claimed missions yet.
           </div>
         )}
 
-        {history.map((item) => {
+        {completions.map((item) => {
           const mission = missionMap.get(item.mission_id);
           return (
             <div
-              key={item.mission_id}
+              key={`${item.mission_id}-${item.completed_at}`}
               className="rounded-2xl bg-white p-4 shadow-sm"
             >
               <div className="flex items-start justify-between">
@@ -82,7 +86,7 @@ export function MissionHistory() {
                 <div className="flex items-center gap-1 shrink-0 ml-3">
                   <CheckCircle2 size={14} className="text-green-600" />
                   <span className="text-xs font-semibold text-green-600">
-                    +{mission?.reward ?? 0} XP
+                    +{item.reward_vxp ?? 0} XP
                   </span>
                 </div>
               </div>

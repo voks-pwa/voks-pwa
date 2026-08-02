@@ -6,8 +6,10 @@ import {
   isContinuousMission,
   isAccumulativeMission,
   isDailyMission,
+  shouldResetOnDailyBoundary,
 } from "./missionRules";
 import { getRuntime, updateResetDate } from "./missionRuntime";
+import { getMissionProgress } from "../repositories/missionProgressRepository";
 import { processMissionProgress, processDailyReset } from "./missionProgressService";
 import { autoClaimIfEligible } from "./MissionClaimService";
 import { repeatMissionIfNeeded } from "./missionRepeat";
@@ -37,8 +39,12 @@ export async function missionEngine({
     const runtime = getRuntime(userId);
     const today = new Date().toISOString().split("T")[0];
 
-    if (runtime.lastResetDate !== today) {
+    const progress = await getMissionProgress(userId, mission.id);
+    if (shouldResetOnDailyBoundary(mission, progress)) {
       await processDailyReset(userId, mission);
+    }
+
+    if (runtime.lastResetDate !== today) {
       updateResetDate(userId);
     }
 
@@ -72,6 +78,7 @@ export async function missionEngine({
 
   useMissionStore.getState().setProgress({
     missionId: mission.id,
+    missionTitle: mission.title,
     progress: progress.progress ?? 0,
     target: mission.durationMinutes ? mission.durationMinutes * 60 : mission.target,
     completed: Boolean(progress.completed),

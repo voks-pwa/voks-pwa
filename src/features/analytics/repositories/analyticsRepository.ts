@@ -25,18 +25,6 @@ export async function getCommerceKpisRpc(days: number = 30): Promise<CommerceKpi
   return result as CommerceKpis;
 }
 
-export async function getUserAnalyticsRpc(days: number = 30): Promise<unknown> {
-  const { data, error } = await supabase.rpc("get_user_analytics", { p_days: days });
-  if (error) throw error;
-  return data;
-}
-
-export async function getMissionAnalyticsRpc(days: number = 30): Promise<unknown> {
-  const { data, error } = await supabase.rpc("get_mission_analytics", { p_days: days });
-  if (error) throw error;
-  return data;
-}
-
 export async function getAdminAnalytics(days: number = 30): Promise<unknown> {
   const { data, error } = await supabase.functions.invoke("admin-analytics", { body: { days } });
   if (error) throw error;

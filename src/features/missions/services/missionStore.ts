@@ -16,6 +16,8 @@ export interface MissionProgressState {
   claimed: boolean
 
   reward: number
+
+  missionTitle: string
 }
 
 interface MissionStore {

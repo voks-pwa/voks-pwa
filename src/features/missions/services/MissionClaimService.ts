@@ -4,12 +4,15 @@ import { isAutoClaimMission } from "../validators";
 import { getMissionProgress } from "../repositories/missionProgressRepository";
 import { grantReward } from "@/core/reward-engine";
 import { calculateXP } from "@/features/economy/services/economyEngine";
+import { syncLevelBadge } from "@/features/profile/services/profileBadgeService";
+import { queryClient } from "@/lib/query-client";
+import { showToast } from "@/components/ui/showToast";
 import type { XpSource } from "@/features/economy/types";
 
 function missionSource(mission: MissionConfig): XpSource {
-  if (mission.period === "daily") return "MISSION_DAILY";
-  if (mission.period === "weekly") return "MISSION_WEEKLY";
-  if (mission.period === "monthly") return "MISSION_MONTHLY";
+  if (mission.period === "daily" || mission.type === "daily") return "MISSION_DAILY";
+  if (mission.period === "weekly" || mission.type === "weekly") return "MISSION_WEEKLY";
+  if (mission.period === "monthly" || mission.type === "monthly") return "MISSION_MONTHLY";
   return "MISSION_COMPLETE";
 }
 
@@ -21,27 +24,18 @@ export async function processMissionClaim(userId: string, mission: MissionConfig
   const calc = await calculateXP({
     source: missionSource(mission),
     userId,
+    baseXP: mission.reward,
     context: { mission_id: mission.id, period: mission.period },
   });
   const amount = calc.finalXP;
 
   const dateKey = new Date().toISOString().split('T')[0]
-  const referenceId = mission.period === "daily"
+  const referenceId = mission.period === "daily" || mission.repeat
     ? `${mission.id}-${dateKey}`
     : String(mission.id)
 
-  const guard = await grantReward({
-    userId,
-    source: "mission",
-    referenceId,
-    amount,
-    reason: `Mission: ${mission.title}`,
-  });
-
-  if (guard.skipped) {
-    return { success: false, claimed: false, message: "Reward already claimed" };
-  }
-
+  // Claim RPC dulu — idempotency asli ada di missions_progress.claimed.
+  // reward_grants ditulis SETELAH sukses supaya kegagalan bisa di-retry.
   const { data, error } = await supabase.rpc("claim_mission_reward", {
     p_user_id: userId,
     p_mission_id: mission.id,
@@ -51,6 +45,7 @@ export async function processMissionClaim(userId: string, mission: MissionConfig
 
   if (error) {
     console.error(`[CLAIM] rpc error user=${userId} mission=${mission.id}: ${error.message}`);
+    showToast({ type: "error", title: "Claim gagal", message: error.message });
     return { success: false, claimed: false, message: error.message };
   }
 
@@ -61,9 +56,23 @@ export async function processMissionClaim(userId: string, mission: MissionConfig
     return { success: false, claimed: false, message: result.error ?? "Claim failed" };
   }
 
+  await grantReward({
+    userId,
+    source: "mission",
+    referenceId,
+    amount,
+    reason: `Mission: ${mission.title}`,
+  });
+
   if (mission.action === "referral") {
     await markReferralsGranted(userId);
   }
+
+  await syncLevelBadge(userId);
+
+  queryClient.invalidateQueries({ queryKey: ["profiles", userId] });
+  queryClient.invalidateQueries({ queryKey: ["missions-progress", userId] });
+  queryClient.invalidateQueries({ queryKey: ["mission-completions", userId] });
 
   return {
     success: true,

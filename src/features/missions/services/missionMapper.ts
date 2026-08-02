@@ -1,12 +1,24 @@
 import type { MissionConfig } from "../types/mission";
 import type { WPMission } from "./missionTypes";
+import { decodeEntities } from "@/lib/html";
 
 export function mapMission(wp: WPMission): MissionConfig {
+  const missionType = wp.acf?.mission_type ?? "mission";
+  const period =
+    wp.acf?.period ??
+    (missionType === "daily"
+      ? "daily"
+      : missionType === "weekly"
+        ? "weekly"
+        : missionType === "monthly"
+          ? "monthly"
+          : "once");
+
   return {
     id: wp.id,
-    title: wp.title?.rendered ?? "",
-    description: wp.acf?.mission_description ?? "",
-    type: wp.acf?.mission_type ?? "mission",
+    title: decodeEntities(wp.title?.rendered ?? ""),
+    description: decodeEntities(wp.acf?.mission_description ?? ""),
+    type: missionType,
     icon: wp.acf?.mission_icon ?? "trophy",
     badge: wp.acf?.mission_badge,
     target: Number(wp.acf?.mission_target ?? 1),
@@ -19,7 +31,7 @@ export function mapMission(wp: WPMission): MissionConfig {
     continuous: Boolean(wp.acf?.continuous),
     accumulative: Boolean(wp.acf?.accumulative),
     daily: Boolean(wp.acf?.daily),
-    period: wp.acf?.period ?? "once",
+    period,
     durationMinutes: wp.acf?.duration_minutes != null ? Number(wp.acf.duration_minutes) : undefined,
     dateStart: wp.acf?.mission_start ?? "",
     dateEnd: wp.acf?.mission_end ?? "",

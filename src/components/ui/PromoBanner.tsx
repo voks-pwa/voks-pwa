@@ -1,6 +1,8 @@
 import { memo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { handleDeepLink } from "@/utils/deepLink";
+import { useAuth } from "@/features/auth/useAuth";
+import { track } from "@/core/action-engine";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
 import "swiper/css";
@@ -21,6 +23,7 @@ function getPromoImage(promo: { _embedded?: Record<string, unknown> }) {
 
 export const PromoBanner = memo(function PromoBanner() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const { data: promos, isLoading, isError, refetch } = usePromos();
 
@@ -43,6 +46,14 @@ export const PromoBanner = memo(function PromoBanner() {
   });
 
   function handleSlideClick(promo: typeof sorted[number]) {
+    if (user) {
+      track("BANNER_CLICK", user.id, {
+        promo_id: promo.id,
+        promo_title: promo.title.rendered,
+        position: "home_carousel",
+        timestamp: new Date().toISOString(),
+      });
+    }
     handleDeepLink(navigate, promo.acf ?? {});
   }
 

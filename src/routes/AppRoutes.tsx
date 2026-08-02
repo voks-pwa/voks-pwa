@@ -4,6 +4,7 @@ import { Routes, Route } from "react-router-dom";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import { AuthLayout } from "@/layouts/AuthLayout";
 import { EmptyLayout } from "@/layouts/EmptyLayout";
+import { PageViewTracker } from "@/components/tracking/PageViewTracker";
 
 import { HomePage } from "@/pages/HomePage";
 import { MorePage } from "@/pages/MorePage";
@@ -104,7 +105,9 @@ function Lazy({ children }: { children: React.ReactNode }) {
 
 export function AppRoutes() {
   return (
-    <Routes>
+    <>
+      <PageViewTracker />
+      <Routes>
       {/* PUBLIC */}
 
       <Route element={<PublicLayout />}>
@@ -352,6 +355,7 @@ export function AppRoutes() {
           </Lazy>
         }
       />
-    </Routes>
+      </Routes>
+    </>
   );
 }

@@ -8,5 +8,6 @@ export function useVoksPlus() {
   return useQuery({
     queryKey: ['voks-plus'],
     queryFn: getVoksPlus,
+    staleTime: 5 * 60 * 1000,
   })
 }

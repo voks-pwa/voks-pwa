@@ -2,7 +2,6 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 
 import {
-  QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query'
 
@@ -13,6 +12,8 @@ import {
   AuthProvider,
 } from '@/features/auth/AuthProvider'
 
+import { queryClient } from '@/lib/query-client'
+
 /*
   IMPORTANT
 
@@ -21,8 +22,6 @@ import {
   to window.
 */
 import '@/features/missions/services/missionRuntime'
-
-const queryClient = new QueryClient()
 
 ReactDOM.createRoot(
   document.getElementById('root')!

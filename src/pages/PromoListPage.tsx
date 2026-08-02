@@ -1,5 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { usePromos } from "@/hooks/usePromos";
+import { useAuth } from "@/features/auth/useAuth";
+import { track } from "@/core/action-engine";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -8,7 +10,20 @@ import { handleDeepLink } from "@/utils/deepLink";
 
 export function PromoListPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: promos, isLoading, isError, refetch } = usePromos();
+
+  const handlePromoClick = (promo: NonNullable<typeof promos>[number]) => {
+    if (user) {
+      track("BANNER_CLICK", user.id, {
+        promo_id: promo.id,
+        promo_title: promo.title.rendered,
+        position: "promo_list",
+        timestamp: new Date().toISOString(),
+      });
+    }
+    handleDeepLink(navigate, promo.acf ?? {});
+  };
 
   return (
     <div>
@@ -60,7 +75,7 @@ export function PromoListPage() {
               <button
                 key={promo.id}
                 type="button"
-                onClick={() => handleDeepLink(navigate, promo.acf ?? {})}
+                onClick={() => handlePromoClick(promo)}
                 className="block w-full text-left"
               >
                 <div className="flex overflow-hidden rounded-3xl bg-white shadow-sm border border-gray-100">

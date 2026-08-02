@@ -6,18 +6,15 @@ export interface LevelProgress {
 }
 
 const LEVELS = [
-  0,
-  100,
-  250,
-  500,
-  1000,
-  2000,
-  4000,
-  7000,
-  10000,
-  15000,
-  25000,
-  50000,
+  0,      // Level 1: 0 XP
+  100,    // Level 2: 100 XP
+  500,    // Level 3: 500 XP
+  750,    // Level 4: 750 XP
+  1000,   // Level 5: 1000 XP
+  4000,   // Level 6: 4000 XP
+  10000,  // Level 7: 10000 XP
+  25000,  // Level 8: 25000 XP
+  50000,  // Level 9: 50000 XP
 ];
 
 export function calculateLevel(

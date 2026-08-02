@@ -19,14 +19,15 @@ function getState(userId: string): MissionRuntime {
     return existing
   }
 
-  // 2. PERBAIKAN INITIAL STATE: Inisialisasi awal otomatis dengan tanggal hari ini
+  // 2. PERBAIKAN INITIAL STATE: lastResetDate kosong — scheduler reset harus jalan
+  //    (init "hari ini" bikin `lastResetDate !== today` selalu false → daily reset mati)
   const state: MissionRuntime = {
     listening: false,
     startedAt: null,
     lastTick: null,
     continuousSeconds: 0,
     accumulativeSeconds: 0,
-    lastResetDate: new Date().toISOString().split('T')[0],
+    lastResetDate: "",
   }
 
   runtime.set(userId, state)

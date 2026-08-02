@@ -2,7 +2,9 @@
 
 Status
 
-Planned
+Partial
+
+— 2026-07-31: MAKSUD gap selesai (DAU/WAU/MAU, stream plays, banner clicks, top pages, top favorites). Detail: `AI/DEPLOYMENT/MAKSUD_STATUS.md`.
 
 ---
 

@@ -1,83 +1,44 @@
-import { Trophy } from "lucide-react";
+import { Trophy, X } from "lucide-react";
 import { RewardBadge } from "./RewardBadge";
 
 interface RewardToastProps {
   mission: string;
   reward: number;
-  progress: number;
-  target: number;
+  onDismiss: () => void;
 }
 
 export function RewardToast({
   mission,
   reward,
-  progress,
-  target,
+  onDismiss,
 }: RewardToastProps) {
   return (
-    <div className="w-90 rounded-2xl bg-white shadow-2xl border border-yellow-200 overflow-hidden">
+    <div className="w-72 rounded-2xl bg-white shadow-lg border border-gray-100 border-l-4 border-l-[#bda752] overflow-hidden">
 
-      <div className="bg-linear-to-r from-yellow-400 to-orange-500 p-4 text-white">
+      <div className="relative p-4">
 
-        <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss"
+          className="absolute right-3 top-3 rounded-full p-1 text-gray-300 transition hover:bg-gray-100 hover:text-gray-500"
+        >
+          <X size={14} />
+        </button>
 
-          <Trophy size={28} />
+        <div className="flex items-start gap-3">
 
-          <div>
+          <Trophy size={20} className="mt-0.5 shrink-0 text-[#bda752]" />
 
-            <h2 className="font-bold text-lg">
-              Mission Complete
-            </h2>
+          <div className="min-w-0">
 
-            <p className="text-sm opacity-90">
-              Congratulations 🎉
-            </p>
+            <h3 className="font-bold text-gray-900">{mission}</h3>
 
-          </div>
+            <p className="mt-1 text-xs text-gray-400">Mission completed</p>
 
-        </div>
-
-      </div>
-
-      <div className="space-y-4 p-5">
-
-        <div>
-
-          <p className="text-gray-500 text-sm">
-            Completed Mission
-          </p>
-
-          <h3 className="font-semibold text-lg">
-            {mission}
-          </h3>
-
-        </div>
-
-        <RewardBadge reward={reward} />
-
-        <div>
-
-          <div className="flex justify-between text-xs mb-1">
-
-            <span>Progress</span>
-
-            <span>
-              {progress}/{target}
-            </span>
-
-          </div>
-
-          <div className="h-2 rounded-full bg-gray-200">
-
-            <div
-              className="h-2 rounded-full bg-green-500 transition-all"
-              style={{
-                width: `${Math.min(
-                  (progress / target) * 100,
-                  100
-                )}%`,
-              }}
-            />
+            <div className="mt-2">
+              <RewardBadge reward={reward} />
+            </div>
 
           </div>
 

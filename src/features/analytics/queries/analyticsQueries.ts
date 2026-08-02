@@ -3,7 +3,5 @@ export const analyticsKeys = {
   wallet: (days: number) => [...analyticsKeys.all, "wallet", days] as const,
   campaign: (days: number) => [...analyticsKeys.all, "campaign", days] as const,
   commerceKpis: (days: number) => [...analyticsKeys.all, "commerce-kpis", days] as const,
-  user: (days: number) => [...analyticsKeys.all, "user", days] as const,
-  mission: (days: number) => [...analyticsKeys.all, "mission", days] as const,
   admin: (days: number) => [...analyticsKeys.all, "admin", days] as const,
 };

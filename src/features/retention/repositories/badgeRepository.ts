@@ -1,6 +1,28 @@
 import { supabase } from "@/lib/supabase";
 import type { UserBadge } from "../types";
 
+export interface XpBadgeDefinition {
+  id: number;
+  slug: string;
+  title: string;
+  description: string;
+  min_lifetime_vxp: number;
+  min_role: string | null;
+  icon_url: string;
+  sort_order: number;
+}
+
+export async function getXpBadgeDefinitions(): Promise<XpBadgeDefinition[]> {
+  const { data, error } = await supabase.rpc("get_xp_badges");
+
+  if (error) {
+    console.error("[BADGE] get_xp_badges error", error.message);
+    return [];
+  }
+
+  return (data as XpBadgeDefinition[]) ?? [];
+}
+
 export async function getBadges(userId: string): Promise<UserBadge[]> {
   const { data, error } = await supabase
     .from("user_badges")

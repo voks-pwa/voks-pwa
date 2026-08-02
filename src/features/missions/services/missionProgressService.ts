@@ -66,9 +66,14 @@ export async function processMissionProgress(
 
   /**
    * CONTINUOUS LISTENING
+   * Guard hanya berlaku untuk mission LISTEN — misi checkin/share/profile/referral
+   * yang kebetulan listen_mode="continuous" di WP jangan di-ignore oleh aksinya.
    */
 
-  if (mission.listenMode === "continuous") {
+  if (
+    mission.listenMode === "continuous" &&
+    mission.action === "listen"
+  ) {
     if (
       INTERRUPT_EVENTS.includes(action)
     ) {

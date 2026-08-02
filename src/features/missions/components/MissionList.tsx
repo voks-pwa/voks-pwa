@@ -60,7 +60,10 @@ export function MissionList(){
   const profileCompleted = profile ? calculateProfileCompletion(profile) >= 100 : false
 
   const visible = sorted.filter((mission: MissionConfig) => {
-    if (mission.action === "checkin") return false
+    if (mission.action === "checkin") {
+      const state = getMissionState(mission, progressMap.get(mission.id));
+      return state === "CLAIMED" || VISIBLE_STATES.has(state);
+    }
     if (mission.action === "profile" && profileCompleted) return false
     const state = getMissionState(mission, progressMap.get(mission.id));
     return VISIBLE_STATES.has(state);

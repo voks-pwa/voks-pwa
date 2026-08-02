@@ -123,7 +123,8 @@ export function shouldUnlockRepeatMission(
   mission: MissionConfig,
   progress: MissionProgressRecord | null
 ) {
-  return canRepeatMission(mission) && Boolean(progress?.completed)
+  // Misi daily di-reset via daily boundary, bukan via repeat unlock
+  return canRepeatMission(mission) && !isDailyMission(mission) && Boolean(progress?.completed)
 }
 
 export function shouldProcessScheduledMission(mission: MissionConfig) {

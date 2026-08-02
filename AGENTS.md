@@ -3,7 +3,7 @@
 ## First read order
 
 Read AI/ docs in this sequence before coding:
-`00_PROJECT_OVERVIEW` → `01_PROJECT_RULES` → `02_CODING_RULES` → `03_ARCHITECTURE` → `CURRENT_TASK` → `SESSION_MEMORY`
+`AI/CHECKPOINTS/001_PLATFORM_STATUS` → `AI/CHECKPOINTS/003_CURRENT_ARCHITECTURE` → `AI/CHECKPOINTS/004_CURRENT_MILESTONE` → `AI/16_SESSION_MEMORY` → `AI/DEPLOYMENT/ROADMAP_STATUS`
 
 ## Commands
 
@@ -78,5 +78,5 @@ Single-context — one `CONTEXT.md` + `docs/adr/` at the root. See `docs/agents/
 
 After completing work, update:
 1. `AI/16_SESSION_MEMORY.md`
-2. `AI/15_CURRENT_TASK.md` (or `AI/18_TODO.md`)
-3. `AI/17_CHANGELOG.md`
+2. `AI/CHECKPOINTS/004_CURRENT_MILESTONE.md`
+3. `AI/MILESTONES/RELEASE_HISTORY.md`

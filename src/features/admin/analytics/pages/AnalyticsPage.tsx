@@ -16,10 +16,15 @@ import {
   Clock,
   TrendingUp,
   ListMusic,
+  Flame,
+  PlayCircle,
+  MousePointerClick,
 } from "lucide-react";
 
 import { useAnalytics } from "../hooks/useAnalytics";
 import type { AnalyticsTotals } from "../types/analytics";
+import { usePrograms } from "@/hooks/usePrograms";
+import { useAnnouncers } from "@/hooks/useAnnouncers";
 import { exportToCSV } from "../../shared/AdminExportCSV";
 import { exportToExcel } from "../../shared/AdminExportExcel";
 
@@ -161,8 +166,42 @@ function KpiCard({ icon: Icon, label, value, sub }: {
   );
 }
 
+function TopList({ title, rows, rankLabel }: {
+  title: string;
+  rows: { id: string; label: string; count: number }[];
+  rankLabel: (i: number) => string;
+}) {
+  if (!rows.length) return null;
+  return (
+    <div className="rounded-3xl bg-white p-5 shadow-sm">
+      <h3 className="mb-4 font-bold text-gray-800">{title}</h3>
+      <div className="space-y-3">
+        {rows.map((row, i) => (
+          <div key={row.id} className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#bda752]/10 text-xs font-bold text-[#bda752]">
+                {rankLabel(i)}
+              </span>
+              <span className="truncate text-sm font-medium text-gray-700">{row.label}</span>
+            </div>
+            <span className="shrink-0 rounded-lg bg-gray-100 px-2 py-1 text-xs font-bold text-gray-600">
+              {row.count.toLocaleString()}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function AnalyticsPage() {
   const [days, setDays] = useState(30);
+
+  const { data: programs = [] } = usePrograms();
+  const { data: announcers = [] } = useAnnouncers();
+
+  const programTitle = new Map(programs.map((p) => [String(p.id), p.title.rendered]));
+  const announcerTitle = new Map(announcers.map((a) => [String(a.id), a.title.rendered]));
 
   const {
     totals,
@@ -297,6 +336,45 @@ export function AnalyticsPage() {
         </div>
       )}
 
+      {/* User Activity KPIs */}
+      {data && (
+        <div>
+          <h2 className="mb-4 text-xl font-bold text-gray-800">User Activity</h2>
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+            <KpiCard
+              icon={Flame}
+              label="DAU"
+              value={(data.activeUsers?.dau ?? 0).toLocaleString()}
+              sub="Active today"
+            />
+            <KpiCard
+              icon={TrendingUp}
+              label="WAU"
+              value={(data.activeUsers?.wau ?? 0).toLocaleString()}
+              sub="Active last 7 days"
+            />
+            <KpiCard
+              icon={Users}
+              label="MAU"
+              value={(data.activeUsers?.mau ?? 0).toLocaleString()}
+              sub="Active last 30 days"
+            />
+            <KpiCard
+              icon={PlayCircle}
+              label="Stream Plays"
+              value={(data.streamPlays?.total ?? 0).toLocaleString()}
+              sub="PWA play actions"
+            />
+            <KpiCard
+              icon={MousePointerClick}
+              label="Banner Clicks"
+              value={(data.bannerClicks?.total ?? 0).toLocaleString()}
+              sub="Promo banner taps"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Section 6: Live Broadcast */}
       <div>
         <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
@@ -387,6 +465,30 @@ export function AnalyticsPage() {
         </div>
       )}
 
+      {/* Engagement trends */}
+      {data && (
+        <div className="grid gap-6 xl:grid-cols-2">
+          {data.activeUsers?.trend && Object.keys(data.activeUsers.trend).length > 0 && (
+            <Suspense fallback={<ChartFallback />}>
+              <AnalyticsLineChart
+                title="Daily Active Users"
+                data={Object.entries(data.activeUsers.trend).map(([date, v]) => ({ date, users: v }))}
+                lines={[{ dataKey: "users", color: "#3b82f6", name: "Active Users" }]}
+              />
+            </Suspense>
+          )}
+          {data.streamPlays?.trend && Object.keys(data.streamPlays.trend).length > 0 && (
+            <Suspense fallback={<ChartFallback />}>
+              <AnalyticsLineChart
+                title="Stream Plays"
+                data={Object.entries(data.streamPlays.trend).map(([date, v]) => ({ date, plays: v }))}
+                lines={[{ dataKey: "plays", color: "#8b5cf6", name: "Plays" }]}
+              />
+            </Suspense>
+          )}
+        </div>
+      )}
+
       {/* Section 3: Listener Sources + Section 4: Geographic + Section 5: Device/Browser/OS pies */}
       {data && (
         <>
@@ -468,6 +570,35 @@ export function AnalyticsPage() {
         azuracast={data?.azuracast ?? null}
         isLoading={isLoading}
       />
+
+      {/* Engagement Detail: pages, promos, favorites */}
+      {data && (
+        <div>
+          <h2 className="mb-4 text-xl font-bold text-gray-800">Engagement Detail</h2>
+          <div className="grid gap-6 xl:grid-cols-2">
+            <TopList
+              title="Top Pages"
+              rows={(data.topPages ?? []).map((p) => ({ id: p.path, label: p.path, count: p.count }))}
+              rankLabel={(i) => String(i + 1)}
+            />
+            <TopList
+              title="Top Promo Diklik"
+              rows={(data.bannerClicks?.topPromos ?? []).map((p) => ({ id: p.id, label: p.title || `Promo #${p.id}`, count: p.count }))}
+              rankLabel={(i) => String(i + 1)}
+            />
+            <TopList
+              title="Top Program Favorit"
+              rows={(data.topFavorites?.programs ?? []).map((p) => ({ id: p.id, label: programTitle.get(p.id) ?? `Program #${p.id}`, count: p.count }))}
+              rankLabel={(i) => String(i + 1)}
+            />
+            <TopList
+              title="Top Penyiar Favorit"
+              rows={(data.topFavorites?.announcers ?? []).map((a) => ({ id: a.id, label: announcerTitle.get(a.id) ?? `Penyiar #${a.id}`, count: a.count }))}
+              rankLabel={(i) => String(i + 1)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Section 8: Executive Insights */}
       <AnalyticsInsightsCard

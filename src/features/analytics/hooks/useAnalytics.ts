@@ -3,8 +3,6 @@ import {
   getWalletAnalyticsRpc,
   getCampaignAnalyticsRpc,
   getCommerceKpisRpc,
-  getUserAnalyticsRpc,
-  getMissionAnalyticsRpc,
   getAdminAnalytics,
 } from "../repositories/analyticsRepository";
 import { analyticsKeys } from "../queries/analyticsQueries";
@@ -34,22 +32,6 @@ export function useCommerceKpis(days: number = 30) {
     queryFn: () => getCommerceKpisRpc(days),
     staleTime: 60_000,
     refetchInterval: 30_000,
-  });
-}
-
-export function useUserAnalytics(days: number = 30) {
-  return useQuery({
-    queryKey: analyticsKeys.user(days),
-    queryFn: () => getUserAnalyticsRpc(days),
-    staleTime: 60_000,
-  });
-}
-
-export function useMissionAnalytics(days: number = 30) {
-  return useQuery({
-    queryKey: analyticsKeys.mission(days),
-    queryFn: () => getMissionAnalyticsRpc(days),
-    staleTime: 60_000,
   });
 }
 

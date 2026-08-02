@@ -15,5 +15,4 @@ export * from "./hooks/useCanonicalUser";
 
 export * from "./utils/profileBadge";
 export * from "./utils/profileCompletion";
-export * from "./utils/profileXP";
 export * from "./services/profileService";

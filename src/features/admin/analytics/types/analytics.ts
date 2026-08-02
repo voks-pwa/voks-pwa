@@ -72,6 +72,26 @@ export interface AnalyticsResponse {
   };
   rewardBreakdown: Record<string, number>;
   missionBreakdown: Record<string, number>;
+  activeUsers: {
+    dau: number;
+    wau: number;
+    mau: number;
+    trend: Record<string, number>;
+  };
+  streamPlays: {
+    total: number;
+    trend: Record<string, number>;
+  };
+  bannerClicks: {
+    total: number;
+    trend: Record<string, number>;
+    topPromos: { id: string; title: string; count: number }[];
+  };
+  topPages: { path: string; count: number }[];
+  topFavorites: {
+    programs: { id: string; count: number }[];
+    announcers: { id: string; count: number }[];
+  };
   devices: Record<string, number>;
   browsers: Record<string, number>;
   platforms: Record<string, number>;

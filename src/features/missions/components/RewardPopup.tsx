@@ -4,6 +4,8 @@ import { RewardToast } from "./RewardToast";
 
 import { useMissionStore } from "../services/missionStore";
 
+const AUTO_DISMISS_MS = 4000;
+
 export function RewardPopup() {
 
   const latestReward =
@@ -28,7 +30,7 @@ export function RewardPopup() {
         clearLatestReward();
         timerRef.current = null;
 
-      }, 3500);
+      }, AUTO_DISMISS_MS);
 
     return () => {
       if (timerRef.current != null) {
@@ -50,13 +52,12 @@ export function RewardPopup() {
 
   return (
 
-    <div className="fixed right-6 top-6 z-50 animate-in slide-in-from-right duration-500">
+    <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-500">
 
       <RewardToast
-        mission={`Mission #${latestReward.missionId}`}
+        mission={latestReward.missionTitle || `Mission #${latestReward.missionId}`}
         reward={latestReward.reward}
-        progress={latestReward.progress}
-        target={latestReward.target}
+        onDismiss={clearLatestReward}
       />
 
     </div>

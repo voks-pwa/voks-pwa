@@ -78,4 +78,5 @@ export interface UpdateProfileInput {
   profile_completed?: boolean;
   profile_reward_claimed?: boolean;
   badge_name?: string;
+  level?: number;
 }

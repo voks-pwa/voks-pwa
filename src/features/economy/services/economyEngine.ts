@@ -29,6 +29,8 @@ export interface CalculateXPInput {
   source: XpSource;
   userId: string;
   context?: Record<string, unknown>;
+  /** Override base XP (e.g. WP mission_vxp) — rule/fallback tidak dipakai */
+  baseXP?: number;
 }
 
 export async function loadEconomyConfig(): Promise<EconomyConfig | null> {
@@ -115,13 +117,17 @@ export async function calculateXP(input: CalculateXPInput): Promise<XpCalculatio
   let baseXP: number;
   let fromFallback = false;
 
-  const rule = await getXpRule(source);
-
-  if (rule && rule.enabled) {
-    baseXP = rule.base_xp;
+  if (input.baseXP != null) {
+    baseXP = input.baseXP;
   } else {
-    baseXP = getFallbackXP(source);
-    fromFallback = true;
+    const rule = await getXpRule(source);
+
+    if (rule && rule.enabled) {
+      baseXP = rule.base_xp;
+    } else {
+      baseXP = getFallbackXP(source);
+      fromFallback = true;
+    }
   }
 
   const canonical = await getCanonicalUser(userId);

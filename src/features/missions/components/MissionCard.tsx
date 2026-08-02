@@ -1,11 +1,14 @@
-import { Trophy, Gift, Loader2, Clock, Lock, Star, Share2, CheckCircle2 } from "lucide-react";
+import { Trophy, Gift, Loader2, Clock, Lock, Star, Share2, CheckCircle2, Flame } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/useAuth";
 import { useMissionClaim } from "@/hooks/useMissionClaim";
 import { useShareMission } from "../hooks/useShareMission";
 import { isShareMission } from "../services/missionRules";
 import { isAutoClaimMission } from "../validators";
 import { deriveMissionState } from "../services/missionStateMachine";
+import { getStreak } from "@/features/retention/repositories/streakRepository";
+import { track } from "@/core/action-engine";
 import type { MissionConfig, MissionProgress } from "../services/missionTypes";
 import { MissionProgressBar } from "./MissionProgressBar";
 
@@ -17,8 +20,17 @@ interface Props {
 export function MissionCard({ mission, progress }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const claim = useMissionClaim();
   const { share, isSharing } = useShareMission();
+
+  const isCheckin = mission.action === "checkin";
+
+  const { data: streak } = useQuery({
+    queryKey: ["streak", user?.id],
+    enabled: !!user && isCheckin,
+    queryFn: () => getStreak(user!.id, "daily"),
+  });
 
   const state = deriveMissionState(mission, progress ?? null);
 
@@ -43,7 +55,18 @@ export function MissionCard({ mission, progress }: Props) {
     share(mission.id);
   };
 
-  if (isClaimed) return null;
+  const handleCheckin = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!user) {
+      navigate("/login?redirect=/missions");
+      return;
+    }
+    track("CHECKIN", user.id, { date: new Date().toISOString().split("T")[0] });
+    queryClient.invalidateQueries({ queryKey: ["missions-progress", user.id] });
+  };
+
+  if (isClaimed && !isCheckin) return null;
 
   return (
     <div
@@ -62,6 +85,11 @@ export function MissionCard({ mission, progress }: Props) {
               </span>
             )}
             <p className="mt-1 text-sm text-gray-500 line-clamp-2">{mission.description}</p>
+            {isCheckin && user && (
+              <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-amber-600">
+                <Flame size={14} /> Streak {streak?.current_streak ?? 0} hari
+              </div>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -76,13 +104,17 @@ export function MissionCard({ mission, progress }: Props) {
         </div>
       )}
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="relative z-10 mt-4 flex items-center justify-between">
         <span className="rounded-md bg-gray-100 px-2 py-1 text-[10px] font-medium text-gray-500 capitalize">
           {mission.type || mission.listenMode || "Standard"}
         </span>
 
         <div>
-          {isReadyToClaim ? (
+          {isCheckin && isClaimed ? (
+            <span className="flex items-center gap-1.5 rounded-xl bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700">
+              <CheckCircle2 size={14} /> Completed Today
+            </span>
+          ) : isReadyToClaim ? (
             autoClaim ? (
               <span className="flex items-center gap-1.5 rounded-xl bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700">
                 <CheckCircle2 size={14} /> Completed
@@ -111,7 +143,15 @@ export function MissionCard({ mission, progress }: Props) {
               Login
             </button>
           ) : isNotStarted ? (
-            isShareMission(mission) ? (
+            isCheckin ? (
+              <button
+                type="button"
+                onClick={handleCheckin}
+                className="flex items-center gap-1.5 rounded-xl bg-[#bda752] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#a8913f] active:scale-[0.97]"
+              >
+                <CheckCircle2 size={14} /> Check In
+              </button>
+            ) : isShareMission(mission) ? (
               <button
                 type="button"
                 onClick={handleShare}
