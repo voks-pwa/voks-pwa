@@ -18,6 +18,16 @@ export const WP_API_URL =
     : 'https://voksradio.com/wp-json/wp/v2')
 
 /**
+ * WordPress custom REST (voks/v1). In dev goes through the Vite proxy (`/wp-json`)
+ * so it's same-origin; prod hits voksradio.com directly.
+ */
+export const WP_VOKS_API_URL =
+  import.meta.env.VITE_WP_VOKS_API_URL ??
+  (import.meta.env.DEV
+    ? '/wp-json/voks/v1'
+    : 'https://voksradio.com/wp-json/voks/v1')
+
+/**
  * Owncast HLS stream.
  * Direct browser access to live.voksradio.com returns 403 (anti-hotlink) + no CORS,
  * so dev proxies via Vite and prod goes through the live-status-proxy Worker.

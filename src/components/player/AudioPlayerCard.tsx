@@ -6,8 +6,9 @@ import { PlayPauseButton } from "@/components/player/PlayPauseButton";
 import { SongArtwork } from "@/components/player/SongArtwork";
 import { VolumeControls } from "@/components/player/VolumeControls";
 
-import { getDisplayTrack } from "@/lib/now-playing";
+import { resolveDisplayTrack } from "@/lib/now-playing";
 
+import { useWpNowPlaying } from "@/hooks/use-wp-now-playing";
 import { useNowPlaying } from "@/hooks/use-now-playing";
 import { useSongUpdate } from "@/hooks/use-song-update";
 import { useCurrentProgram } from "@/hooks/useCurrentProgram";
@@ -44,6 +45,8 @@ export const AudioPlayerCard = memo(function AudioPlayerCard({
     isError,
   } = useNowPlaying();
 
+  const { data: wpNowPlaying } = useWpNowPlaying();
+
   const { data: songUpdate } = useSongUpdate();
 
   const {
@@ -71,7 +74,7 @@ export const AudioPlayerCard = memo(function AudioPlayerCard({
   );
 
   const displayTrack =
-    getDisplayTrack(data, songUpdate);
+    resolveDisplayTrack(wpNowPlaying, data, songUpdate);
 
   const streamUrl =
     data?.station.listen_url;
@@ -91,13 +94,14 @@ export const AudioPlayerCard = memo(function AudioPlayerCard({
     useCurrentProgram();
 
   const programArtwork =
-    currentProgram?._embedded?.[
+    wpNowPlaying?.artwork ||
+    (currentProgram?._embedded?.[
       "wp:featuredmedia"
     ]?.[0]?.media_details?.sizes
       ?.medium_large?.source_url ??
     currentProgram?._embedded?.[
       "wp:featuredmedia"
-    ]?.[0]?.source_url ??
+    ]?.[0]?.source_url) ||
     fallbackCover;
 
   useEffect(() => {

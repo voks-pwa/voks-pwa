@@ -1,5 +1,6 @@
 import type { AzuraCastNowPlayingResponse } from '@/types/azuracast'
 import type { SongUpdate } from '@/services/azuracast/song-update'
+import type { WordPressNowPlaying } from '@/types/wordpress-now-playing'
 
 export interface DisplayTrack {
   title: string
@@ -25,6 +26,31 @@ function parseFallbackSongUpdate(fallback: SongUpdate | null | undefined): {
     }
   }
   return { title: fallback.raw.trim() || null, artist: null }
+}
+
+export function resolveDisplayTrack(
+  wpNowPlaying?: WordPressNowPlaying | null,
+  data?: AzuraCastNowPlayingResponse,
+  fallbackSongUpdate?: SongUpdate | null,
+): DisplayTrack {
+  if (
+    wpNowPlaying &&
+    (wpNowPlaying.title?.trim() || wpNowPlaying.artist?.trim())
+  ) {
+    const title =
+      wpNowPlaying.title?.trim() ||
+      wpNowPlaying.streamer ||
+      'Live Broadcast'
+    const artist = wpNowPlaying.artist?.trim() ?? 'Voks Radio'
+    return {
+      title,
+      artist,
+      artworkUrl: wpNowPlaying.artwork || null,
+      isLive: wpNowPlaying.is_live,
+    }
+  }
+
+  return getDisplayTrack(data, fallbackSongUpdate)
 }
 
 export function getDisplayTrack(

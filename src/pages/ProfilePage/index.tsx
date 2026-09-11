@@ -160,7 +160,7 @@ export function ProfilePage() {
   const saving = isSaving || isMutating
 
   return (
-    <div className="space-y-5 pb-24">
+    <div className="space-y-5 pb-6">
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarSelect} />
 
       <div className="flex items-center justify-between">
@@ -262,16 +262,14 @@ export function ProfilePage() {
         {errors.website && <p className="mt-2 text-xs text-red-500">{errors.website}</p>}
       </div>
 
-      <div className="fixed bottom-20 left-4 right-4 z-40 mx-auto max-w-md">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full rounded-2xl bg-[#bda752] hover:bg-[#a69243] disabled:opacity-50 disabled:cursor-not-allowed p-4 font-bold text-white shadow-lg transition-colors flex items-center justify-center gap-2"
-        >
-          {saving && <Loader2 size={18} className="animate-spin" />}
-          {saving ? "Saving..." : "Save Profile"}
-        </button>
-      </div>
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="w-full rounded-2xl bg-[#bda752] hover:bg-[#a69243] disabled:opacity-50 disabled:cursor-not-allowed p-4 font-bold text-white shadow-lg transition-colors flex items-center justify-center gap-2"
+      >
+        {saving && <Loader2 size={18} className="animate-spin" />}
+        {saving ? "Saving..." : "Save Profile"}
+      </button>
     </div>
   )
 }
