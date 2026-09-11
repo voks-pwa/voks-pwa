@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { BeforeInstallPromptEvent, PWAInstallState } from '@/types/pwa'
+import { showToast } from '@/components/ui/showToast'
 
 function getIsStandalone(): boolean {
   return (
@@ -37,10 +38,17 @@ export function usePWAInstall(): PWAInstallState {
     window.addEventListener('appinstalled', onAppInstalled)
     mediaQuery.addEventListener('change', onDisplayModeChange)
 
+    // PWA update available — controllerchange means new SW took over (autoUpdate)
+    const onControllerChange = () => {
+      showToast({ type: 'success', title: 'Update tersedia', message: 'Reload untuk versi terbaru Voks' })
+    }
+    navigator.serviceWorker?.addEventListener('controllerchange', onControllerChange)
+
     return () => {
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
       window.removeEventListener('appinstalled', onAppInstalled)
       mediaQuery.removeEventListener('change', onDisplayModeChange)
+      navigator.serviceWorker?.removeEventListener('controllerchange', onControllerChange)
     }
   }, [])
 

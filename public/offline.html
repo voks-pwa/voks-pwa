@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#BDA752" />
+  <title>Voks Radio — Offline</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#F8F9FA;color:#1a1a1a;display:flex;min-height:100dvh;align-items:center;justify-content:center;padding:24px}
+    .card{max-width:420px;width:100%;background:#fff;border-radius:28px;padding:32px 24px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.08);border:1px solid rgba(0,0,0,.06)}
+    .icon{width:56px;height:56px;margin:0 auto 16px;border-radius:16px;background:linear-gradient(135deg,#5B5B3F,#bda752);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;letter-spacing:-.02em}
+    h1{font-size:20px;font-weight:800;letter-spacing:-.02em}
+    p{margin-top:8px;font-size:14px;line-height:1.5;color:#6b7280}
+    a,button{margin-top:20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 16px;border-radius:9999px;background:#bda752;color:#fff;font-weight:700;text-decoration:none;border:none;cursor:pointer}
+    a:active,button:active{transform:scale(.98)}
+    small{display:block;margin-top:16px;font-size:11px;color:#9ca3af}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">VOKS</div>
+    <h1>Kamu sedang offline</h1>
+    <p>Voks Radio butuh koneksi untuk streaming & misi. Konten yang sudah di-cache tetap bisa dibuka.</p>
+    <button onclick="location.reload()">Coba lagi</button>
+    <a href="/">Kembali ke Home</a>
+    <small>New Experience Transformation · Offline fallback</small>
+  </div>
+</body>
+</html>

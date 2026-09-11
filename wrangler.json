@@ -15,8 +15,40 @@
 
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true,
+    "rules": [
+      { "type": "SUFFIXES", "suffixes": ["js", "html", "ts"], "glob": "**", "fallthrough": true }
+    ]
   },
+
+  "headers": [
+    {
+      "source": "/manifest.webmanifest",
+      "headers": {
+        "Content-Type": "application/manifest+json",
+        "Cache-Control": "public, max-age=86400"
+      }
+    },
+    {
+      "source": "/sw.js",
+      "headers": {
+        "Cache-Control": "no-cache"
+      }
+    },
+    {
+      "source": "/offline.html",
+      "headers": {
+        "Cache-Control": "public, max-age=86400"
+      }
+    },
+    {
+      "source": "/icon-*.png",
+      "headers": {
+        "Cache-Control": "public, max-age=2592000"
+      }
+    }
+  ],
 
   "r2_buckets": [
     {

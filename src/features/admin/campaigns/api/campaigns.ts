@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { WP_API_URL } from "@/lib/constants";
 import { getCampaigns, getCampaignBySlug } from "@/features/campaigns/repositories/campaignRepository";
 import { deriveCampaignStatus } from "@/features/campaigns/services/campaignStatus";
 import type {
@@ -10,9 +11,6 @@ import type {
   CampaignMission,
 } from "../types";
 import type { Campaign } from "@/features/campaigns/types";
-
-const WP_API_URL =
-  import.meta.env.VITE_WP_API_URL ?? "https://voksradio.com/wp-json/wp/v2";
 
 function toAdminCampaign(c: Campaign): AdminCampaign {
   return {

@@ -36,3 +36,8 @@ dev-dist
 AI_SKILLS/
 session-*.md
 /claude-skills
+
+# Local tooling / artifacts
+.ua/
+*.tgz
+lighthouse-report*.json

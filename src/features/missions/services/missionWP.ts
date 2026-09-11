@@ -1,15 +1,13 @@
 import axios from 'axios'
 
+import { WP_API_URL } from '@/lib/constants'
+
 import type {
   MissionConfig,
   WPMission,
 } from './missionTypes'
 
 import { mapMission } from './missionMapper'
-
-const WP_API_URL =
-  import.meta.env.VITE_WP_API_URL ??
-  'https://voksradio.com/wp-json/wp/v2'
 
 let cache: MissionConfig[] = []
 

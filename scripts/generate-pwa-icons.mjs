@@ -4,7 +4,8 @@ import sharp from 'sharp'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const publicDir = path.resolve(__dirname, '../public')
-const sourcePath = path.join(publicDir, 'icon-512.png')
+const svgSourcePath = path.join(publicDir, 'favicon.svg')
+const pngFallbackPath = path.join(publicDir, 'icon-512.png')
 
 const BRAND_BACKGROUND = { r: 255, g: 255, b: 255, alpha: 1 }
 const MASKABLE_SAFE_RATIO = 0.72
@@ -61,10 +62,28 @@ async function writeMaskableIcon(sourceBuffer, size) {
   console.log(`Created ${path.basename(outputPath)} (${size}x${size})`)
 }
 
+async function getSourceBuffer() {
+  // Prefer vector favicon.svg (full 477×477 lockup with tagline)
+  try {
+    const { default: fs } = await import('node:fs')
+    if (fs.existsSync(svgSourcePath)) {
+      // density 512 ensures crisp rasterization of vector at 512px
+      const buf = await sharp(svgSourcePath, { density: 512 }).png().toBuffer()
+      const { width, height } = await sharp(buf).metadata()
+      console.log(`Source: favicon.svg → rasterized ${width}x${height}`)
+      return buf
+    }
+  } catch {
+    // fall through to PNG fallback
+  }
+  const buf = await sharp(pngFallbackPath).png().toBuffer()
+  const { width, height } = await sharp(buf).metadata()
+  console.log(`Source: icon-512.png (${width}x${height}) fallback`)
+  return buf
+}
+
 async function main() {
-  const sourceBuffer = await sharp(sourcePath).png().toBuffer()
-  const { width, height } = await sharp(sourceBuffer).metadata()
-  console.log(`Source: icon-512.png (${width}x${height})`)
+  const sourceBuffer = await getSourceBuffer()
 
   await writeAnyIcon(sourceBuffer, 192)
   await writeAnyIcon(sourceBuffer, 512)

@@ -1,9 +1,7 @@
+import { WP_API_URL } from "@/lib/constants";
+
 import { mapCampaign } from "../campaignMapper";
 import type { Campaign, WPCampaign } from "../types";
-
-const WP_API_URL =
-  import.meta.env.VITE_WP_API_URL ??
-  "https://voksradio.com/wp-json/wp/v2";
 
 /**
  * Campaign Repository — WordPress is the single source of truth for

@@ -11,8 +11,7 @@ import type { WPReward } from "@/features/rewards/rewardTypes";
 import type { WordPressPromo } from "@/types/promo";
 
 import { decodeWpText } from "@/lib/html";
-
-const WP_API_URL = "https://voksradio.com/wp-json/wp/v2";
+import { WP_API_URL } from "@/lib/constants";
 
 export async function getMissions(): Promise<WPMission[]> {
   const response = await fetch(

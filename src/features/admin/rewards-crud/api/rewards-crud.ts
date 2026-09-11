@@ -1,9 +1,7 @@
 import { supabase } from "@/lib/supabase";
+import { WP_API_URL } from "@/lib/constants";
 
 import type { WPReward } from "@/features/rewards/rewardTypes";
-
-const WP_API_URL =
-  "https://voksradio.com/wp-json/wp/v2";
 
 export interface UpdateRewardPayload {
   rewardId: number;
