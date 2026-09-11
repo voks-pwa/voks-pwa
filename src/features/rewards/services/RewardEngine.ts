@@ -8,9 +8,14 @@ export interface RewardResult {
   redemptionId?: string;
 }
 
+function isPhysicalDelivery(deliveryType?: string): boolean {
+  const t = (deliveryType ?? "").toLowerCase();
+  return t === "physical" || t === "merchandise" || t === "event" || t === "pickup";
+}
+
 export async function processRewardRedemption(
   userId: string,
-  reward: RewardItem,
+  reward: RewardItem & { deliveryType?: string; slug?: string },
 ): Promise<RewardResult> {
   if (!userId) {
     return { success: false, message: "Authentication required" };
@@ -30,12 +35,16 @@ export async function processRewardRedemption(
     return { success: false, message: "This reward is out of stock" };
   }
 
+  const physical = isPhysicalDelivery(reward.deliveryType);
+  // Shopee-like: physical needs admin approval + shipping, digital/voucher auto-approved
   const result = await processRedeem({
     userId,
     rewardId: reward.id,
     rewardTitle: reward.title,
     requiredVxp: reward.cost,
-    approvalRequired: false,
+    approvalRequired: physical,
+    voucherReward: !physical,
+    needShipping: physical,
   });
 
   return {

@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback } from "react";
 import { useNotificationStore } from "../notificationStore";
 import { dispatchEvent } from "../services/eventDispatcher";
 import {
@@ -17,18 +17,26 @@ export function NotificationProvider({ userId, children }: { userId: string | nu
   const items = store((s) => s.items);
   const unreadCount = store((s) => s.unread);
 
-  const loadStarted = useRef(false);
-
   const load = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      store.getState().clear();
+      return;
+    }
     const notifs = await fetchNotifications(userId);
     store.getState().setFromSupabase(notifs);
-  }, [userId, store]);
+  }, [userId]);
 
   useEffect(() => {
-    if (loadStarted.current) return;
-    loadStarted.current = true;
     load();
+  }, [load]);
+
+  // Also reload when app becomes visible (sync badge <-> page)
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [load]);
 
   useEffect(() => {

@@ -85,7 +85,17 @@ function dispatchEvent(event: ActionEvent) {
   });
 }
 
+function isValidUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
 function recordEvent(event: ActionEvent) {
+  // Guard: system events use "system" placeholder which is not a valid UUID
+  // (activity_logs.user_id is uuid). Skip DB insert for non-UUID users.
+  if (!isValidUuid(event.userId)) {
+    return;
+  }
+
   void (async () => {
     try {
       const metadata = event.payload

@@ -1,4 +1,4 @@
-import { Loader2, AlertCircle, Target } from "lucide-react";
+import { Loader2, AlertCircle, Target, CalendarCheck, Megaphone } from "lucide-react";
 import { useMissionProgress } from "@/hooks/useMissionProgress";
 import { useMissions } from "@/hooks/useMissions";
 import { useProfile } from "@/features/profile/hooks/useProfile";
@@ -80,14 +80,45 @@ export function MissionList(){
     );
   }
 
-  return(
-    <div className="space-y-4">
-      {visible.map((mission: MissionConfig) => {
-        const state = progress.find((p: MissionProgress) => p.mission_id === mission.id);
-        return(
-          <MissionCard key={mission.id} mission={mission} progress={state} />
-        );
-      })}
+  // Shopee-style grouping: Daily vs Campaign sponsor (WP campaignSlug) vs Sekali
+  const daily = visible.filter((m) => m.type === "daily" || m.action === "checkin");
+  const campaign = visible.filter((m) => !!m.campaignSlug);
+  const campaignIds = new Set(campaign.map((m) => m.id));
+  const dailyIds = new Set(daily.map((m) => m.id));
+  const once = visible.filter((m) => !dailyIds.has(m.id) && !campaignIds.has(m.id));
+
+  const Section = ({ title, icon: Icon, items, emptyText }: { title: string; icon: typeof CalendarCheck; items: typeof visible; emptyText: string }) => {
+    if (!items.length) return null;
+    return (
+      <div>
+        <div className="mb-3 flex items-center gap-2">
+          <Icon size={16} className="text-[#bda752]" />
+          <h3 className="text-sm font-bold text-gray-900">{title}</h3>
+          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-500">{items.length}</span>
+        </div>
+        <div className="space-y-3">
+          {items.map((mission) => {
+            const state = progress.find((p) => p.mission_id === mission.id);
+            return <MissionCard key={mission.id} mission={mission} progress={state} />;
+          })}
+        </div>
+        {items.length === 0 && <p className="text-sm text-gray-400">{emptyText}</p>}
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <Section title="Misi Harian" icon={CalendarCheck} items={daily} emptyText="Tidak ada misi harian" />
+      {campaign.length > 0 && (
+        <Section title="Misi Campaign Sponsor" icon={Megaphone} items={campaign} emptyText="Tidak ada campaign" />
+      )}
+      <Section title="Misi Sekali & Lainnya" icon={Target} items={once} emptyText="Tidak ada misi" />
+
+      {/* Hint untuk WP integration */}
+      <p className="text-center text-xs text-gray-400">
+        Misi campaign dibuat di WordPress (field campaignSlug) — otomatis muncul di sini.
+      </p>
     </div>
   );
 }

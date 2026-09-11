@@ -2,6 +2,7 @@ import { ArrowLeft, Gift } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useProfile } from "@/features/profile/hooks/useProfile";
 import { MissionHeader } from "@/features/missions/components/MissionHeader";
+import { MissionStreak7 } from "@/features/missions/components/MissionStreak7";
 import { MissionList } from "@/features/missions/components/MissionList";
 import { MissionHistory } from "@/features/missions/components/MissionHistory";
 
@@ -43,6 +44,10 @@ export function MissionsPage() {
         </div>
 
         <MissionHeader />
+
+        <div className="mt-6">
+          <MissionStreak7 />
+        </div>
 
         <div className="mt-6">
           <MissionList />

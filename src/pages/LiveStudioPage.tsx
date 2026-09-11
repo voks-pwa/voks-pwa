@@ -1,16 +1,18 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, Radio, Music, Calendar, Clock, MessageCircle, Info, List } from "lucide-react";
+import { ChevronLeft, Radio, Music, Calendar, Clock, MessageCircle, Info, List, Disc3, Users } from "lucide-react";
 import { LiveStudioPlayer } from "@/components/live/LiveStudioPlayer";
 import { LiveChat } from "@/features/live/components/LiveChat";
 import { LiveReactions } from "@/features/live/components/LiveReactions";
-import { LivePoll } from "@/features/live/components/LivePoll";
-import { LiveGiveaway } from "@/features/live/components/LiveGiveaway";
 import { useCurrentProgram } from "@/hooks/useCurrentProgram";
 import { usePrograms } from "@/hooks/usePrograms";
 import { useAuth } from "@/features/auth/useAuth";
 import { buildSchedule } from "@/lib/program-schedule";
 import { getProgramScheduleText } from "@/lib/schedule";
+import { useNowPlaying } from "@/hooks/use-now-playing";
+import { useSongUpdate } from "@/hooks/use-song-update";
+import { getDisplayTrack } from "@/lib/now-playing";
+import logoNextWhite from "@/assets/branding/voks-next-white.svg";
 
 type Tab = "chat" | "info" | "schedule";
 
@@ -25,6 +27,11 @@ export function LiveStudioPage() {
   const currentProgram = useCurrentProgram();
   const { data: programs } = usePrograms();
   const [activeTab, setActiveTab] = useState<Tab>("chat");
+  const { data: nowPlayingData } = useNowPlaying();
+  const { data: songUpdate } = useSongUpdate();
+  const displayTrack = getDisplayTrack(nowPlayingData, songUpdate);
+  const isOnline = nowPlayingData?.is_online ?? false;
+  const listenerCount = nowPlayingData?.listeners.current ?? 0;
 
   const schedule = useMemo(
     () => (programs ? buildSchedule(programs) : null),
@@ -53,30 +60,52 @@ export function LiveStudioPage() {
       <div className="overflow-hidden rounded-3xl bg-black shadow-xl">
         <LiveStudioPlayer />
       </div>
-      {currentProgram && (
-        <div className="mt-3 rounded-2xl bg-white p-4 shadow-sm">
-          <span className="inline-block rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
-            On Air Now
-          </span>
-          <h2 className="mt-2 text-base font-bold text-gray-900">
-            {currentProgram.title.rendered}
-          </h2>
-          {currentProgram.acf?.host && (
-            <p className="mt-0.5 text-sm text-gray-500">{currentProgram.acf.host}</p>
-          )}
-        </div>
-      )}
 
-      <div className="mt-3 space-y-3">
-        <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <LivePoll userId={user?.id} />
+      <div className="mt-3 overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm">
+        <div className="flex items-center gap-4 bg-gradient-to-r from-[#5B5B3F] to-[#bda752] px-5 py-4">
+          <img src={logoNextWhite} alt="VOKS NEXT" className="h-7 w-auto" />
+          <div className="ml-auto flex items-center gap-2">
+            <span className={`h-2 w-2 rounded-full ${isOnline ? "bg-red-500 animate-pulse" : "bg-white/40"}`} />
+            <span className="text-[11px] font-bold uppercase tracking-widest text-white">
+              {displayTrack.isLive ? "Live On Air" : isOnline ? "On Air" : "Offline"}
+            </span>
+          </div>
         </div>
-        <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <LiveGiveaway userId={user?.id} />
+
+        <div className="p-5">
+          <div className="flex items-start gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#5B5B3F] to-[#bda752] shadow-md">
+              {displayTrack.artworkUrl ? (
+                <img src={displayTrack.artworkUrl} alt={displayTrack.title} className="h-full w-full object-cover" />
+              ) : (
+                <Disc3 size={28} className="text-white/80" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#bda752]">Now Playing</p>
+              <h2 className="mt-1 line-clamp-2 text-base font-bold leading-tight text-gray-900 sm:text-lg">{displayTrack.title}</h2>
+              <p className="mt-1 truncate text-sm text-gray-500">{displayTrack.artist}</p>
+              {currentProgram && (
+                <p className="mt-2 flex items-center gap-1.5 text-xs text-gray-400">
+                  <Radio size={12} className="text-[#bda752]" />
+                  <span className="truncate">{currentProgram.title.rendered}</span>
+                  {currentProgram.acf?.host && <span className="truncate">· {currentProgram.acf.host}</span>}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
+            <span className="flex items-center gap-1.5 text-xs text-gray-400">
+              <Users size={14} className="text-gray-400" />
+              {listenerCount.toLocaleString()} listeners
+            </span>
+            <span className="text-xs font-medium text-gray-400">{isOnline ? "Streaming live" : "Offline"}</span>
+          </div>
         </div>
       </div>
 
-      <div className="sticky top-0 z-10 -mx-4 border-b border-gray-100 bg-white/95 backdrop-blur-sm sm:mx-0">
+      <div className="sticky top-0 z-10 mt-6 -mx-4 border-b border-gray-100 bg-white/95 backdrop-blur-sm sm:mx-0">
         <div className="flex">
           {TABS.map((tab) => {
             const Icon = tab.icon;

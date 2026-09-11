@@ -18,7 +18,15 @@ export async function recordEventRpc(
     p_metadata: metadata ?? {},
   });
 
-  if (error) return { success: false, error: error.message };
+  if (error) {
+    // 404/PGRST116 = function not deployed yet — don't spam console, treat as no-op
+    const msg = error.message ?? "";
+    if (msg.includes("Not Found") || (error as unknown as { code?: string }).code === "PGRST116") {
+      console.warn("[COMMERCE] record_commerce_event not deployed, skipped:", eventType);
+      return { success: true, error: undefined } as unknown as CommerceActionResult;
+    }
+    return { success: false, error: error.message };
+  }
   return data as CommerceActionResult;
 }
 

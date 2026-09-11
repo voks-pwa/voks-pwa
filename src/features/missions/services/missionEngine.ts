@@ -40,11 +40,13 @@ export async function missionEngine({
     const today = new Date().toISOString().split("T")[0];
 
     const progress = await getMissionProgress(userId, mission.id);
-    if (shouldResetOnDailyBoundary(mission, progress)) {
+    const runtimeMismatch = runtime.lastResetDate !== today;
+
+    if (shouldResetOnDailyBoundary(mission, progress) || runtimeMismatch) {
       await processDailyReset(userId, mission);
     }
 
-    if (runtime.lastResetDate !== today) {
+    if (runtimeMismatch) {
       updateResetDate(userId);
     }
 

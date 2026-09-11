@@ -33,6 +33,16 @@ export async function dispatchEvent(event: NotificationEvent): Promise<DispatchR
   };
 
   if (event.userId) {
+    // Guard: "system" is not a valid UUID (notifications.user_id is uuid)
+    const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      event.userId,
+    );
+    if (!isValidUuid) {
+      // System/broadcast events stay in-memory only
+      useNotificationStore.getState().add(storeItem);
+      return { success: true, notification: storeItem };
+    }
+
     const dbNotification = await insertNotification({
       user_id: event.userId,
       category,

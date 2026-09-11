@@ -24,9 +24,13 @@ async function generateReferralCode(): Promise<string> {
 
 export async function updateProfile(id: string, input: UpdateProfileInput) {
   if (!input.referral_code) {
-    const existing = await findProfile(id);
-    if (existing && !existing.referral_code) {
-      input.referral_code = await generateReferralCode();
+    try {
+      const existing = await findProfile(id);
+      if (existing && !existing.referral_code) {
+        input.referral_code = await generateReferralCode();
+      }
+    } catch {
+      // Preserve the update even when profile lookup is unavailable.
     }
   }
 

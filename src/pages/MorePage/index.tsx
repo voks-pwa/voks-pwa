@@ -15,6 +15,7 @@ import { ExploreSection } from "./components/ExploreSection"
 import { ConnectSection } from "./components/ConnectSection"
 import { SupportSection } from "./components/SupportSection"
 import { AboutCard } from "./components/AboutCard"
+import { PushOptIn } from "@/components/pwa/PushOptIn"
 
 function CheckinStreakCard() {
   const { user } = useAuth()
@@ -179,6 +180,10 @@ export function MorePage() {
       <ConnectSection />
 
       <SupportSection handleShare={handleShare} />
+
+      <div className="mt-6">
+        <PushOptIn />
+      </div>
 
       <AboutCard />
     </>

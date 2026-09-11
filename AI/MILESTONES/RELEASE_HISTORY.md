@@ -181,6 +181,14 @@ E2E Testing & Fix Produksi
 - Ketemu + fix 2 bug history: mission_completions RLS read policy, invalidate mission-completions
 - Report: `AI/DEPLOYMENT/TESTING_REPORT.md`
 
+Console Error Hardening
+
+✅ 2026-09-11
+- Akar: service worker stale mengontrol dev (CORS palsu), CORS statis Supabase, HLS anti-hotlink 403, spam Agentation
+- Fix: unregister SW di dev, SW catch-handler + WP StaleWhileRevalidate, CORS dinamis, proxy dev `/wp-json` + `/hls`, Worker HLS proxy, LiveStudioPlayer graceful, Agentation opt-in
+- Verifikasi: `npm run check` OK, `npm run build` OK
+- Detail: `AI/16_SESSION_MEMORY.md`
+
 ---
 
 ### Next

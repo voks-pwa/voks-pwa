@@ -52,6 +52,10 @@ E2E Testing
 
 ✅ 2026-07-31 — testing produksi: ketemu 5 bug (mission_completions UUID, reward_grants 403, continuous-guard ignore, daily double-credit, overlay kartu). Semua fixed + deployed. Report: `AI/DEPLOYMENT/TESTING_REPORT.md`
 
+Console Error Hardening
+
+✅ 2026-09-11 — fix flood error console: unregister SW stale di dev, SW catch-handler + WP SWR, CORS dinamis Supabase, proxy `/wp-json` & `/hls`, HLS player graceful, Agentation opt-in. Lihat `AI/16_SESSION_MEMORY.md`.
+
 ---
 
 Blocked

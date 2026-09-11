@@ -13,6 +13,7 @@ import {
   getDeadQueueItems,
 } from "../repositories/automationRepository";
 import { dispatchEvent } from "@/features/notifications/services/eventDispatcher";
+import { executeBrowserTask } from "./browserUseService";
 import type {
   ScheduledJob,
   NotificationQueueItem,
@@ -155,6 +156,15 @@ export async function processDueJobs(limit = 50): Promise<{ processed: number; f
 
 async function handleJob(job: ScheduledJob): Promise<void> {
   switch (job.job_type) {
+    case "BROWSER_AUTOMATION":
+      if (job.payload && typeof job.payload === "object") {
+        const p = job.payload as Record<string, unknown>;
+        const task = typeof p.task === "string" ? p.task : "";
+        if (!task) throw new Error("Browser automation requires task in payload");
+        const result = await executeBrowserTask(task);
+        if (!result.success) throw new Error(result.error || "Browser automation failed");
+      }
+      break;
     case "MISSION_SCHEDULE":
     case "CAMPAIGN_SCHEDULE":
     case "BROADCAST_SEND":

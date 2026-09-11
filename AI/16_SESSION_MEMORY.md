@@ -128,3 +128,48 @@
 - `mission_completions` kurang RLS read policy di prod → history selalu kosong walau claim sukses. Fix: migration `20260909000000_fix_mission_completions_rls.sql`.
 - `MissionClaimService` tidak invalidate `["mission-completions"]` → history gak refresh. Fix: tambah invalidate.
 - Deploy f863b129. Cleanup 6 user test + hapus temp edge fn + debug script.
+
+## 2026-09-11 — Fix console error flood (SW stale, CORS, HLS, Agentation)
+
+### Diagnosis
+Lima akar masalah dari log console yang sangat panjang:
+1. **Service worker stale** dari build/preview lama tetap mengontrol `localhost:5173`, mengintersep request WP/Supabase cross-origin dengan `CacheFirst` lalu gagal `no-response`. Browser melaporkannya sebagai CORS palsu — padahal `voksradio.com` mengirim `Access-Control-Allow-Origin` yang benar (diverifikasi via request manual).
+2. **Supabase `now-playing-proxy`** memakai `corsHeaders` statis (fallback `https://voks.app`), jadi preflight dari `localhost:5173` gagal.
+3. **HLS `live.voksradio.com`** menolak request browser dengan 403 (anti-hotlink) + tanpa CORS.
+4. **Agentation** dev widget spam `localhost:4747` (ERR_CONNECTION_REFUSED) saat agent server tidak jalan.
+5. **WP API** dipanggil cross-origin langsung di dev sehingga rentan terhadap SW/CORS.
+
+### Dikerjakan
+- `src/main.tsx`: unregister semua service worker + hapus cache di DEV.
+- `src/sw.ts`: `__WB_DISABLE_DEV_LOGS=true`; WP API `CacheFirst` → `StaleWhileRevalidate`; `setCatchHandler` mengembalikan fallback (offline.html / JSON 503) supaya tidak ada lagi `no-response` rejection.
+- `vite.config.ts`: proxy dev `/wp-json` dan `/hls`; sinkronkan runtimeCaching WP ke SWR.
+- `src/lib/constants.ts`: `WP_API_URL` (dev relatif `/wp-json/wp/v2`) + `LIVE_HLS_URL` (dev `/hls/stream.m3u8`, prod Worker).
+- `src/services/wordpress-api.ts`, `missionWP.ts`, `campaignRepository.ts`, `admin/campaigns/api/campaigns.ts`, `admin/rewards-crud/api/rewards-crud.ts`: pakai `WP_API_URL` bersama.
+- `supabase/functions/_shared/cors.ts`: `getCorsHeaders` echo origin (+ `.pages.dev`); `corsHeaders` statis jadi `*` agar preflight dev lolos.
+- `supabase/functions/now-playing-proxy/index.ts`: pakai `getCorsHeaders(origin)` + preflight 204.
+- `workers/live-status-proxy/src/index.ts`: tambah proxy `/hls/*` (passthrough playlist/segmen + rewrite URL absolut + CORS/Range).
+- `src/components/live/LiveStudioPlayer.tsx`: pakai `LIVE_HLS_URL`, tangkap error fatal HLS → overlay "Live stream tidak tersedia".
+- `src/App.tsx`: Agentation jadi opt-in `VITE_AGENTATION_ENABLED=true`.
+
+### Lanjutan — Agentation lokal-only
+- `endpoint` Agentation opsional: tanpa `endpoint` toolbar jalan penuh via `localStorage` (nol network ke `:4747`).
+- `src/App.tsx`: Agentation dirender DEV-only tanpa `endpoint`, default **aktif** di dev (matikan dengan `VITE_AGENTATION_ENABLED=false`). Pakai `lazy(() => import("agentation"))` sehingga tree-shaken dari bundle produksi (diverifikasi: `dist/` bersih dari string agentation).
+- `agentation` tetap di `devDependencies`. Tidak ada yang ter-deploy ke Cloudflare / ter-push ke GitHub.
+- Akses: jalankan `npm run dev`, buka `http://localhost:5173`, toolbar muncul di pojok kanan bawah.
+
+### Verifikasi
+- `npm run check` OK, `npm run build` OK. Lint: 18 error pre-existing (claude-skills, PushOptIn, MissionList, ProfilePage, VoksPlusDetailPage, beberapa edge function) — tidak ada dari file yang diubah.
+- HLS master playlist memakai path relatif (`0/stream.m3u8`) sehingga proxy dev & Worker ikut mengalirkan segmen.
+- `dist/` diverifikasi bersih dari string `agentation` (tree-shaken dari bundle produksi).
+
+### Catatan
+- Worker `voks-live-status-proxy` perlu di-deploy ulang agar proxy HLS aktif di produksi.
+- Agentation aktif default di dev; matikan dengan `VITE_AGENTATION_ENABLED=false` di `.env` lokal bila mengganggu.
+
+### Follow-up — deploy now-playing-proxy + verifikasi console bersih
+- Akar sisa error `now-playing-proxy` CORS: function **belum ter-deploy** (OPTIONS mengembalikan 404). Fix CORS di source tidak berefek sampai deploy.
+- `npx supabase functions deploy now-playing-proxy --project-ref aefelmycrbiquqfoafcs` → OPTIONS 204 + `Access-Control-Allow-Origin: http://localhost:5173`.
+- Verifikasi browser (Playwright, dev server): **0 console error, 0 failed request**.
+
+### UI — InstallAppButton redesign
+- `src/components/pwa/InstallAppButton.tsx`: tombol gradient brand (`#5B5B3F → #bda752`) dengan ikon `Download`; kartu iOS profesional (ikon `Smartphone`, gradient top bar, petunjuk `Share → Add to Home Screen`, tombol dismiss yang tersimpan di localStorage).

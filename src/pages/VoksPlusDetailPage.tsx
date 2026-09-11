@@ -6,11 +6,17 @@ import { ArrowLeft } from 'lucide-react'
 function getYoutubeId(url?: string) {
   if (!url) return ''
 
-  const match = url.match(
-    /(?:youtu\.be\/|v=)([^&]+)/i
-  )
+  const trimmed = url.trim()
 
-  return match?.[1] ?? ''
+  // Support: youtu.be/ID, youtube.com/watch?v=ID, youtube.com/embed/ID, youtube.com/v/ID
+  const match = trimmed.match(
+    /(?:youtube\.com\/(?:embed\/|v\/|.*[?&]v=)|youtu\.be\/)([A-Za-z0-9_-]{11})/
+  )
+  if (match?.[1]) return match[1]
+
+  // Fallback legacy (capture up to &/?)
+  const fallback = trimmed.match(/(?:youtu\.be\/|v=)([^&#?\/\s]+)/i)
+  return fallback?.[1]?.slice(0, 11) ?? ''
 }
 
 // Fungsi pembantu untuk memproses entitas HTML (seperti &#8211;) menjadi teks biasa
@@ -77,12 +83,31 @@ export function VoksPlusDetailPage() {
 
         {/* YOUTUBE IFRAME EMBED PLAYER */}
         <div className="overflow-hidden rounded-3xl bg-black shadow-sm border border-gray-100 aspect-video w-full">
-          <iframe
-            src={`https://www.youtube.com/embed/${videoId}`}
-            title={decodedTitle}
-            allowFullScreen
-            className="w-full h-full border-0"
-          />
+          {videoId ? (
+            <iframe
+              src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1`}
+              title={decodedTitle}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="strict-origin-when-cross-origin"
+              className="w-full h-full border-0"
+            />
+          ) : (
+            <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-[#5B5B3F] to-[#bda752] p-6 text-center text-white">
+              <p className="text-sm font-semibold">Video tidak tersedia</p>
+              {data.acf?.youtube_url && (
+                <a
+                  href={data.acf.youtube_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-full bg-white px-4 py-2 text-xs font-bold text-[#5B5B3F] shadow-sm transition hover:bg-white/90"
+                >
+                  Buka di YouTube
+                </a>
+              )}
+            </div>
+          )}
         </div>
 
         {/* DATA METADATA KONTEN VOKS+ */}

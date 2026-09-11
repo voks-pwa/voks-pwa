@@ -51,13 +51,16 @@ export function RewardDetailPage() {
 
   const redeemMutation = useRedeem();
 
+  const isPhysical = (reward?.delivery_type ?? "").toLowerCase();
+  const needsApproval = ["physical", "merchandise", "event", "pickup"].includes(isPhysical);
+
   const handleRedeem = async () => {
     if (!reward) return;
     const result = await redeemMutation.mutateAsync({
       rewardId: reward.id,
       rewardTitle: reward.name,
       requiredVxp: reward.cost,
-      approvalRequired: false,
+      approvalRequired: needsApproval,
     });
     if (result.success) {
       showToast({ type: "success", title: result.message });

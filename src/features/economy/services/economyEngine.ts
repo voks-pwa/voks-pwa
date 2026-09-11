@@ -56,38 +56,24 @@ export async function validateTransaction(
   }
 
   if (amount < 0) {
+    const balance = await getUserBalance(userId);
+    const absAmount = Math.abs(amount);
+
     if (limit && !limit.allowed) {
       return {
         allowed: false,
-        error: `Spending limit exceeded: ${limit.wouldExceed}`,
-        hasSufficientBalance: true,
+        error: `Spending limit exceeded: ${limit.wouldExceed ?? "daily"}`,
+        hasSufficientBalance: balance >= absAmount,
         spendingLimit: limit,
         config,
       };
     }
 
-    // Balance check before debit
-    const balance = await getUserBalance(userId);
-    const absAmount = Math.abs(amount);
     if (balance < absAmount) {
       return {
         allowed: false,
         error: `Insufficient balance: ${balance} < ${absAmount}`,
         hasSufficientBalance: false,
-        spendingLimit: limit ?? undefined,
-        config,
-      };
-    }
-  }
-
-  if (amount >= 0) {
-    const minBalance = config.VXP_MIN_BALANCE_FOR_REDEMPTION;
-    const canonical = await getCanonicalUser(userId);
-
-    if (canonical.wallet.balance < minBalance && amount > 0) {
-      return {
-        allowed: true,
-        hasSufficientBalance: true,
         spendingLimit: limit ?? undefined,
         config,
       };
@@ -141,7 +127,7 @@ export async function calculateXP(input: CalculateXPInput): Promise<XpCalculatio
 
   let finalXP = Math.round(baseXP * multiplierResult.finalMultiplier);
 
-  // Enforce daily earning cap
+  // Enforce daily earning cap — loosened for fast earn (2000 vs 200)
   const config = await getEconomyConfig();
   if (config) {
     const cap = config.VXP_EARNING_DAILY_CAP;

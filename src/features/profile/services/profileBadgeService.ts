@@ -15,17 +15,26 @@ export async function updateBadge(
 }
 
 export async function syncLevelBadge(userId: string) {
-  const profile = await findProfile(userId);
-  if (!profile) return;
+  try {
+    const profile = await findProfile(userId);
+    if (!profile) return;
 
-  const level = calculateLevel(profile.lifetime_vxp).level;
+    const level = calculateLevel(profile.lifetime_vxp ?? 0).level;
 
-  const { data: badge } = await supabase.rpc("calculate_badge_for_user", {
-    p_user_id: userId,
-  });
+    const { data: badge, error: badgeError } = await supabase.rpc("calculate_badge_for_user", {
+      p_user_id: userId,
+    });
 
-  await updateProfile(userId, {
-    level,
-    badge_name: (badge as string | null) ?? profile.badge_name ?? undefined,
-  });
+    if (badgeError) {
+      console.warn("[PROFILE_BADGE] badge calculation failed:", badgeError.message);
+      return;
+    }
+
+    await updateProfile(userId, {
+      level,
+      badge_name: (badge as string | null) ?? profile.badge_name ?? undefined,
+    });
+  } catch (error) {
+    console.warn("[PROFILE_BADGE] sync skipped:", error instanceof Error ? error.message : error);
+  }
 }

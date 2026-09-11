@@ -6,20 +6,40 @@ export async function getEconomyConfig(): Promise<EconomyConfig | null> {
 
   if (error) {
     console.error("[ECONOMY REPO] get_economy_config error", error.message);
-    return null;
+    // Fallback to Shopee-coin–style fast redeem defaults (loose caps)
+    return {
+      CURRENCIES: ["VXP"] as CurrencyType[],
+      VXP_EARNING_DAILY_CAP: 2000,
+      VXP_SPENDING_DAILY_CAP: 5000,
+      VXP_SPENDING_WEEKLY_CAP: 20000,
+      VXP_SPENDING_MONTHLY_CAP: 80000,
+      VXP_MIN_BALANCE_FOR_REDEMPTION: 0,
+      ECONOMY_VERSION: 1,
+    };
   }
 
   const result = data as { success: boolean; config: Record<string, string | string[]> };
-  if (!result.success) return null;
+  if (!result.success) {
+    return {
+      CURRENCIES: ["VXP"] as CurrencyType[],
+      VXP_EARNING_DAILY_CAP: 2000,
+      VXP_SPENDING_DAILY_CAP: 5000,
+      VXP_SPENDING_WEEKLY_CAP: 20000,
+      VXP_SPENDING_MONTHLY_CAP: 80000,
+      VXP_MIN_BALANCE_FOR_REDEMPTION: 0,
+      ECONOMY_VERSION: 1,
+    };
+  }
 
   const cfg = result.config;
+  // Shopee-style loosened defaults: higher caps, no min balance
   return {
     CURRENCIES: (cfg.CURRENCIES ?? ["VXP"]) as CurrencyType[],
-    VXP_EARNING_DAILY_CAP: Number(cfg.VXP_EARNING_DAILY_CAP ?? 200),
-    VXP_SPENDING_DAILY_CAP: Number(cfg.VXP_SPENDING_DAILY_CAP ?? 500),
-    VXP_SPENDING_WEEKLY_CAP: Number(cfg.VXP_SPENDING_WEEKLY_CAP ?? 2000),
-    VXP_SPENDING_MONTHLY_CAP: Number(cfg.VXP_SPENDING_MONTHLY_CAP ?? 8000),
-    VXP_MIN_BALANCE_FOR_REDEMPTION: Number(cfg.VXP_MIN_BALANCE_FOR_REDEMPTION ?? 100),
+    VXP_EARNING_DAILY_CAP: Number(cfg.VXP_EARNING_DAILY_CAP ?? 2000),
+    VXP_SPENDING_DAILY_CAP: Number(cfg.VXP_SPENDING_DAILY_CAP ?? 5000),
+    VXP_SPENDING_WEEKLY_CAP: Number(cfg.VXP_SPENDING_WEEKLY_CAP ?? 20000),
+    VXP_SPENDING_MONTHLY_CAP: Number(cfg.VXP_SPENDING_MONTHLY_CAP ?? 80000),
+    VXP_MIN_BALANCE_FOR_REDEMPTION: Number(cfg.VXP_MIN_BALANCE_FOR_REDEMPTION ?? 0),
     ECONOMY_VERSION: Number(cfg.ECONOMY_VERSION ?? 1),
   };
 }

@@ -4,6 +4,7 @@ export type JobType =
   | "SUBSCRIPTION_GRACE"
   | "SUBSCRIPTION_EXPIRY"
   | "BROADCAST_SEND"
+  | "BROWSER_AUTOMATION"
   | "CUSTOM";
 
 export type JobStatus = "PENDING" | "CLAIMED" | "DONE" | "FAILED";

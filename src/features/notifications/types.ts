@@ -46,6 +46,12 @@ export interface NotificationEvent {
     progress?: number;
     campaignSlug?: string;
     rank?: number;
+    rewardId?: number;
+    currentStock?: number;
+    warningStock?: number;
+    streakDay?: number;
+    rewardTitle?: string;
+    [key: string]: unknown;
   };
 }
 

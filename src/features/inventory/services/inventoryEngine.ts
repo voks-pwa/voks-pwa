@@ -10,7 +10,6 @@ import {
   adjustStockRpc,
   releaseReservationRpc,
 } from "../repositories/inventoryRepository";
-import { track } from "@/core/action-engine/engine";
 import type {
   InventoryRecord,
   InventoryLedgerEntry,
@@ -58,14 +57,26 @@ export async function deductStock(
   if (result.success) {
     const inv = await getInventory(rewardId);
     if (inv && inv.current_stock <= inv.warning_stock) {
+      // LOW_STOCK is a system-wide signal — don't log with fake user "system"
+      // which violates activity_logs.user_id UUID constraint (code 22P02).
+      // Use a fire-and-forget system notification instead.
       try {
-        await track("LOW_STOCK", "system", {
-          reward_id: rewardId,
-          current_stock: inv.current_stock,
-          warning_stock: inv.warning_stock,
+        const { systemNotification } = await import(
+          "@/features/notifications/services/notificationSubscriber"
+        );
+        systemNotification({
+          type: "admin_broadcast",
+          metadata: {
+            rewardId,
+            currentStock: inv.current_stock,
+            warningStock: inv.warning_stock,
+          },
         });
+        console.warn(
+          `[INVENTORY] LOW_STOCK reward ${rewardId}: ${inv.current_stock} <= ${inv.warning_stock}`,
+        );
       } catch {
-        /* notification failure does not block */
+        /* notification failure does not block deduct */
       }
     }
   }
