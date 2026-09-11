@@ -56,6 +56,10 @@ Console Error Hardening
 
 ✅ 2026-09-11 — fix flood error console: unregister SW stale di dev, SW catch-handler + WP SWR, CORS dinamis Supabase, proxy `/wp-json` & `/hls`, HLS player graceful, Agentation opt-in. Lihat `AI/16_SESSION_MEMORY.md`.
 
+Admin Analytics — Report Klien
+
+✅ 2026-09-11 — tingkatkan `admin-analytics` + `AnalyticsPage`: Top Engaged Users (plays/listen min/XP), Average DAU, DAU/MAU ratio, Retention D1/D7, export CSV. Edge function deployed (aefelmycrbiquqfoafcs). Lihat `AI/16_SESSION_MEMORY.md`.
+
 ---
 
 Blocked

@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 
 import { useAnalytics } from "../hooks/useAnalytics";
-import type { AnalyticsTotals } from "../types/analytics";
+import type { AnalyticsTotals, TopEngagedUser } from "../types/analytics";
 import { usePrograms } from "@/hooks/usePrograms";
 import { useAnnouncers } from "@/hooks/useAnnouncers";
 import { exportToCSV } from "../../shared/AdminExportCSV";
@@ -194,6 +194,82 @@ function TopList({ title, rows, rankLabel }: {
   );
 }
 
+function averageRetention(map?: Record<string, number>): number | null {
+  if (!map) return null;
+  const vals = Object.values(map).filter((v) => Number.isFinite(v));
+  if (!vals.length) return null;
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+
+function RetentionCard({ d1, d7 }: { d1: number | null; d7: number | null }) {
+  return (
+    <div className="rounded-3xl bg-white p-5 shadow-sm">
+      <div className="mb-3 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gray-100">
+          <Users size={20} className="text-gray-600" />
+        </div>
+        <span className="text-sm font-medium text-gray-500">Retention</span>
+      </div>
+      <div className="flex items-end gap-6">
+        <div>
+          <p className="text-3xl font-black text-gray-900">
+            {d1 == null ? "—" : (d1 * 100).toFixed(0) + "%"}
+          </p>
+          <p className="mt-1 text-xs text-gray-400">Return next day (D1)</p>
+        </div>
+        <div>
+          <p className="text-3xl font-black text-gray-900">
+            {d7 == null ? "—" : (d7 * 100).toFixed(0) + "%"}
+          </p>
+          <p className="mt-1 text-xs text-gray-400">Return in 7 days (D7)</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TopEngagedUsersTable({ users }: { users: TopEngagedUser[] }) {
+  if (!users.length) return null;
+  return (
+    <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
+      <div className="border-b border-gray-100 px-5 py-4">
+        <h3 className="font-bold text-gray-800">Top Engaged Users</h3>
+        <p className="mt-0.5 text-xs text-gray-400">By stream plays & listen minutes · best for client reports</p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px] text-left text-sm">
+          <thead>
+            <tr className="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-400">
+              <th className="px-5 py-3 font-semibold">Rank</th>
+              <th className="px-5 py-3 font-semibold">User</th>
+              <th className="px-5 py-3 text-right font-semibold">Stream Plays</th>
+              <th className="px-5 py-3 text-right font-semibold">Listen (min)</th>
+              <th className="px-5 py-3 text-right font-semibold">Lifetime XP</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((u, i) => (
+              <tr key={u.user_id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
+                <td className="px-5 py-3">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#bda752]/10 text-xs font-bold text-[#bda752]">
+                    {i + 1}
+                  </span>
+                </td>
+                <td className="px-5 py-3 font-medium text-gray-800">
+                  {u.display_name ?? "Anonymous"}
+                </td>
+                <td className="px-5 py-3 text-right font-semibold tabular-nums text-gray-700">{u.plays.toLocaleString()}</td>
+                <td className="px-5 py-3 text-right tabular-nums text-gray-600">{u.listen_minutes.toLocaleString()}</td>
+                <td className="px-5 py-3 text-right font-semibold tabular-nums text-[#bda752]">{u.lifetime_vxp.toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export function AnalyticsPage() {
   const [days, setDays] = useState(30);
 
@@ -216,10 +292,18 @@ export function AnalyticsPage() {
 
   const getExportData = () => {
     if (!chartData.length) return null;
-    const rows = chartData.map((d) => ({ ...d }));
+    const dau = data?.activeUsers?.trend ?? {};
+    const plays = data?.streamPlays?.trend ?? {};
+    const rows = chartData.map((d) => ({
+      ...d,
+      dau: dau[d.date] ?? 0,
+      plays: plays[d.date] ?? 0,
+    }));
     const headers: Record<string, string> = {
       date: "Date",
       users: "New Users",
+      dau: "Daily Active Users",
+      plays: "Stream Plays",
       missions: "Completions",
       redemptions: "Redemptions",
       xp: "XP Earned",
@@ -237,6 +321,22 @@ export function AnalyticsPage() {
     const exportData = getExportData();
     if (!exportData) return;
     exportToExcel(exportData.rows as Record<string, unknown>[], exportData.headers, `analytics-${days}d.xls`);
+  };
+
+  const handleExportUsersCSV = () => {
+    const users = data?.topUsers ?? [];
+    if (!users.length) return;
+    exportToCSV(
+      users as unknown as Record<string, unknown>[],
+      {
+        user_id: "User ID",
+        display_name: "Name",
+        lifetime_vxp: "Lifetime XP",
+        plays: "Stream Plays",
+        listen_minutes: "Listen (min)",
+      },
+      `top-users-${days}d.csv`
+    );
   };
 
   if (isLoading && !totals) {
@@ -370,6 +470,31 @@ export function AnalyticsPage() {
               label="Banner Clicks"
               value={(data.bannerClicks?.total ?? 0).toLocaleString()}
               sub="Promo banner taps"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Audience health: Avg DAU + DAU/MAU ratio + retention */}
+      {data && (
+        <div>
+          <h2 className="mb-4 text-xl font-bold text-gray-800">Audience Health</h2>
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <KpiCard
+              icon={Users}
+              label="Average DAU"
+              value={(data.activeUsers?.avgDailyUsers ?? 0).toLocaleString()}
+              sub={`Avg active users/day (last ${days}d)`}
+            />
+            <KpiCard
+              icon={TrendingUp}
+              label="DAU / MAU Ratio"
+              value={((data.activeUsers?.dauMauRatio ?? 0) * 100).toFixed(1) + "%"}
+              sub="Stickiness: DAU ÷ MAU"
+            />
+            <RetentionCard
+              d1={averageRetention(data.activeUsers?.retention?.d1)}
+              d7={averageRetention(data.activeUsers?.retention?.d7)}
             />
           </div>
         </div>
@@ -570,6 +695,22 @@ export function AnalyticsPage() {
         azuracast={data?.azuracast ?? null}
         isLoading={isLoading}
       />
+
+      {/* Top Engaged Users — for client-facing reports */}
+      {data && data.topUsers && data.topUsers.length > 0 && (
+        <div>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-800">Top Engaged Users</h2>
+            <button
+              onClick={handleExportUsersCSV}
+              className="rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
+            >
+              Export CSV
+            </button>
+          </div>
+          <TopEngagedUsersTable users={data.topUsers} />
+        </div>
+      )}
 
       {/* Engagement Detail: pages, promos, favorites */}
       {data && (

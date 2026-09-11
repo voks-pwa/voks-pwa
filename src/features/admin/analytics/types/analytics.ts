@@ -47,6 +47,15 @@ export interface NowPlayingData {
   listeners: number;
 }
 
+export interface TopEngagedUser {
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  lifetime_vxp: number;
+  plays: number;
+  listen_minutes: number;
+}
+
 export interface AnalyticsResponse {
   totals: AnalyticsTotals;
   trends: AnalyticsTrends;
@@ -77,11 +86,18 @@ export interface AnalyticsResponse {
     wau: number;
     mau: number;
     trend: Record<string, number>;
+    avgDailyUsers: number;
+    dauMauRatio: number;
+    retention: {
+      d1: Record<string, number>;
+      d7: Record<string, number>;
+    };
   };
   streamPlays: {
     total: number;
     trend: Record<string, number>;
   };
+  topUsers: TopEngagedUser[];
   bannerClicks: {
     total: number;
     trend: Record<string, number>;

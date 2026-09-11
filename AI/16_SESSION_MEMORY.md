@@ -173,3 +173,30 @@ Lima akar masalah dari log console yang sangat panjang:
 
 ### UI — InstallAppButton redesign
 - `src/components/pwa/InstallAppButton.tsx`: tombol gradient brand (`#5B5B3F → #bda752`) dengan ikon `Download`; kartu iOS profesional (ikon `Smartphone`, gradient top bar, petunjuk `Share → Add to Home Screen`, tombol dismiss yang tersimpan di localStorage).
+
+## 2026-09-11 — Admin Analytics untuk Report & Presentasi Klien
+
+### Konteks
+- Permintaan: halaman analitik admin untuk report klien — jumlah User, Top User, Play Count, DAU, MAU, Average User, dsb.
+- Rencana awal: buat tabel `app_events` + beacon baru + edge function `admin-audience`.
+- **Temuan saat verifikasi**: infrastruktur tracking SUDAH ada (`activity_logs` + Action Engine; `admin-analytics` sudah hitung DAU/WAU/MAU, stream plays, banner clicks, page views, top favorites; `AnalyticsPage` sudah render + export CSV/Excel). Opsi penuh = duplikat → disepakati "Tingkatkan yang ada".
+
+### Dikerjakan
+- **Edge function `admin-analytics`** (deployed `aefelmycrbiquqfoafcs`):
+  - `topUsers`: Top 15 engaged users (plays dihitung dari `player_play`, listen_minutes dari `listen_tick` metadata seconds, join `profiles` untuk nama/avatar/lifetime_vxp).
+  - `avgDailyUsers`: rata-rata DAU per hari di periode.
+  - `dauMauRatio`: stickiness = DAUtoday ÷ MAU.
+  - Retention `d1`/`d7`: user yang kembali 1 hari / 7 hari setelah hari aktifnya.
+- **Types** (`src/features/admin/analytics/types/analytics.ts`): `TopEngagedUser`, bidang `activeUsers.avgDailyUsers/dauMauRatio/retention`, `topUsers`.
+- **UI** (`AnalyticsPage.tsx`):
+  - Section "Audience Health": Average DAU, DAU/MAU Ratio, Retention D1/D7.
+  - Tabel "Top Engaged Users" (rank, user, plays, listen min, lifetime XP) + tombol Export CSV.
+  - Export CSV/Excel harian kini mencakup `dau` + `plays` per hari.
+
+### Verifikasi
+- `npm run check` ✅ · `npm run build` ✅ · `npx eslint` untuk file yang diubah ✅ (error lint lain pre-existing).
+- Edge function `admin-analytics` deployed.
+
+### Catatan
+- Retention D1/D7 memakai window `max(days,30)` aktivitas yang sama; data sebelum tracking tersebut tidak tersedia (retention terisi sejak `activity_logs` aktif).
+- Play Count = jumlah `player_play` (bukan session unik) — konsisten dengan definisi sebelumnya.

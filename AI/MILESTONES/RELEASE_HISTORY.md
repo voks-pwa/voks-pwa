@@ -189,6 +189,16 @@ Console Error Hardening
 - Verifikasi: `npm run check` OK, `npm run build` OK
 - Detail: `AI/16_SESSION_MEMORY.md`
 
+Audience Analytics — Report Klien
+
+✅ 2026-09-11
+- Tingkatkan `admin-analytics` + `AnalyticsPage` (tanpa duplikasi tracking yang sudah ada)
+- Baru: Top Engaged Users (plays, listen minutes, lifetime XP), Average DAU, DAU/MAU ratio, Retention D1/D7
+- Export CSV/Excel harian kini menyertakan DAU + Stream Plays per hari; export CSV Top Users
+- Edge function `admin-analytics` deployed (aefelmycrbiquqfoafcs)
+- Verifikasi: `npm run check` OK, `npm run build` OK, eslint file diubah OK
+- Detail: `AI/16_SESSION_MEMORY.md`
+
 ---
 
 ### Next

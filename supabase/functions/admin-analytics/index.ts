@@ -25,6 +25,15 @@ interface NowPlayingData {
   listeners: number;
 }
 
+interface TopEngagedUser {
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  lifetime_vxp: number;
+  plays: number;
+  listen_minutes: number;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -92,6 +101,12 @@ Deno.serve(async (req) => {
         map[val] = (map[val] ?? 0) + 1;
       }
       return map;
+    }
+
+    function nextDay(dateStr: string, offset: number): string {
+      const d = new Date(dateStr + "T00:00:00Z");
+      d.setUTCDate(d.getUTCDate() + offset);
+      return d.toISOString().slice(0, 10);
     }
 
     // ── Section 1: Row counts (isolated) ──
@@ -268,6 +283,8 @@ Deno.serve(async (req) => {
     const clicksByDate: Record<string, number> = {};
     const topPromoMap: Record<string, { count: number; title: string }> = {};
     const topPageMap: Record<string, number> = {};
+    const userPlaysMap = new Map<string, number>();
+    const userListenSecondsMap = new Map<string, number>();
     let streamPlaysTotal = 0;
     let bannerClicksTotal = 0;
 
@@ -278,6 +295,12 @@ Deno.serve(async (req) => {
       if (row.activity_type === "player_play") {
         streamPlaysTotal += 1;
         playsByDate[day] = (playsByDate[day] ?? 0) + 1;
+        if (row.user_id) userPlaysMap.set(row.user_id, (userPlaysMap.get(row.user_id) ?? 0) + 1);
+      } else if (row.activity_type === "listen_tick") {
+        if (row.user_id) {
+          const seconds = Number(meta.seconds ?? 1) || 1;
+          userListenSecondsMap.set(row.user_id, (userListenSecondsMap.get(row.user_id) ?? 0) + seconds);
+        }
       } else if (row.activity_type === "banner_click") {
         bannerClicksTotal += 1;
         clicksByDate[day] = (clicksByDate[day] ?? 0) + 1;
@@ -300,6 +323,97 @@ Deno.serve(async (req) => {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
       .map(([path, count]) => ({ path, count }));
+
+    // ── Top engaged users (by plays + listen minutes) for client reporting ──
+    let topUsers: TopEngagedUser[] = [];
+    try {
+      const engagedIdSet = new Set<string>([
+        ...userPlaysMap.keys(),
+        ...userListenSecondsMap.keys(),
+      ]);
+      const engagedIds = [...engagedIdSet].slice(0, 200);
+      const profileMap: Record<string, { display_name: string | null; avatar_url: string | null; lifetime_vxp: number }> = {};
+      if (engagedIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, display_name, avatar_url, lifetime_vxp")
+          .in("id", engagedIds);
+        for (const p of profiles ?? []) {
+          profileMap[p.id] = {
+            display_name: p.display_name,
+            avatar_url: p.avatar_url,
+            lifetime_vxp: p.lifetime_vxp ?? 0,
+          };
+        }
+      }
+      topUsers = engagedIds
+        .map((uid) => ({
+          user_id: uid,
+          display_name: profileMap[uid]?.display_name ?? null,
+          avatar_url: profileMap[uid]?.avatar_url ?? null,
+          lifetime_vxp: profileMap[uid]?.lifetime_vxp ?? 0,
+          plays: userPlaysMap.get(uid) ?? 0,
+          listen_minutes: Math.round((userListenSecondsMap.get(uid) ?? 0) / 60),
+        }))
+        .filter((u) => u.plays > 0 || u.listen_minutes > 0)
+        .sort((a, b) => b.plays - a.plays || b.listen_minutes - a.listen_minutes)
+        .slice(0, 15);
+    } catch (err) {
+      console.error("[admin-analytics] top users fetch threw:", err instanceof Error ? err.message : String(err));
+    }
+
+    // ── Retention D1/D7 & average DAU / DAU-MAU ratio ──
+    const activeDaySets: Record<string, Set<string>> = {};
+    for (const row of activityRows) {
+      if (!row.user_id) continue;
+      const day = new Date(row.created_at).toISOString().slice(0, 10);
+      (activeDaySets[day] ??= new Set()).add(row.user_id);
+    }
+    const dauValues = Object.values(activeDaySets).map((s) => s.size);
+    const avgDailyUsers = dauValues.length > 0
+      ? Math.round(dauValues.reduce((a, b) => a + b, 0) / dauValues.length)
+      : 0;
+    const dauMauRatio = mauSet.size > 0 ? Math.round((dauSet.size / mauSet.size) * 1000) / 1000 : 0;
+
+    let dayRetention: Record<string, number> = {};
+    let weekRetention: Record<string, number> = {};
+    try {
+      const userDays = new Map<string, string[]>();
+      for (const row of activityRows) {
+        if (!row.user_id) continue;
+        const day = new Date(row.created_at).toISOString().slice(0, 10);
+        const arr = userDays.get(row.user_id) ?? [];
+        if (!arr.includes(day)) arr.push(day);
+        userDays.set(row.user_id, arr);
+      }
+      const dayKeys = Object.keys(activeDaySets).sort();
+      const d1Map: Record<string, { newUsers: number; returned: number }> = {};
+      const d7Map: Record<string, { newUsers: number; returned: number }> = {};
+      for (const day of dayKeys) {
+        const users = activeDaySets[day];
+        let d1Returned = 0;
+        let d7Returned = 0;
+        for (const uid of users) {
+          const days = userDays.get(uid) ?? [];
+          const dayIdx = days.indexOf(day);
+          if (dayIdx >= 0) {
+            if (days.includes(nextDay(day, 1))) d1Returned++;
+            if (days.includes(nextDay(day, 7))) d7Returned++;
+          }
+        }
+        d1Map[day] = { newUsers: users.size, returned: d1Returned };
+        d7Map[day] = { newUsers: users.size, returned: d7Returned };
+      }
+      dayRetention = {};
+      weekRetention = {};
+      for (const day of dayKeys) {
+        const d1 = d1Map[day]; const d7 = d7Map[day];
+        if (d1 && d1.newUsers > 0) dayRetention[day] = Math.round((d1.returned / d1.newUsers) * 1000) / 1000;
+        if (d7 && d7.newUsers > 0) weekRetention[day] = Math.round((d7.returned / d7.newUsers) * 1000) / 1000;
+      }
+    } catch (err) {
+      console.error("[admin-analytics] retention compute threw:", err instanceof Error ? err.message : String(err));
+    }
 
     // Top favorite programs & announcers from user_favorites
     let topPrograms: { id: string; count: number }[] = [];
@@ -639,11 +753,18 @@ Deno.serve(async (req) => {
           wau: wauSet.size,
           mau: mauSet.size,
           trend: activeTrend,
+          avgDailyUsers,
+          dauMauRatio,
+          retention: {
+            d1: dayRetention,
+            d7: weekRetention,
+          },
         },
         streamPlays: {
           total: streamPlaysTotal,
           trend: playsByDate,
         },
+        topUsers,
         bannerClicks: {
           total: bannerClicksTotal,
           trend: clicksByDate,
